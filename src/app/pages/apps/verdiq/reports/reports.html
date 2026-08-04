@@ -1,0 +1,62 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Reports</h1>
+      <p class="muted">Parent-reported data problems. Approve marks the report valid (acknowledgment only — fix the product separately); reject records a reason.</p>
+    </div>
+    <button class="btn btn-ghost" (click)="load()" [disabled]="loading()">Refresh</button>
+  </div>
+
+  @if (notice()) { <div class="card notice">{{ notice() }}</div> }
+  @if (error()) { <div class="card state error">{{ error() }}</div> }
+
+  @if (data(); as d) {
+    <div class="tabs">
+      <button class="tab" [class.on]="tab === 'pending'" (click)="setTab('pending')">
+        Pending <span class="count">{{ d.counts.pending }}</span>
+      </button>
+      <button class="tab" [class.on]="tab === 'approved'" (click)="setTab('approved')">
+        Approved <span class="count">{{ d.counts.approved }}</span>
+      </button>
+      <button class="tab" [class.on]="tab === 'rejected'" (click)="setTab('rejected')">
+        Rejected <span class="count">{{ d.counts.rejected }}</span>
+      </button>
+    </div>
+
+    @if (loading()) {
+      <div class="card state">Loading…</div>
+    } @else if (d.rows.length === 0) {
+      <div class="card state">No {{ tab }} reports.</div>
+    } @else {
+      <div class="rep-list">
+        @for (r of d.rows; track r.id) {
+          <div class="card rep-card">
+            <div class="rep-head">
+              <div class="rep-title">
+                <span class="rep-name">{{ r.product_name || '(unknown product)' }}</span>
+                <code>{{ r.barcode }}</code>
+                <span class="pill" [class.yes]="r.status === 'approved'"
+                                   [class.no]="r.status === 'rejected'"
+                                   [class.neutral]="r.status === 'pending'">{{ r.status }}</span>
+              </div>
+              <span class="rep-meta">{{ r.created_at | date:'medium' }} · {{ r.reporter_email || 'unknown' }}</span>
+            </div>
+
+            <div class="rep-reason">{{ reasonLabel(r.reason) }}</div>
+            @if (r.note) { <p class="rep-note">📝 {{ r.note }}</p> }
+            @if (r.review_note) { <p class="rep-review">Review: {{ r.review_note }}</p> }
+
+            @if (r.status === 'pending') {
+              <div class="rep-actions">
+                <button class="btn btn-ghost danger" (click)="reject(r)" [disabled]="busy() === r.id">Reject</button>
+                <button class="btn" (click)="approve(r)" [disabled]="busy() === r.id">
+                  {{ busy() === r.id ? 'Working…' : 'Mark valid' }}
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  }
+</div>

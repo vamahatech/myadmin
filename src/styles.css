@@ -1,0 +1,82 @@
+@import './styles/colors.css';
+@import './app/pages/apps/verdiq/verdiq-globals.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: 'Manrope', 'Hind', system-ui, sans-serif;
+  margin: 0;
+}
+
+h1, h2, h3, .font-display {
+  font-family: 'Fraunces', 'Hind', Georgia, serif;
+  letter-spacing: -0.015em;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent), var(--color-gold));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Ink seal — the shell's signature mark. A small stamped "V", used in page
+   headers and as a pressed-stamp micro-interaction on the login button. */
+.ink-seal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1.5px solid currentColor;
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  transform: rotate(-8deg);
+}
+
+@keyframes stamp-press {
+  0%   { transform: rotate(-8deg) scale(1); }
+  40%  { transform: rotate(-8deg) scale(0.8); }
+  100% { transform: rotate(-8deg) scale(1); }
+}
+
+.ink-seal--pressed {
+  animation: stamp-press 0.35s ease-out;
+}
+
+/* Ledger index rows on the tile-home screen — a staggered page-turn reveal. */
+@keyframes ledger-row-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.ledger-row {
+  animation: ledger-row-in 0.4s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ink-seal--pressed,
+  .ledger-row {
+    animation: none;
+  }
+}
+
+/* Chrome/Edge/Safari paint their own blue-or-yellow tint behind an
+   autofilled input and ignore background-color — this repaints it to match
+   the app's surface color instead, so a field's border stays the same shape
+   whether it's empty, focused, or filled by the browser's password manager. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--color-text);
+  -webkit-box-shadow: 0 0 0px 1000px var(--color-surface) inset;
+  box-shadow: 0 0 0px 1000px var(--color-surface) inset;
+  transition: background-color 9999s ease-in-out 0s;
+}

@@ -1,0 +1,20 @@
+<app-modal [open]="open" title="Confirm delete" (closed)="close()">
+  <p class="confirm-copy">
+    This will permanently delete <strong>{{ itemLabel }}</strong>. This cannot be undone.
+  </p>
+  <p class="confirm-copy">
+    Type <strong>{{ expectedText }}</strong> to confirm.
+  </p>
+  <input
+    class="input"
+    type="text"
+    [(ngModel)]="typed"
+    (ngModelChange)="onInput()"
+    (keyup.enter)="confirm()"
+    autocomplete="off"
+  />
+  <div class="form-actions">
+    <button class="btn btn-ghost" (click)="close()">Cancel</button>
+    <button class="btn btn-danger" [disabled]="!matches()" (click)="confirm()">Delete</button>
+  </div>
+</app-modal>

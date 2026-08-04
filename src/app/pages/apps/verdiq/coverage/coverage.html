@@ -1,0 +1,92 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Coverage &amp; gaps</h1>
+      <p class="muted">What's missing before the app can rely on cached data — the "add next" list.</p>
+    </div>
+    <button class="btn btn-ghost" (click)="load()" [disabled]="loading()">Refresh</button>
+  </div>
+
+  @if (loading()) {
+    <div class="card state">Loading gaps report…</div>
+  } @else if (error()) {
+    <div class="card state error">{{ error() }}</div>
+  } @else if (report(); as r) {
+
+    <!-- Gap headline cards -->
+    <div class="gap-grid">
+      <div class="card gap alarm">
+        <span class="gap-label">Missing nutrition</span>
+        <span class="gap-value">{{ r.summary.missingNutrition | number }}</span>
+        <span class="gap-sub">of {{ r.summary.totalProducts | number }} — can't be scored from seed</span>
+      </div>
+      <div class="card gap" [class.alarm]="r.summary.additives === 0">
+        <span class="gap-label">Additives (INS) decoded</span>
+        <span class="gap-value">{{ r.summary.additives | number }}</span>
+        <span class="gap-sub">{{ r.summary.additives === 0 ? 'table empty' : 'entries' }}</span>
+      </div>
+      <div class="card gap alarm">
+        <span class="gap-label">Missing double-standard</span>
+        <span class="gap-value">{{ r.summary.missingDoubleStandard | number }}</span>
+        <span class="gap-sub">products with no India-vs-UK pair</span>
+      </div>
+      <div class="card gap">
+        <span class="gap-label">Scored barcodes</span>
+        <span class="gap-value">{{ r.summary.scoredBarcodes | number }}</span>
+        <span class="gap-sub">distinct products with a verdict</span>
+      </div>
+      <div class="card gap">
+        <span class="gap-label">Missing name</span>
+        <span class="gap-value">{{ r.summary.missingName | number }}</span>
+      </div>
+      <div class="card gap" [class.alarm]="r.summary.verdictsMissingAlternatives > 0">
+        <span class="gap-label">Verdicts w/o alternatives</span>
+        <span class="gap-value">{{ r.summary.verdictsMissingAlternatives | number }}</span>
+        <span class="gap-sub">screen 3 empty for these</span>
+      </div>
+    </div>
+
+    <div class="cols">
+      <!-- Per-category scoreable coverage -->
+      <div class="card panel">
+        <h2>Scoreable coverage by category</h2>
+        <p class="muted">% of each category that carries nutrition (so it can be scored).</p>
+        <table class="mini-table">
+          <thead>
+            <tr><th>Category</th><th class="num">Products</th><th class="num">Scoreable</th><th>Coverage</th></tr>
+          </thead>
+          <tbody>
+            @for (c of r.byCategory; track c.category) {
+              <tr>
+                <td>{{ c.category }}</td>
+                <td class="num">{{ c.products | number }}</td>
+                <td class="num">{{ c.withNutrition | number }}</td>
+                <td class="cov">
+                  <div class="cov-bar"><div class="cov-fill" [style.width.%]="c.coveragePct"></div></div>
+                  <span class="cov-pct">{{ c.coveragePct }}%</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Backfill worklist -->
+      <div class="card panel">
+        <h2>Backfill worklist</h2>
+        <p class="muted">Sample of products missing nutrition.</p>
+        <ul class="worklist">
+          @for (p of r.missingNutritionSample; track p.id) {
+            <li>
+              <span class="wl-name">{{ p.name || '—' }}</span>
+              <span class="wl-meta">{{ p.brand || '—' }} · <code>{{ p.barcode || '—' }}</code></span>
+            </li>
+          } @empty {
+            <li class="muted">Nothing missing 🎉</li>
+          }
+        </ul>
+      </div>
+    </div>
+
+  }
+</div>

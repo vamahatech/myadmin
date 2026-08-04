@@ -1,0 +1,61 @@
+.add-form
+  padding: 1.1rem 1.25rem
+  display: flex
+  flex-direction: column
+  gap: .7rem
+
+.add-form h2
+  margin: 0
+  font-size: 1rem
+
+.guard
+  margin: 0
+  font-size: .82rem
+  color: var(--caution)
+
+.form-grid
+  display: grid
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr))
+  gap: .7rem
+
+.form-grid label
+  display: flex
+  flex-direction: column
+  gap: .3rem
+  font-size: .82rem
+  color: var(--text-muted)
+
+.form-grid label.wide
+  grid-column: 1 / -1
+
+.form-actions
+  display: flex
+  justify-content: flex-end
+
+.toolbar
+  display: flex
+  align-items: center
+  gap: .6rem
+  flex-wrap: wrap
+
+.toolbar .search
+  flex: 1
+  min-width: 200px
+
+.counts
+  font-size: .82rem
+
+.note
+  max-width: 320px
+  font-size: .84rem
+
+.notice
+  padding: .7rem 1rem
+  background: #ecfdf3
+  color: #027a48
+  border: 1px solid #a6f4c5
+  font-size: .88rem
+
+.btn.danger
+  color: var(--avoid)
+  border-color: #fca5a5

@@ -1,0 +1,58 @@
+.tabs
+  display: flex
+  gap: .4rem
+
+.tab
+  background: var(--surface)
+  border: 1px solid var(--border)
+  border-radius: 8px
+  padding: .5rem .9rem
+  font-size: .88rem
+  font-weight: 600
+  cursor: pointer
+  display: flex
+  align-items: center
+  gap: .5rem
+
+.tab.on
+  background: var(--primary)
+  color: #fff
+  border-color: var(--primary)
+
+.tab .count
+  background: rgba(0,0,0,.08)
+  border-radius: 999px
+  padding: 0 .45rem
+  font-size: .78rem
+
+.tab.on .count
+  background: rgba(255,255,255,.25)
+
+.fb-list
+  display: flex
+  flex-direction: column
+  gap: 1rem
+
+.fb-card
+  padding: 1.1rem 1.25rem
+  display: flex
+  flex-direction: column
+  gap: .5rem
+
+.fb-head
+  display: flex
+  align-items: center
+  gap: .6rem
+
+.fb-meta
+  font-size: .78rem
+  color: var(--text-muted)
+
+.fb-note
+  margin: 0
+  font-size: .9rem
+  white-space: pre-wrap
+
+.fb-actions
+  display: flex
+  justify-content: flex-end

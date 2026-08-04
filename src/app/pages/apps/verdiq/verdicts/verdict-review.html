@@ -1,0 +1,121 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Verdict review</h1>
+      <p class="muted">Every cached verdict with its reason, citation, flags, and additives.</p>
+    </div>
+    <button class="btn btn-ghost" (click)="load()" [disabled]="loading()">Refresh</button>
+  </div>
+
+  @if (notice()) {
+    <div class="card notice">{{ notice() }}</div>
+  }
+
+  @if (loading()) {
+    <div class="card state">Loading verdicts…</div>
+  } @else if (error()) {
+    <div class="card state error">{{ error() }}</div>
+  } @else if (data(); as d) {
+
+    @if (d.total === 0) {
+      <div class="card state">No verdicts cached yet.</div>
+    } @else {
+      <div class="verdict-list">
+        @for (v of d.rows; track v.barcode + v.age_band) {
+          <div class="card verdict-card">
+            <div class="vc-head">
+              <div class="vc-title">
+                <span class="badge" [class.ok]="v.verdict === 'OK'"
+                                    [class.caution]="v.verdict === 'Caution'"
+                                    [class.avoid]="v.verdict === 'Avoid'">{{ v.verdict }}</span>
+                <span class="vc-name">{{ v.product_name || 'Unknown product' }}</span>
+                <span class="age-chip">{{ ageLabel(v.age_band) }}</span>
+              </div>
+              <div class="vc-meta">
+                <code>{{ v.barcode }}</code>
+                <span>updated {{ v.updated_at | date:'mediumDate' }}</span>
+                @if (v.stale_days > 30) {
+                  <span class="stale">stale {{ v.stale_days }}d</span>
+                }
+              </div>
+            </div>
+
+            <p class="vc-reason">{{ v.reason }}</p>
+            <p class="vc-citation">📚 {{ v.citation }}</p>
+
+            @if (v.flags?.length) {
+              <div class="chips">
+                @for (f of v.flags; track f) {
+                  <span class="chip flag">{{ f }}</span>
+                }
+              </div>
+            }
+
+            @if (v.additives?.length) {
+              <div class="additives">
+                @for (a of v.additives; track a.ins) {
+                  <div class="additive" [class.controversial]="a.controversial">
+                    <span class="ins">INS {{ a.ins }}</span>
+                    <span class="aname">{{ a.name }}</span>
+                    <span class="arisk">{{ a.risk }}</span>
+                  </div>
+                }
+              </div>
+            }
+
+            <!-- Actions -->
+            <div class="vc-actions">
+              <button class="btn btn-ghost" (click)="recompute(v)"
+                      [disabled]="busyKey() === key(v)">
+                {{ busyKey() === key(v) ? 'Working…' : '↻ Recompute' }}
+              </button>
+              @if (editingKey() !== key(v)) {
+                <button class="btn btn-ghost" (click)="startOverride(v)"
+                        [disabled]="busyKey() === key(v)">✎ Override</button>
+              }
+            </div>
+
+            <!-- Override form -->
+            @if (editingKey() === key(v)) {
+              <div class="override">
+                <div class="override-row">
+                  <label class="of">
+                    <span>Verdict</span>
+                    <select class="input" [(ngModel)]="draft.verdict">
+                      @for (l of levels; track l) { <option [value]="l">{{ l }}</option> }
+                    </select>
+                  </label>
+                  <label class="of grow">
+                    <span>Reason</span>
+                    <input class="input" [(ngModel)]="draft.reason" />
+                  </label>
+                </div>
+                <label class="of">
+                  <span>Citation (must be defensible)</span>
+                  <input class="input" [(ngModel)]="draft.citation" />
+                </label>
+                <div class="override-actions">
+                  <button class="btn btn-ghost" (click)="cancelOverride()">Cancel</button>
+                  <button class="btn" (click)="saveOverride(v)"
+                          [disabled]="busyKey() === key(v) || !draft.reason.trim() || !draft.citation.trim()">
+                    Save override
+                  </button>
+                </div>
+                <p class="override-note">Overrides are logged. Flags &amp; additives are preserved.</p>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="card pager">
+        <span class="muted">{{ d.total }} verdicts · page {{ d.page }} of {{ totalPages() }}</span>
+        <div class="pager-btns">
+          <button class="btn btn-ghost" (click)="prev()" [disabled]="d.page <= 1 || loading()">Prev</button>
+          <button class="btn btn-ghost" (click)="next()" [disabled]="d.page >= totalPages() || loading()">Next</button>
+        </div>
+      </div>
+    }
+
+  }
+</div>

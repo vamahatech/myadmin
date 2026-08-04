@@ -1,0 +1,24 @@
+<main class="min-h-screen bg-bg text-text flex items-center justify-center px-6">
+  <div class="w-full max-w-sm">
+    <a routerLink="/" class="text-sm text-text2 hover:text-text transition-colors mb-6 inline-block">
+      ← All apps
+    </a>
+
+    <div class="bg-card border border-border rounded-3xl p-8 space-y-5">
+      <h1 class="text-xl font-bold">Account</h1>
+      @if (auth.user(); as u) {
+        <div class="space-y-2 text-sm">
+          <p><span class="text-text2">Name:</span> {{ u.name }}</p>
+          <p><span class="text-text2">Email:</span> {{ u.email }}</p>
+          <p><span class="text-text2">Role:</span> {{ u.role }}</p>
+        </div>
+      }
+      <button
+        (click)="logout()"
+        class="w-full py-3 border border-border hover:bg-surface text-text text-sm font-semibold rounded-xl transition-colors"
+      >
+        Sign out
+      </button>
+    </div>
+  </div>
+</main>

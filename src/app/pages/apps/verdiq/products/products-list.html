@@ -1,0 +1,103 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Products</h1>
+      <p class="muted">Browse the seeded catalog. Toggle "missing nutrition" for the backfill worklist.</p>
+    </div>
+    <a class="btn" routerLink="/products/new">+ Add product</a>
+  </div>
+
+  <div class="card panel toolbar">
+    <select class="select" [(ngModel)]="field" (change)="applyFilters()">
+      @for (f of fields; track f.value) {
+      <option [ngValue]="f.value">{{ f.label }}</option>
+      }
+    </select>
+    <input class="input search" type="text"
+      [placeholder]="field ? ('Search ' + field + '…') : 'Search name, brand, or barcode…'"
+      [(ngModel)]="q" (keyup.enter)="applyFilters()" />
+    <label class="check">
+      <input type="checkbox" [(ngModel)]="incompleteOnly" (change)="applyFilters()" />
+      Missing nutrition only
+    </label>
+    <button class="btn" (click)="applyFilters()" [disabled]="loading()">Search</button>
+  </div>
+
+  @if (error()) {
+  <div class="card state error">{{ error() }}</div>
+  } @else if (data(); as d) {
+  <div class="card">
+    <div class="table-scroll">
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Brand</th>
+            <th>Category</th>
+            <th>Barcode</th>
+            <th>Ingredients</th>
+            <th>Nutrition</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of d.rows; track row.id) {
+          <tr>
+            <td class="strong">{{ row.name || '—' }}</td>
+            <td>{{ row.brand || '—' }}</td>
+            <td>{{ row.category || '—' }}</td>
+            <td class="mono">{{ row.barcode || '—' }}</td>
+            <td>
+              <span class="pill" [class.yes]="row.has_ingredients" [class.no]="!row.has_ingredients">
+                {{ row.has_ingredients ? 'yes' : 'no' }}
+              </span>
+            </td>
+            <td>
+              <span class="pill" [class.yes]="row.has_nutrition" [class.no]="!row.has_nutrition">
+                {{ row.has_nutrition ? 'yes' : 'no' }}
+              </span>
+            </td>
+            <td class="actions">
+              <a class="btn btn-ghost btn-sm" [routerLink]="['/products', row.id]">Edit</a>
+              <button class="icon-btn icon-danger" (click)="openDelete(row)"
+                [disabled]="deletingId() === row.id" title="Delete product" aria-label="Delete product">
+                @if (deletingId() === row.id) {
+                <span class="spin">⋯</span>
+                } @else {
+                <svg width="13" height="16" viewBox="0 0 11 14" aria-hidden="true">
+                  <path fill="currentColor"
+                    d="M.768 12.286c.002.847.689 1.533 1.536 1.536h6.143c.848-.003 1.534-.689 1.536-1.536V3.075H.768v9.21zM10.75.768H8.062L7.295 0H3.455l-.768.768H0v1.535h10.75V.768z" />
+                </svg>
+                }
+              </button>
+            </td>
+          </tr>
+          } @empty {
+          <tr>
+            <td colspan="7" class="empty">No products match.</td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pager">
+      <span class="muted">
+        {{ d.total | number }} products · page {{ d.page }} of {{ totalPages() }}
+      </span>
+      <div class="pager-btns">
+        <button class="btn btn-ghost" (click)="prev()" [disabled]="d.page <= 1 || loading()">Prev</button>
+        <button class="btn btn-ghost" (click)="next()" [disabled]="d.page >= totalPages() || loading()">Next</button>
+      </div>
+    </div>
+  </div>
+  }
+
+  <app-confirm-delete-modal
+    [open]="deleteTarget() !== null"
+    [itemLabel]="deleteTarget() ? deleteLabel(deleteTarget()!) : ''"
+    [expectedText]="deleteTarget() ? deleteLabel(deleteTarget()!) : ''"
+    (confirmed)="confirmDelete()"
+    (closed)="closeDelete()"
+  ></app-confirm-delete-modal>
+</div>

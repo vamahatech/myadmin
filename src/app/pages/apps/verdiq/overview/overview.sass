@@ -1,0 +1,151 @@
+.kpi-grid
+  display: grid
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr))
+  gap: 1rem
+
+.kpi
+  padding: 1.1rem 1.2rem
+  display: flex
+  flex-direction: column
+  gap: .2rem
+
+.kpi.alarm
+  border-color: #fca5a5
+  background: #fff7f7
+
+.kpi-label
+  font-size: .78rem
+  text-transform: uppercase
+  letter-spacing: .05em
+  color: var(--text-muted)
+
+.kpi-value
+  font-size: 1.8rem
+  font-weight: 700
+  line-height: 1.1
+
+.kpi-sub
+  font-size: .78rem
+  color: var(--text-muted)
+
+.cols
+  display: grid
+  grid-template-columns: 2fr 1fr
+  gap: 1rem
+
+.meter
+  margin-top: .9rem
+
+.meter-head
+  display: flex
+  justify-content: space-between
+  font-size: .85rem
+  margin-bottom: .3rem
+
+.bar
+  height: 8px
+  background: #eef1f5
+  border-radius: 999px
+  overflow: hidden
+
+.fill
+  height: 100%
+  background: var(--ok)
+  border-radius: 999px
+
+.fill.nutrition
+  background: var(--avoid)
+
+.meter.alarm .meter-head strong
+  color: var(--avoid)
+
+.hint
+  display: block
+  margin-top: .35rem
+  font-size: .78rem
+  color: var(--avoid)
+
+.mini-stats
+  display: flex
+  gap: 1.2rem
+  margin-top: 1rem
+  font-size: .82rem
+  color: var(--text-muted)
+
+.verdict-bar
+  display: flex
+  height: 14px
+  border-radius: 999px
+  overflow: hidden
+  margin-top: .5rem
+
+.seg.ok
+  background: var(--ok)
+
+.seg.caution
+  background: var(--caution)
+
+.seg.avoid
+  background: var(--avoid)
+
+.verdict-legend
+  display: flex
+  flex-direction: column
+  gap: .4rem
+  margin-top: .8rem
+  font-size: .85rem
+
+.dot
+  display: inline-block
+  width: 10px
+  height: 10px
+  border-radius: 50%
+  margin-right: .5rem
+
+.dot.ok
+  background: var(--ok)
+
+.dot.caution
+  background: var(--caution)
+
+.dot.avoid
+  background: var(--avoid)
+
+.cat-list
+  display: flex
+  flex-direction: column
+  gap: .5rem
+  margin-top: .5rem
+
+.cat-row
+  display: grid
+  grid-template-columns: 200px 1fr 60px
+  align-items: center
+  gap: .8rem
+  font-size: .85rem
+
+.cat-name
+  overflow: hidden
+  text-overflow: ellipsis
+  white-space: nowrap
+
+.cat-bar
+  height: 8px
+  background: #eef1f5
+  border-radius: 999px
+  overflow: hidden
+
+.cat-fill
+  height: 100%
+  background: var(--primary)
+  border-radius: 999px
+
+.cat-count
+  text-align: right
+  color: var(--text-muted)
+
+@media (max-width: 800px)
+  .cols
+    grid-template-columns: 1fr
+  .cat-row
+    grid-template-columns: 120px 1fr 50px

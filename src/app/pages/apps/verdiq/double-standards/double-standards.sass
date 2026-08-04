@@ -1,0 +1,90 @@
+.notice
+  padding: .7rem 1rem
+  background: #ecfdf3
+  color: #027a48
+  border: 1px solid #a6f4c5
+  font-size: .88rem
+
+.form-card
+  display: flex
+  flex-direction: column
+  gap: .9rem
+
+.form-grid
+  display: grid
+  grid-template-columns: repeat(3, 1fr)
+  gap: .9rem
+
+.field
+  display: flex
+  flex-direction: column
+  gap: .35rem
+  font-size: .82rem
+  font-weight: 600
+
+.field.full
+  grid-column: 1 / -1
+
+.form-actions
+  display: flex
+  justify-content: flex-end
+  gap: .6rem
+
+.form-note
+  margin: 0
+  font-size: .78rem
+  color: var(--text-muted)
+
+.table-head
+  padding: .8rem 1rem
+  border-bottom: 1px solid var(--border)
+  font-size: .82rem
+  color: var(--text-muted)
+
+.ok-text
+  color: var(--ok)
+  font-weight: 600
+
+.draft-text
+  color: var(--caution)
+  font-weight: 600
+
+.draft-row
+  background: #fffdf7
+
+.src
+  max-width: 240px
+  color: var(--text-muted)
+  font-size: .82rem
+
+.nowrap
+  white-space: nowrap
+
+.row-actions
+  white-space: nowrap
+  text-align: right
+
+.link
+  background: none
+  border: none
+  color: var(--primary)
+  cursor: pointer
+  font-size: .84rem
+  padding: 0 .35rem
+
+.link:disabled
+  opacity: .5
+  cursor: default
+
+.link.ok-link
+  color: var(--ok)
+
+.link.warn-link
+  color: var(--caution)
+
+.link.danger
+  color: var(--avoid)
+
+@media (max-width: 900px)
+  .form-grid
+    grid-template-columns: 1fr

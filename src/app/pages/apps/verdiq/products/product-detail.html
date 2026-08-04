@@ -1,0 +1,67 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <a class="back-link" routerLink="/products">← Back to products</a>
+      <h1>{{ isNew ? 'Add product' : 'Edit product' }}</h1>
+      @if (!isNew && product(); as p) {
+        <p class="muted">{{ p.barcode || 'No barcode' }}</p>
+      }
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="card state">Loading…</div>
+  } @else if (error() && !isNew && !product()) {
+    <div class="card state error">{{ error() }}</div>
+  } @else if (isNew || product()) {
+    <div class="card panel">
+      @if (notice()) { <div class="notice">{{ notice() }}</div> }
+      @if (error()) { <div class="form-error">{{ error() }}</div> }
+
+      @if (isNew) {
+        <label class="field">
+          <span>Barcode (optional)</span>
+          <input class="input mono" type="text" [(ngModel)]="barcode" maxlength="64" />
+        </label>
+      }
+
+      <label class="field">
+        <span>Name{{ isNew ? ' (required)' : '' }}</span>
+        <input class="input" type="text" [(ngModel)]="name" />
+      </label>
+
+      <label class="field">
+        <span>Brand</span>
+        <input class="input" type="text" [(ngModel)]="brand" />
+      </label>
+
+      <label class="field">
+        <span>Category</span>
+        <input class="input" type="text" [(ngModel)]="category" />
+      </label>
+
+      <label class="field">
+        <span>Market</span>
+        <input class="input" type="text" [(ngModel)]="market" maxlength="10" />
+      </label>
+
+      <label class="field">
+        <span>Ingredients (text)</span>
+        <textarea class="input textarea" rows="4" [(ngModel)]="ingredientsText"></textarea>
+      </label>
+
+      <label class="field">
+        <span>Nutrition (raw JSON)</span>
+        <textarea class="input textarea mono" rows="8" [(ngModel)]="nutritionJson"
+          placeholder="{ &quot;energyKcal&quot;: 120, &quot;sodiumMg&quot;: 340 }"></textarea>
+      </label>
+
+      <div class="form-actions">
+        <button class="btn btn-ghost" (click)="back()" [disabled]="saving()">Cancel</button>
+        <button class="btn" (click)="save()" [disabled]="saving()">
+          {{ saving() ? 'Saving…' : (isNew ? 'Create product' : 'Save changes') }}
+        </button>
+      </div>
+    </div>
+  }
+</div>

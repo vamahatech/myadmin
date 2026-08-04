@@ -1,0 +1,166 @@
+.notice
+  padding: .7rem 1rem
+  background: #ecfdf3
+  color: #027a48
+  border: 1px solid #a6f4c5
+  font-size: .88rem
+
+.tabs
+  display: flex
+  gap: .4rem
+
+.tab
+  background: var(--surface)
+  border: 1px solid var(--border)
+  border-radius: 8px
+  padding: .5rem .9rem
+  font-size: .88rem
+  font-weight: 600
+  cursor: pointer
+  display: flex
+  align-items: center
+  gap: .5rem
+
+.tab.on
+  background: var(--primary)
+  color: #fff
+  border-color: var(--primary)
+
+.tab .count
+  background: rgba(0,0,0,.08)
+  border-radius: 999px
+  padding: 0 .45rem
+  font-size: .78rem
+
+.tab.on .count
+  background: rgba(255,255,255,.25)
+
+.ing-list
+  display: flex
+  flex-direction: column
+  gap: 1rem
+
+.ing-card
+  padding: 1.1rem 1.25rem
+  display: flex
+  flex-direction: column
+  gap: .55rem
+
+.ing-head
+  display: flex
+  align-items: flex-start
+  justify-content: space-between
+  gap: 1rem
+  flex-wrap: wrap
+
+.ing-title
+  display: flex
+  align-items: center
+  gap: .6rem
+  flex-wrap: wrap
+
+.ing-name
+  font-weight: 600
+  font-size: 1rem
+
+.ing-brand
+  color: var(--text-muted)
+  font-size: .85rem
+
+.ing-meta
+  font-size: .78rem
+  color: var(--text-muted)
+
+.pill.site
+  background: var(--surface)
+  border: 1px solid var(--border)
+  border-radius: 999px
+  padding: .1rem .55rem
+  font-size: .74rem
+  font-weight: 600
+
+.ing-fields
+  display: flex
+  gap: 1.2rem
+  font-size: .84rem
+  flex-wrap: wrap
+  align-items: center
+
+.ing-fields code
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace
+
+.src-link
+  color: var(--primary)
+  font-weight: 600
+  text-decoration: none
+
+.src-link:hover
+  text-decoration: underline
+
+.warn
+  margin: 0
+  font-size: .82rem
+  color: var(--caution)
+
+.ing-parsed
+  margin: 0
+  font-size: .86rem
+  display: flex
+  flex-wrap: wrap
+  gap: .35rem
+  align-items: center
+
+.chip
+  background: var(--surface)
+  border: 1px solid var(--border)
+  border-radius: 6px
+  padding: .1rem .45rem
+  font-size: .78rem
+
+.ing-raw
+  font-size: .82rem
+
+.ing-raw summary
+  cursor: pointer
+  color: var(--text-muted)
+
+.ing-raw p
+  margin: .4rem 0 0
+  color: var(--text-muted)
+
+.ing-review
+  margin: 0
+  font-size: .82rem
+  color: var(--caution)
+
+.ing-approve
+  display: flex
+  align-items: flex-end
+  justify-content: space-between
+  gap: 1rem
+  flex-wrap: wrap
+  margin-top: .3rem
+
+.ing-approve label
+  display: flex
+  flex-direction: column
+  gap: .25rem
+  font-size: .8rem
+  font-weight: 600
+  color: var(--text-muted)
+
+.ing-approve input
+  border: 1px solid var(--border)
+  border-radius: 8px
+  padding: .45rem .6rem
+  font-size: .88rem
+  min-width: 220px
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace
+
+.ing-actions
+  display: flex
+  gap: .6rem
+
+.btn.danger
+  color: var(--avoid)
+  border-color: #fca5a5

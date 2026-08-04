@@ -1,0 +1,81 @@
+.gap-grid
+  display: grid
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr))
+  gap: 1rem
+
+.gap
+  padding: 1.1rem 1.2rem
+  display: flex
+  flex-direction: column
+  gap: .2rem
+
+.gap.alarm
+  border-color: #fca5a5
+  background: #fff7f7
+
+.gap-label
+  font-size: .78rem
+  text-transform: uppercase
+  letter-spacing: .05em
+  color: var(--text-muted)
+
+.gap-value
+  font-size: 1.7rem
+  font-weight: 700
+  line-height: 1.1
+
+.gap-sub
+  font-size: .78rem
+  color: var(--text-muted)
+
+.cov
+  display: flex
+  align-items: center
+  gap: .5rem
+  min-width: 130px
+
+.cov-bar
+  flex: 1
+  height: 7px
+  background: #eef1f5
+  border-radius: 999px
+  overflow: hidden
+
+.cov-fill
+  height: 100%
+  background: var(--ok)
+  border-radius: 999px
+
+.cov-pct
+  width: 42px
+  text-align: right
+  color: var(--text-muted)
+  font-size: .8rem
+
+.worklist
+  list-style: none
+  margin: .6rem 0 0
+  padding: 0
+  display: flex
+  flex-direction: column
+  gap: .55rem
+  max-height: 420px
+  overflow-y: auto
+
+.worklist li
+  display: flex
+  flex-direction: column
+  gap: .15rem
+  padding-bottom: .5rem
+  border-bottom: 1px solid #f0f2f5
+  font-size: .85rem
+
+.wl-name
+  font-weight: 600
+
+.wl-meta
+  color: var(--text-muted)
+  font-size: .78rem
+
+.wl-meta code
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace

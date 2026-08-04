@@ -1,0 +1,80 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Submissions</h1>
+      <p class="muted">Parent-submitted products. Approve → becomes a real product; reject → records a reason.</p>
+    </div>
+    <button class="btn btn-ghost" (click)="load()" [disabled]="loading()">Refresh</button>
+  </div>
+
+  @if (notice()) { <div class="card notice">{{ notice() }}</div> }
+  @if (error()) { <div class="card state error">{{ error() }}</div> }
+
+  @if (data(); as d) {
+    <div class="tabs">
+      <button class="tab" [class.on]="tab === 'pending'" (click)="setTab('pending')">
+        Pending <span class="count">{{ d.counts.pending }}</span>
+      </button>
+      <button class="tab" [class.on]="tab === 'approved'" (click)="setTab('approved')">
+        Approved <span class="count">{{ d.counts.approved }}</span>
+      </button>
+      <button class="tab" [class.on]="tab === 'rejected'" (click)="setTab('rejected')">
+        Rejected <span class="count">{{ d.counts.rejected }}</span>
+      </button>
+    </div>
+
+    @if (loading()) {
+      <div class="card state">Loading…</div>
+    } @else if (d.rows.length === 0) {
+      <div class="card state">No {{ tab }} submissions.</div>
+    } @else {
+      <div class="sub-list">
+        @for (s of d.rows; track s.id) {
+          <div class="card sub-card">
+            <div class="sub-head">
+              <div class="sub-title">
+                <span class="sub-name">{{ s.name || '(no name)' }}</span>
+                @if (s.brand) { <span class="sub-brand">{{ s.brand }}</span> }
+                <span class="pill" [class.yes]="s.status === 'approved'"
+                                   [class.no]="s.status === 'rejected'"
+                                   [class.neutral]="s.status === 'pending'">{{ s.status }}</span>
+              </div>
+              <span class="sub-meta">{{ s.created_at | date:'medium' }} · {{ s.submitter_email || 'unknown' }}</span>
+            </div>
+
+            <div class="sub-fields">
+              @if (s.barcode) { <span><b>Barcode:</b> <code>{{ s.barcode }}</code></span> }
+              @if (s.weight) { <span><b>Weight:</b> {{ s.weight }}</span> }
+              @if (s.category) { <span><b>Category:</b> {{ s.category }}</span> }
+            </div>
+            @if (s.ingredients) { <p class="sub-ingredients"><b>Ingredients:</b> {{ s.ingredients }}</p> }
+
+            @if (s.images?.length) {
+              <div class="sub-photos">
+                @for (img of s.images; track img.url) {
+                  <a class="photo" [href]="img.url" target="_blank" rel="noopener"
+                     [title]="'Open ' + img.kind + ' photo full size'">
+                    <img [src]="img.url" [alt]="img.kind + ' label photo'" loading="lazy" />
+                    <span class="photo-label">{{ img.kind }}</span>
+                  </a>
+                }
+              </div>
+            }
+
+            @if (s.note) { <p class="sub-note">📝 {{ s.note }}</p> }
+            @if (s.review_note) { <p class="sub-review">Review: {{ s.review_note }}</p> }
+
+            @if (s.status === 'pending') {
+              <div class="sub-actions">
+                <button class="btn btn-ghost danger" (click)="reject(s)" [disabled]="busy() === s.id">Reject</button>
+                <button class="btn" (click)="approve(s)" [disabled]="busy() === s.id">
+                  {{ busy() === s.id ? 'Working…' : 'Approve → create product' }}
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  }
+</div>

@@ -1,0 +1,74 @@
+<main class="min-h-screen bg-bg text-text">
+  <header class="border-b border-border">
+    <div class="max-w-[1800px] mx-auto px-6 lg:px-8 py-6 grid grid-cols-3 items-center gap-4">
+      <div class="flex items-center">
+        <span class="ink-seal text-primary w-8 h-8 text-base">V</span>
+      </div>
+
+      <div class="text-center">
+        <p class="text-[11px] uppercase tracking-[0.2em] text-text2">Vamaha Studio</p>
+        <h1 class="text-lg font-bold leading-tight">The Ledger</h1>
+      </div>
+
+      <div class="flex items-center justify-end gap-3">
+        @if (auth.user(); as u) {
+          <span class="text-right leading-tight hidden sm:block">
+            <span class="block text-sm font-medium text-text">{{ u.name }}</span>
+            <span class="block text-xs text-text2">{{ u.role }}</span>
+          </span>
+        }
+        <button
+          (click)="logout()"
+          class="shrink-0 rounded-full p-1.5 hover:bg-surface transition-colors focus:outline focus:outline-2 focus:outline-offset-2 focus:[outline-color:var(--color-primary)]"
+          aria-label="Sign out"
+        >
+          <img src="/logout.svg" alt="" class="w-5 h-5" />
+        </button>
+      </div>
+    </div>
+  </header>
+
+  @if (!loading()) {
+  <div class="max-w-[1800px] mx-auto px-6 lg:px-8 py-14">
+    <p class="text-text2 text-sm mb-10">
+      Every app the studio ships gets an entry here. Open one to manage it.
+    </p>
+
+    <div class="border-t border-border">
+      @for (app of apps; track app.id; let i = $index) {
+      <a
+        [routerLink]="app.route"
+        class="ledger-row group flex items-center gap-6 py-6 pl-5 border-b border-border relative hover:bg-surface transition-colors focus:outline focus:outline-2 focus:outline-offset-[-2px] focus:[outline-color:var(--color-primary)]"
+        [style.animation-delay]="(i * 90) + 'ms'">
+        <span
+          class="absolute left-0 top-0 bottom-0 w-[3px] rounded-full"
+          [style.background-color]="'color-mix(in srgb, ' + app.accentColor + ' 55%, transparent)'"></span>
+
+        <span
+          class="font-display text-2xl text-text2 tabular-nums w-8 shrink-0">
+          {{ i < 9 ? '0' + (i + 1) : (i + 1) }}
+        </span>
+
+        <span class="flex-1 min-w-0">
+          <span class="flex items-baseline gap-2">
+            <span class="text-2xl">{{ app.icon }}</span>
+            <span class="text-xl font-bold">{{ app.name }}</span>
+          </span>
+          <span class="block text-text2 text-sm mt-1">{{ app.tagline }}</span>
+        </span>
+
+        <span
+          class="text-text2 group-hover:text-primary group-hover:translate-x-1 transition-all text-xl shrink-0"
+          aria-hidden="true">
+          →
+        </span>
+      </a>
+      }
+    </div>
+
+    <p class="text-text2 text-xs mt-8">
+      More apps join the ledger as they ship.
+    </p>
+  </div>
+  }
+</main>

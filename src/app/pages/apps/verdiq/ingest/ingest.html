@@ -1,0 +1,102 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Ingest review</h1>
+      <p class="muted">
+        Scraped e-commerce leads (from the <code>ingredient-ingest</code> tool). Verify each
+        against its source, attach the barcode, then approve into the catalog. Nothing is
+        trusted until you approve it.
+      </p>
+    </div>
+    <button class="btn btn-ghost" (click)="load()" [disabled]="loading()">Refresh</button>
+  </div>
+
+  @if (notice()) { <div class="card notice">{{ notice() }}</div> }
+  @if (error()) { <div class="card state error">{{ error() }}</div> }
+
+  @if (data(); as d) {
+    <div class="tabs">
+      <button class="tab" [class.on]="tab === 'pending_review'" (click)="setTab('pending_review')">
+        Pending <span class="count">{{ d.counts.pending_review }}</span>
+      </button>
+      <button class="tab" [class.on]="tab === 'approved'" (click)="setTab('approved')">
+        Approved <span class="count">{{ d.counts.approved }}</span>
+      </button>
+      <button class="tab" [class.on]="tab === 'rejected'" (click)="setTab('rejected')">
+        Rejected <span class="count">{{ d.counts.rejected }}</span>
+      </button>
+    </div>
+
+    @if (loading()) {
+      <div class="card state">Loading…</div>
+    } @else if (d.rows.length === 0) {
+      <div class="card state">Nothing in the “{{ tab }}” queue.</div>
+    } @else {
+      <div class="ing-list">
+        @for (r of d.rows; track r.id) {
+          <div class="card ing-card">
+            <div class="ing-head">
+              <div class="ing-title">
+                <span class="ing-name">{{ r.name || '(no name)' }}</span>
+                @if (r.brand) { <span class="ing-brand">{{ r.brand }}</span> }
+                <span class="pill site">{{ siteLabel(r.source_site) }}</span>
+              </div>
+              <span class="ing-meta">{{ r.fetched_at | date:'medium' }}</span>
+            </div>
+
+            <div class="ing-fields">
+              @if (r.category) { <span><b>Category:</b> {{ r.category }}</span> }
+              @if (r.barcode) {
+                <span><b>Barcode:</b> <code>{{ r.barcode }}</code></span>
+              } @else {
+                <span class="muted"><b>Barcode:</b> none scraped</span>
+              }
+              <a class="src-link" [href]="r.source_url" target="_blank" rel="noopener">
+                View source ↗
+              </a>
+            </div>
+
+            @if (r.barcode_in_catalog) {
+              <p class="warn">⚠ This barcode already exists in the catalog — approving will
+                update the existing product.</p>
+            }
+
+            @if (r.ingredients?.length) {
+              <p class="ing-parsed"><b>Ingredients (parsed):</b>
+                @for (item of r.ingredients; track item) { <span class="chip">{{ item }}</span> }
+              </p>
+            } @else {
+              <p class="warn">⚠ No ingredients parsed — verify at the source before approving.</p>
+            }
+            @if (r.ingredients_raw) {
+              <details class="ing-raw">
+                <summary>Raw scraped text</summary>
+                <p>{{ r.ingredients_raw }}</p>
+              </details>
+            }
+
+            @if (r.review_note) { <p class="ing-review">Review: {{ r.review_note }}</p> }
+
+            @if (r.status === 'pending_review') {
+              <div class="ing-approve">
+                <label>
+                  Barcode to attach
+                  <input type="text" [(ngModel)]="barcodeEdits[r.id]"
+                         [placeholder]="r.barcode || 'e.g. 8901000000001'" />
+                </label>
+                <div class="ing-actions">
+                  <button class="btn btn-ghost danger" (click)="reject(r)" [disabled]="busy() === r.id">
+                    Reject
+                  </button>
+                  <button class="btn" (click)="approve(r)" [disabled]="busy() === r.id">
+                    {{ busy() === r.id ? 'Working…' : 'Approve → catalog' }}
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  }
+</div>

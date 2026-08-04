@@ -1,0 +1,116 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Overview</h1>
+      <p class="muted">Live data-health snapshot — what the app actually has to work with.</p>
+    </div>
+    <button class="btn btn-ghost" (click)="load()" [disabled]="loading()">Refresh</button>
+  </div>
+
+  @if (loading()) {
+    <div class="card state">Loading metrics…</div>
+  } @else if (error()) {
+    <div class="card state error">{{ error() }}</div>
+  } @else if (metrics(); as m) {
+
+    <div class="kpi-grid">
+      <div class="card kpi">
+        <span class="kpi-label">Products</span>
+        <span class="kpi-value">{{ m.counts.products | number }}</span>
+      </div>
+      <div class="card kpi" [class.alarm]="m.counts.verdicts < m.counts.products">
+        <span class="kpi-label">Verdicts cached</span>
+        <span class="kpi-value">{{ m.counts.verdicts | number }}</span>
+        <span class="kpi-sub">of {{ m.counts.products | number }} products</span>
+      </div>
+      <div class="card kpi" [class.alarm]="m.counts.additives === 0">
+        <span class="kpi-label">Additives (INS)</span>
+        <span class="kpi-value">{{ m.counts.additives | number }}</span>
+        <span class="kpi-sub">{{ m.counts.additives === 0 ? 'table empty' : 'decoded' }}</span>
+      </div>
+      <div class="card kpi">
+        <span class="kpi-label">Double standards</span>
+        <span class="kpi-value">{{ m.counts.doubleStandards | number }}</span>
+      </div>
+      <div class="card kpi">
+        <span class="kpi-label">Alternatives</span>
+        <span class="kpi-value">{{ m.counts.alternatives | number }}</span>
+      </div>
+      <div class="card kpi">
+        <span class="kpi-label">Users / children</span>
+        <span class="kpi-value">{{ m.counts.users }} / {{ m.counts.children }}</span>
+      </div>
+    </div>
+
+    <div class="cols">
+      <div class="card panel">
+        <h2>Catalog completeness</h2>
+        <p class="muted">Of {{ m.completeness.total | number }} products, how many carry each field.</p>
+
+        <div class="meter" [class.alarm]="m.completeness.nutritionPct === 0">
+          <div class="meter-head">
+            <span>Nutrition</span>
+            <strong>{{ m.completeness.nutritionPct }}%</strong>
+          </div>
+          <div class="bar"><div class="fill nutrition" [style.width.%]="m.completeness.nutritionPct"></div></div>
+          @if (m.completeness.nutritionPct === 0) {
+            <span class="hint">⚠ No product has nutrition — the seed can't be batch-scored.</span>
+          }
+        </div>
+
+        <div class="meter">
+          <div class="meter-head">
+            <span>Ingredients</span>
+            <strong>{{ m.completeness.ingredientsPct }}%</strong>
+          </div>
+          <div class="bar"><div class="fill" [style.width.%]="m.completeness.ingredientsPct"></div></div>
+        </div>
+
+        <div class="meter">
+          <div class="meter-head">
+            <span>Name</span>
+            <strong>{{ m.completeness.namePct }}%</strong>
+          </div>
+          <div class="bar"><div class="fill" [style.width.%]="m.completeness.namePct"></div></div>
+        </div>
+
+        <div class="mini-stats">
+          <span>{{ m.completeness.distinctCategories }} categories</span>
+          <span>{{ m.completeness.withBarcode | number }} with barcode</span>
+        </div>
+      </div>
+
+      <div class="card panel">
+        <h2>Verdict mix</h2>
+        @if (verdictTotal() === 0) {
+          <p class="muted">No verdicts computed yet.</p>
+        } @else {
+          <div class="verdict-bar">
+            <div class="seg ok" [style.flex]="m.verdicts.OK"></div>
+            <div class="seg caution" [style.flex]="m.verdicts.Caution"></div>
+            <div class="seg avoid" [style.flex]="m.verdicts.Avoid"></div>
+          </div>
+          <div class="verdict-legend">
+            <span><i class="dot ok"></i>OK {{ m.verdicts.OK }}</span>
+            <span><i class="dot caution"></i>Caution {{ m.verdicts.Caution }}</span>
+            <span><i class="dot avoid"></i>Avoid {{ m.verdicts.Avoid }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="card panel">
+      <h2>Top categories</h2>
+      <div class="cat-list">
+        @for (c of m.categories; track c.category) {
+          <div class="cat-row">
+            <span class="cat-name">{{ c.category }}</span>
+            <div class="cat-bar"><div class="cat-fill" [style.width]="barWidth(c.count)"></div></div>
+            <span class="cat-count">{{ c.count | number }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+  }
+</div>

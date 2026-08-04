@@ -1,0 +1,105 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Analytics</h1>
+      <p class="muted">Scan activity from <code>scan_events</code>. Fills as the app scans.</p>
+    </div>
+    <div class="range">
+      <button class="btn btn-ghost" [class.on]="days === 7" (click)="setDays(7)">7d</button>
+      <button class="btn btn-ghost" [class.on]="days === 30" (click)="setDays(30)">30d</button>
+      <button class="btn btn-ghost" [class.on]="days === 90" (click)="setDays(90)">90d</button>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="card state">Loading…</div>
+  } @else if (error()) {
+    <div class="card state error">{{ error() }}</div>
+  } @else if (data(); as d) {
+
+    <div class="kpi-grid">
+      <div class="card kpi">
+        <span class="kpi-label">Scans ({{ d.days }}d)</span>
+        <span class="kpi-value">{{ d.totals.total | number }}</span>
+      </div>
+      <div class="card kpi">
+        <span class="kpi-label">Cache hit rate</span>
+        <span class="kpi-value">{{ d.totals.cacheHitRate }}%</span>
+        <span class="kpi-sub">{{ d.totals.cacheHits | number }} served from cache</span>
+      </div>
+      <div class="card kpi" [class.alarm]="d.totals.unfound > 0">
+        <span class="kpi-label">Unfound scans</span>
+        <span class="kpi-value">{{ d.totals.unfound | number }}</span>
+        <span class="kpi-sub">products we don't have</span>
+      </div>
+    </div>
+
+    @if (d.totals.total === 0) {
+      <div class="card state">No scans recorded yet in this window.</div>
+    } @else {
+      <!-- Trend -->
+      <div class="card panel">
+        <h2>Scans per day</h2>
+        <div class="trend">
+          @for (pt of d.perDay; track pt.day) {
+            <div class="trend-col" [title]="pt.day + ': ' + pt.scans + ' scans (' + pt.hits + ' cached)'">
+              <div class="trend-bar" [style.height]="barHeight(pt.scans)">
+                <div class="trend-hits" [style.height.%]="pt.scans ? (pt.hits / pt.scans) * 100 : 0"></div>
+              </div>
+            </div>
+          }
+        </div>
+        <div class="trend-legend">
+          <span><i class="sw total"></i>scans</span>
+          <span><i class="sw hits"></i>cache hits</span>
+        </div>
+      </div>
+
+      <div class="cols">
+        <!-- Most scanned -->
+        <div class="card panel">
+          <h2>Most scanned</h2>
+          <table class="mini-table">
+            <thead><tr><th>Product</th><th class="num">Scans</th></tr></thead>
+            <tbody>
+              @for (t of d.topScanned; track t.barcode) {
+                <tr>
+                  <td>{{ t.product_name || t.barcode }}</td>
+                  <td class="num">{{ t.scans | number }}</td>
+                </tr>
+              } @empty { <tr><td colspan="2" class="muted">—</td></tr> }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Unfound = add next -->
+        <div class="card panel">
+          <h2>Unfound — "add next"</h2>
+          <p class="muted">Barcodes scanned that we don't have.</p>
+          <table class="mini-table">
+            <thead><tr><th>Barcode</th><th class="num">Scans</th></tr></thead>
+            <tbody>
+              @for (u of d.unfound; track u.barcode) {
+                <tr><td class="mono">{{ u.barcode }}</td><td class="num">{{ u.scans | number }}</td></tr>
+              } @empty { <tr><td colspan="2" class="muted">None 🎉</td></tr> }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Verdict mix -->
+      <div class="card panel">
+        <h2>Verdict mix (of scans)</h2>
+        <div class="vmix">
+          @for (v of d.verdictMix; track v.verdict) {
+            <div class="vmix-item">
+              <span class="vmix-label">{{ v.verdict }}</span>
+              <span class="vmix-count">{{ v.count | number }}</span>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+  }
+</div>

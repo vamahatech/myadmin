@@ -1,0 +1,120 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Users &amp; testers</h1>
+      <p class="muted">Accounts, child age bands, and the closed-test inactivity watchlist.</p>
+    </div>
+    <div class="head-actions">
+      <button class="btn btn-ghost" (click)="openCreate()">+ New user</button>
+      <button class="btn btn-ghost" (click)="load()" [disabled]="loading()">Refresh</button>
+    </div>
+  </div>
+
+  @if (notice()) { <div class="card notice">{{ notice() }}</div> }
+
+  <app-modal [open]="createOpen()" title="Create account" (closed)="closeCreate()">
+    <div class="create-row">
+      <input class="input" type="email" placeholder="new-user@example.com"
+        [(ngModel)]="newEmail" (keyup.enter)="createUser()" [disabled]="creating()" />
+    </div>
+    <label class="check">
+      <input type="checkbox" [(ngModel)]="newIsAdmin" [disabled]="creating()" />
+      Is admin
+    </label>
+    @if (createError()) { <p class="create-error">{{ createError() }}</p> }
+    <div class="form-actions">
+      <button class="btn btn-ghost" (click)="closeCreate()" [disabled]="creating()">Cancel</button>
+      <button class="btn" (click)="createUser()" [disabled]="creating()">
+        {{ creating() ? 'Creating…' : (newIsAdmin ? 'Create admin & email password' : 'Create account & email password') }}
+      </button>
+    </div>
+  </app-modal>
+
+  <app-confirm-delete-modal
+    [open]="deleteTarget() !== null"
+    [itemLabel]="deleteTarget()?.email ?? ''"
+    [expectedText]="deleteTarget()?.email ?? ''"
+    (confirmed)="confirmDelete()"
+    (closed)="closeDelete()"
+  ></app-confirm-delete-modal>
+
+  @if (loading()) {
+    <div class="card state">Loading…</div>
+  } @else if (error()) {
+    <div class="card state error">{{ error() }}</div>
+  } @else if (data(); as d) {
+
+    <div class="kpi-grid">
+      <div class="card kpi">
+        <span class="kpi-label">Users</span>
+        <span class="kpi-value">{{ d.summary.total_users | number }}</span>
+        <span class="kpi-sub">{{ d.summary.admins }} admin</span>
+      </div>
+      <div class="card kpi">
+        <span class="kpi-label">Testers opted in</span>
+        <span class="kpi-value">{{ d.summary.testers | number }}</span>
+      </div>
+      <div class="card kpi" [class.alarm]="d.summary.inactive_testers > 0">
+        <span class="kpi-label">Inactive testers (14d+)</span>
+        <span class="kpi-value">{{ d.summary.inactive_testers | number }}</span>
+        <span class="kpi-sub">nudge before the clock breaks</span>
+      </div>
+      <div class="card kpi">
+        <span class="kpi-label">Children by band</span>
+        <span class="kpi-value band">
+          <span>{{ d.ageBands.under_2 }} <small>under 2</small></span>
+          <span>{{ d.ageBands['2_to_5'] }} <small>2–5</small></span>
+        </span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="table-scroll">
+        <table class="grid">
+          <thead>
+            <tr><th>Email</th><th>Role</th><th class="num">Children</th><th>Tester</th><th>Last seen</th><th>Joined</th><th></th></tr>
+          </thead>
+          <tbody>
+            @for (u of d.rows; track u.id) {
+              <tr [class.inactive]="u.inactive_tester">
+                <td class="strong">{{ u.email }}</td>
+                <td>
+                  @if (u.is_admin) { <span class="pill yes">admin</span> }
+                  @else { <span class="pill neutral">parent</span> }
+                </td>
+                <td class="num">{{ u.children }}</td>
+                <td>
+                  @if (u.tester_opted_in) {
+                    @if (u.inactive_tester) { <span class="pill no">inactive</span> }
+                    @else { <span class="pill yes">active</span> }
+                  } @else { <span class="muted">—</span> }
+                </td>
+                <td class="nowrap">{{ u.last_seen_at ? (u.last_seen_at | date:'mediumDate') : '—' }}</td>
+                <td class="nowrap">{{ u.created_at | date:'mediumDate' }}</td>
+                <td class="actions">
+                  <button class="btn btn-ghost btn-sm" (click)="toggleAdmin(u)"
+                    [disabled]="roleChangingId() === u.id || u.id === currentUserId"
+                    [title]="u.id === currentUserId ? 'You cannot change your own admin status here' : ''">
+                    {{ u.is_admin ? 'Remove admin' : 'Make admin' }}
+                  </button>
+                  <button class="icon-btn icon-danger" (click)="openDelete(u)"
+                    [disabled]="u.id === currentUserId"
+                    [title]="u.id === currentUserId ? 'Ask another admin to remove your account' : 'Delete user'"
+                    aria-label="Delete user">
+                    <svg width="13" height="16" viewBox="0 0 11 14" aria-hidden="true">
+                      <path fill="currentColor"
+                        d="M.768 12.286c.002.847.689 1.533 1.536 1.536h6.143c.848-.003 1.534-.689 1.536-1.536V3.075H.768v9.21zM10.75.768H8.062L7.295 0H3.455l-.768.768H0v1.535h10.75V.768z" />
+                    </svg>
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="7" class="empty">No users.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  }
+</div>

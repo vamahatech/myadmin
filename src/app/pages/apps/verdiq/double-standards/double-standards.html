@@ -1,0 +1,98 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Double standards</h1>
+      <p class="muted">India-vs-foreign pairs. A pair only reaches the app once <strong>verified</strong>.</p>
+    </div>
+    <button class="btn btn-ghost" (click)="startNew()" [disabled]="busy() === 'form'">+ New pair</button>
+  </div>
+
+  @if (notice()) { <div class="card notice">{{ notice() }}</div> }
+  @if (error()) { <div class="card state error">{{ error() }}</div> }
+
+  <!-- Draft / edit form -->
+  <div class="card panel form-card">
+    <h2>{{ editing() ? 'Edit pair — ' + editing() : 'New pair (draft)' }}</h2>
+    <div class="form-grid">
+      <label class="field">
+        <span>Barcode</span>
+        <input class="input" [(ngModel)]="form.barcode" [disabled]="!!editing()" />
+      </label>
+      <label class="field">
+        <span>Nutrient</span>
+        <input class="input" [(ngModel)]="form.nutrient" placeholder="e.g. Added sugar" />
+      </label>
+      <label class="field">
+        <span>India value</span>
+        <input class="input" [(ngModel)]="form.indiaValue" placeholder="e.g. 15g / serve" />
+      </label>
+      <label class="field">
+        <span>Foreign market</span>
+        <input class="input" [(ngModel)]="form.foreignMarket" placeholder="UK" />
+      </label>
+      <label class="field">
+        <span>Foreign value</span>
+        <input class="input" [(ngModel)]="form.foreignValue" placeholder="e.g. 6g / serve" />
+      </label>
+      <label class="field full">
+        <span>Source (must be citable — the accusation rests on this)</span>
+        <input class="input" [(ngModel)]="form.source" />
+      </label>
+    </div>
+    <div class="form-actions">
+      @if (editing()) {
+        <button class="btn btn-ghost" (click)="cancel()" [disabled]="busy() === 'form'">Cancel</button>
+      }
+      <button class="btn" (click)="save()" [disabled]="busy() === 'form'">
+        {{ editing() ? 'Save changes' : 'Add draft' }}
+      </button>
+    </div>
+    <p class="form-note">New pairs are saved <strong>unverified</strong>. Verify below to publish.</p>
+  </div>
+
+  <!-- Table -->
+  @if (loading()) {
+    <div class="card state">Loading…</div>
+  } @else {
+    <div class="card">
+      <div class="table-head">
+        {{ rows().length }} pairs · <span class="ok-text">{{ verifiedCount() }} published</span>
+        · <span class="draft-text">{{ draftCount() }} drafts</span>
+      </div>
+      <div class="table-scroll">
+        <table class="grid">
+          <thead>
+            <tr><th>Status</th><th>Product</th><th>Nutrient</th><th>India</th><th>Foreign</th><th>Source</th><th>Updated</th><th></th></tr>
+          </thead>
+          <tbody>
+            @for (r of rows(); track r.barcode) {
+              <tr [class.draft-row]="!r.verified">
+                <td>
+                  <span class="pill" [class.yes]="r.verified" [class.no]="!r.verified">
+                    {{ r.verified ? 'published' : 'draft' }}
+                  </span>
+                </td>
+                <td class="strong">{{ r.product_name || '—' }}<br><span class="mono">{{ r.barcode }}</span></td>
+                <td>{{ r.nutrient }}</td>
+                <td>{{ r.india_value }}</td>
+                <td>{{ r.foreign_market }}: {{ r.foreign_value }}</td>
+                <td class="src">{{ r.source }}</td>
+                <td class="nowrap">{{ r.updated_at | date:'mediumDate' }}</td>
+                <td class="row-actions">
+                  <button class="link" (click)="startEdit(r)" [disabled]="busy() === r.barcode">Edit</button>
+                  <button class="link" [class.ok-link]="!r.verified" [class.warn-link]="r.verified"
+                          (click)="toggleVerify(r)" [disabled]="busy() === r.barcode">
+                    {{ r.verified ? 'Unpublish' : 'Verify' }}
+                  </button>
+                  <button class="link danger" (click)="remove(r)" [disabled]="busy() === r.barcode">Delete</button>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="8" class="empty">No pairs yet. Add one above.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</div>

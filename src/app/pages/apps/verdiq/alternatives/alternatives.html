@@ -1,0 +1,95 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Alternatives</h1>
+      <p class="muted">Screen 3: homemade swaps &amp; cleaner packaged picks for flagged products.</p>
+    </div>
+    <button class="btn btn-ghost" (click)="load()" [disabled]="loading()">Refresh</button>
+  </div>
+
+  @if (notice()) { <div class="card notice">{{ notice() }}</div> }
+  @if (error()) { <div class="card state error">{{ error() }}</div> }
+
+  <!-- Add form -->
+  <div class="card panel add-form">
+    <h2>Add an alternative</h2>
+    <p class="guard">
+      ⚠ Homemade swaps must be <b>allergy-aware</b> — put any allergen caveat in the note.
+      Cleaner-SKU picks must be evidence-based with <b>no commercial input</b>.
+    </p>
+    <div class="form-grid">
+      <label>Barcode
+        <input class="input" [(ngModel)]="form.barcode" placeholder="8901…" />
+      </label>
+      <label>Age band
+        <select class="select" [(ngModel)]="form.ageBand">
+          <option value="under_2">Under 2</option>
+          <option value="2_to_5">2–5</option>
+        </select>
+      </label>
+      <label>Kind
+        <select class="select" [(ngModel)]="form.kind">
+          <option value="homemade">Homemade swap</option>
+          <option value="packaged">Cleaner packaged</option>
+        </select>
+      </label>
+      <label class="wide">Name
+        <input class="input" [(ngModel)]="form.name"
+          [placeholder]="form.kind === 'homemade' ? 'e.g. Warm milk with a soaked date' : 'e.g. Unsweetened malt drink'" />
+      </label>
+      <label class="wide">Note
+        <input class="input" [(ngModel)]="form.note"
+          placeholder="Why it's better + any allergen caveat" />
+      </label>
+    </div>
+    <div class="form-actions">
+      <button class="btn" (click)="add()" [disabled]="busy() === 'form'">
+        {{ busy() === 'form' ? 'Adding…' : 'Add alternative' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Filter + list -->
+  <div class="card panel toolbar">
+    <input class="input search" type="text" placeholder="Filter by barcode…"
+      [(ngModel)]="filterBarcode" (keyup.enter)="load()" />
+    <button class="btn" (click)="load()" [disabled]="loading()">Filter</button>
+    <span class="muted counts">{{ homemadeCount() }} homemade · {{ packagedCount() }} packaged</span>
+  </div>
+
+  @if (loading()) {
+    <div class="card state">Loading…</div>
+  } @else {
+    <div class="card">
+      <div class="table-scroll">
+        <table class="grid">
+          <thead>
+            <tr><th>Product</th><th>Barcode</th><th>Age</th><th>Kind</th><th>Name</th><th>Note</th><th>Added</th><th></th></tr>
+          </thead>
+          <tbody>
+            @for (r of rows(); track r.id) {
+              <tr>
+                <td class="strong">{{ r.product_name || '—' }}</td>
+                <td class="mono">{{ r.barcode }}</td>
+                <td>{{ ageLabel(r.age_band) }}</td>
+                <td>
+                  <span class="pill" [class.yes]="r.kind === 'packaged'" [class.neutral]="r.kind === 'homemade'">
+                    {{ r.kind }}
+                  </span>
+                </td>
+                <td>{{ r.name }}</td>
+                <td class="note">{{ r.note }}</td>
+                <td class="nowrap">{{ r.created_at | date:'mediumDate' }}</td>
+                <td>
+                  <button class="btn btn-ghost danger" (click)="remove(r)" [disabled]="busy() === r.id">Delete</button>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="8" class="empty">No alternatives{{ filterBarcode ? ' for this barcode' : '' }} yet.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</div>

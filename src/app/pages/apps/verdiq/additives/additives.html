@@ -1,0 +1,88 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Additives (INS)</h1>
+      <p class="muted">The decode table that powers additive warnings in the app. Empty until seeded.</p>
+    </div>
+    <div class="head-actions">
+      <button class="btn btn-ghost" (click)="startNew()" [disabled]="busy()">+ New entry</button>
+      <button class="btn" (click)="seed()" [disabled]="busy()">Seed from code</button>
+    </div>
+  </div>
+
+  @if (notice()) {
+    <div class="card notice">{{ notice() }}</div>
+  }
+  @if (error()) {
+    <div class="card state error">{{ error() }}</div>
+  }
+
+  <!-- Add / edit form -->
+  <app-modal [open]="formOpen()" [title]="editing() ? 'Edit INS ' + editing() : 'Add additive'" (closed)="cancel()">
+    <div class="form-grid">
+      <label class="field">
+        <span>INS code</span>
+        <input class="input" [(ngModel)]="form.ins" [disabled]="!!editing()" placeholder="e.g. 621" />
+      </label>
+      <label class="field">
+        <span>Name</span>
+        <input class="input" [(ngModel)]="form.name" placeholder="e.g. Monosodium glutamate (MSG)" />
+      </label>
+      <label class="check-field">
+        <input type="checkbox" [(ngModel)]="form.controversial" />
+        Controversial for young children
+      </label>
+      <label class="field full">
+        <span>Risk note (must be defensible — FSSAI/EFSA/WHO)</span>
+        <textarea class="input" rows="2" [(ngModel)]="form.risk"></textarea>
+      </label>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" (click)="cancel()" [disabled]="busy()">Cancel</button>
+      <button class="btn" (click)="save()"
+              [disabled]="busy() || !form.ins.trim() || !form.name.trim() || !form.risk.trim()">
+        {{ editing() ? 'Save changes' : 'Add' }}
+      </button>
+    </div>
+  </app-modal>
+
+  <!-- Table -->
+  @if (loading()) {
+    <div class="card state">Loading…</div>
+  } @else {
+    <div class="card">
+      <div class="table-head">
+        <span>{{ rows().length }} entries · {{ controversialCount() }} controversial</span>
+      </div>
+      <div class="table-scroll">
+        <table class="grid">
+          <thead>
+            <tr><th>INS</th><th>Name</th><th>Risk</th><th>Flag</th><th></th></tr>
+          </thead>
+          <tbody>
+            @for (a of rows(); track a.ins) {
+              <tr>
+                <td class="mono">{{ a.ins }}</td>
+                <td class="strong">{{ a.name }}</td>
+                <td class="risk">{{ a.risk }}</td>
+                <td>
+                  @if (a.controversial) {
+                    <span class="pill no">controversial</span>
+                  } @else {
+                    <span class="pill neutral">low</span>
+                  }
+                </td>
+                <td class="row-actions">
+                  <button class="link" (click)="startEdit(a)">Edit</button>
+                  <button class="link danger" (click)="remove(a)">Delete</button>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="5" class="empty">Table is empty. Click "Seed from code" to load the starter set.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</div>

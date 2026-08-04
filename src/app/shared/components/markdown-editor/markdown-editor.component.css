@@ -1,0 +1,8 @@
+/* The heavy Toast UI vendor CSS is NOT bundled here (it would blow the component
+   style budget). It's copied to /vendor by angular.json and injected as a <link>
+   at runtime only when this editor mounts — see the component's ensureStyles(). */
+.toastui-editor-defaultUI {
+  border-color: #2a2a4a;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}

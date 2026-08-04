@@ -1,0 +1,48 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Feedback</h1>
+      <p class="muted">General feedback parents send from Settings — not tied to any product.</p>
+    </div>
+    <button class="btn btn-ghost" (click)="load()" [disabled]="loading()">Refresh</button>
+  </div>
+
+  @if (error()) { <div class="card state error">{{ error() }}</div> }
+
+  @if (data(); as d) {
+    <div class="tabs">
+      <button class="tab" [class.on]="tab === 'new'" (click)="setTab('new')">
+        New <span class="count">{{ d.counts.new }}</span>
+      </button>
+      <button class="tab" [class.on]="tab === 'read'" (click)="setTab('read')">
+        Read <span class="count">{{ d.counts.read }}</span>
+      </button>
+      <button class="tab" [class.on]="tab === 'all'" (click)="setTab('all')">All</button>
+    </div>
+
+    @if (loading()) {
+      <div class="card state">Loading…</div>
+    } @else if (d.rows.length === 0) {
+      <div class="card state">No {{ tab === 'all' ? '' : tab }} feedback.</div>
+    } @else {
+      <div class="fb-list">
+        @for (f of d.rows; track f.id) {
+          <div class="card fb-card">
+            <div class="fb-head">
+              <span class="pill" [class.yes]="f.status === 'read'" [class.neutral]="f.status === 'new'">{{ f.status }}</span>
+              <span class="fb-meta">{{ f.created_at | date:'medium' }} · {{ f.sender_email || 'unknown' }}</span>
+            </div>
+            <p class="fb-note">{{ f.note }}</p>
+            @if (f.status === 'new') {
+              <div class="fb-actions">
+                <button class="btn btn-ghost" (click)="markRead(f)" [disabled]="busy() === f.id">
+                  {{ busy() === f.id ? 'Working…' : 'Mark read' }}
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  }
+</div>
