@@ -1,23 +1,28 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { Component, DestroyRef, inject, signal, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Meta } from '@angular/platform-browser';
+import { Subject, debounceTime } from 'rxjs';
 import { AdminContentService } from '../../../../core/services/admin-content.service';
 import { Article } from '../../../../models/article.model';
 import { MarkdownEditorComponent } from '../../../../shared/components/markdown-editor/markdown-editor.component';
+import { PublishPanelComponent } from '../../../../shared/components/publish-panel/publish-panel.component';
 import { environment } from '../../../../../environments/environment';
+
+const AUTOSAVE_DEBOUNCE_MS = 2000;
 
 @Component({
   selector: 'app-admin-article',
   standalone: true,
-  imports: [FormsModule, RouterLink, DatePipe, MarkdownEditorComponent],
+  imports: [FormsModule, RouterLink, MarkdownEditorComponent, PublishPanelComponent],
   templateUrl: './admin-article.component.html',
 })
 export class AdminArticleComponent implements OnInit {
   private readonly admin = inject(AdminContentService);
   private readonly route = inject(ActivatedRoute);
   private readonly meta = inject(Meta);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly siteUrl = environment.siteUrl;
 
@@ -27,6 +32,7 @@ export class AdminArticleComponent implements OnInit {
   readonly loadError = signal('');
 
   readonly lang = signal<'en' | 'te'>('en');
+  readonly panelOpen = signal(false);
 
   title = '';
   excerpt = '';
@@ -36,15 +42,29 @@ export class AdminArticleComponent implements OnInit {
   bodyMdTe = '';
   seoTitle = '';
   seoDescription = '';
+  category = 'update';
 
-  readonly saveStatus = signal<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  readonly autosaveStatus = signal<'idle' | 'dirty' | 'saving' | 'saved' | 'error'>('idle');
   readonly publishStatus = signal<'idle' | 'publishing' | 'error'>('idle');
   readonly actionError = signal('');
+
+  private readonly dirty$ = new Subject<void>();
+
+  constructor() {
+    this.dirty$.pipe(debounceTime(AUTOSAVE_DEBOUNCE_MS), takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.save();
+    });
+  }
 
   ngOnInit(): void {
     this.meta.updateTag({ name: 'robots', content: 'noindex, nofollow' });
     this.id = this.route.snapshot.paramMap.get('id') ?? '';
     this.load();
+  }
+
+  markDirty(): void {
+    this.autosaveStatus.set('dirty');
+    this.dirty$.next();
   }
 
   load(): void {
@@ -63,8 +83,8 @@ export class AdminArticleComponent implements OnInit {
   }
 
   save(): void {
-    if (this.saveStatus() === 'saving') return;
-    this.saveStatus.set('saving');
+    if (this.autosaveStatus() === 'saving') return;
+    this.autosaveStatus.set('saving');
     this.actionError.set('');
     this.admin
       .update(this.id, {
@@ -76,14 +96,15 @@ export class AdminArticleComponent implements OnInit {
         bodyMdTe: this.bodyMdTe.trim() || null,
         seoTitle: this.seoTitle.trim() || null,
         seoDescription: this.seoDescription.trim() || null,
+        category: this.category.trim() || 'update',
       })
       .subscribe({
         next: (a) => {
           this.apply(a);
-          this.saveStatus.set('saved');
+          this.autosaveStatus.set('saved');
         },
         error: (err: unknown) => {
-          this.saveStatus.set('error');
+          this.autosaveStatus.set('error');
           this.actionError.set(this.messageFor(err));
         },
       });
@@ -98,6 +119,7 @@ export class AdminArticleComponent implements OnInit {
       next: (a) => {
         this.apply(a);
         this.publishStatus.set('idle');
+        this.panelOpen.set(false);
       },
       error: (err: unknown) => {
         this.publishStatus.set('error');
@@ -116,6 +138,7 @@ export class AdminArticleComponent implements OnInit {
     this.bodyMdTe = a.bodyMdTe ?? '';
     this.seoTitle = a.seoTitle ?? '';
     this.seoDescription = a.seoDescription ?? '';
+    this.category = a.category;
   }
 
   private messageFor(err: unknown): string {

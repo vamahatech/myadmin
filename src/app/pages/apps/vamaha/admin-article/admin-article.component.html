@@ -1,5 +1,4 @@
 <main class="min-h-screen bg-bg text-text">
-  <!-- ── Sticky action bar: back · title · status · Save · Publish ── -->
   <header class="sticky top-0 z-20 bg-bg/85 backdrop-blur border-b border-border">
     <div class="w-full px-6 lg:px-8 py-3 flex items-center gap-4">
       <a routerLink="/apps/vamaha" class="shrink-0 text-sm text-text2 hover:text-text transition-colors">
@@ -8,7 +7,6 @@
 
       @if (article(); as a) {
         <div class="min-w-0 flex-1 flex items-center gap-3">
-          <span class="truncate text-sm font-medium text-text2">{{ title || 'Untitled' }}</span>
           <span
             class="shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full"
             [class.bg-success]="a.status === 'PUBLISHED'"
@@ -18,20 +16,16 @@
             [class.border]="a.status !== 'PUBLISHED'"
             [class.border-border]="a.status !== 'PUBLISHED'"
           >{{ a.status }}</span>
+
+          @switch (autosaveStatus()) {
+            @case ('dirty') { <span class="text-text2 text-xs">Unsaved changes</span> }
+            @case ('saving') { <span class="text-text2 text-xs">Saving…</span> }
+            @case ('saved') { <span class="text-success text-xs">Saved ✓</span> }
+            @case ('error') { <span class="text-danger text-xs">Error saving</span> }
+          }
         </div>
 
         <div class="shrink-0 flex items-center gap-2.5">
-          @if (saveStatus() === 'saved') {
-            <span class="text-success text-xs">Saved ✓</span>
-          }
-          <button
-            (click)="save()"
-            [disabled]="saveStatus() === 'saving'"
-            class="py-2 px-4 border border-border hover:bg-surface disabled:opacity-50 text-text text-sm font-semibold rounded-xl transition-colors"
-          >
-            {{ saveStatus() === 'saving' ? 'Saving…' : 'Save' }}
-          </button>
-
           @if (a.status === 'PUBLISHED') {
             <a
               [href]="siteUrl + '/learn/' + a.slug"
@@ -39,21 +33,18 @@
               rel="noopener"
               class="py-2 px-4 text-primary hover:text-accent text-sm font-semibold transition-colors"
             >View live →</a>
-          } @else {
-            <button
-              (click)="publish()"
-              [disabled]="publishStatus() === 'publishing'"
-              class="py-2 px-4 bg-success hover:opacity-90 disabled:opacity-50 text-bg text-sm font-semibold rounded-xl transition-opacity"
-            >
-              {{ publishStatus() === 'publishing' ? 'Publishing…' : 'Publish' }}
-            </button>
           }
+          <button
+            type="button" (click)="panelOpen.set(true)"
+            class="py-2 px-4 bg-primary hover:bg-accent text-white text-sm font-semibold rounded-xl transition-colors"
+          >
+            Publish
+          </button>
         </div>
       }
     </div>
   </header>
 
-  <!-- Full-bleed container: the writing + preview surface owns the whole width -->
   <div class="w-full px-6 lg:px-8 py-6">
     @if (loading()) {
       <p class="text-text2 text-sm">Loading…</p>
@@ -66,8 +57,7 @@
         </div>
       }
 
-      <!-- Language switch — sets which content the editor shows -->
-      <div class="flex flex-wrap items-center gap-3 mb-6">
+      <div class="flex flex-wrap items-center gap-3 mb-8 max-w-3xl mx-auto">
         <div class="inline-flex rounded-xl border border-border overflow-hidden text-sm">
           <button
             type="button" (click)="lang.set('en')"
@@ -91,130 +81,48 @@
         </p>
       </div>
 
-      <form (ngSubmit)="save()" class="space-y-6">
-        <!-- ── Main writing surface (full width, top priority) ── -->
-        <section class="bg-card border border-border rounded-3xl overflow-hidden">
-          <div class="px-6 py-4 border-b border-border">
-            <h2 class="text-sm font-semibold">
-              {{ lang() === 'en' ? 'Article content' : 'Telugu content (app only)' }}
-            </h2>
-          </div>
+      <div class="max-w-3xl mx-auto space-y-6">
+        @if (lang() === 'en') {
+          <input
+            name="title" [ngModel]="title" (ngModelChange)="title = $event; markDirty()"
+            placeholder="What a repo-rate cut really does to your EMI"
+            class="w-full text-4xl font-display font-bold placeholder:text-text2/60 placeholder:font-normal bg-transparent border-0 focus:outline-none"
+          />
+          <app-markdown-editor
+            [value]="bodyMd" (valueChange)="bodyMd = $event; markDirty()"
+            height="640px" placeholder="Write the article in Markdown…"
+          />
+        } @else {
+          <input
+            name="titleTe" [ngModel]="titleTe" (ngModelChange)="titleTe = $event; markDirty()"
+            placeholder="శీర్షిక"
+            class="w-full text-4xl font-display font-bold placeholder:text-text2/60 placeholder:font-normal bg-transparent border-0 focus:outline-none"
+          />
+          <app-markdown-editor
+            [value]="bodyMdTe" (valueChange)="bodyMdTe = $event; markDirty()"
+            height="640px" placeholder="తెలుగులో వ్యాసం రాయండి…"
+          />
+        }
+      </div>
 
-          <div class="p-6 space-y-5">
-            @if (lang() === 'en') {
-              <div>
-                <label for="title" class="block text-xs uppercase tracking-wide text-text2 mb-1.5">Title</label>
-                <input
-                  id="title" name="title" [(ngModel)]="title"
-                  placeholder="What a repo-rate cut really does to your EMI"
-                  class="w-full px-4 py-3 bg-surface border border-border rounded-xl text-text text-lg font-semibold placeholder:text-text2 placeholder:font-normal focus:outline-none focus:border-primary transition-colors"
-                />
-              </div>
-              <div>
-                <label for="excerpt" class="block text-xs uppercase tracking-wide text-text2 mb-1.5">
-                  Excerpt <span class="normal-case tracking-normal text-text2">— the one-line summary in listings</span>
-                </label>
-                <textarea
-                  id="excerpt" name="excerpt" [(ngModel)]="excerpt" rows="2"
-                  class="w-full px-4 py-3 bg-surface border border-border rounded-xl text-text focus:outline-none focus:border-primary transition-colors text-sm"
-                ></textarea>
-              </div>
-              <div>
-                <label class="block text-xs uppercase tracking-wide text-text2 mb-1.5">
-                  Body <span class="normal-case tracking-normal text-text2">— type on the left, live preview on the right</span>
-                </label>
-                <app-markdown-editor [(value)]="bodyMd" height="700px" placeholder="Write the article in Markdown…" />
-              </div>
-            } @else {
-              <div>
-                <label for="titleTe" class="block text-xs uppercase tracking-wide text-text2 mb-1.5">Title (Telugu)</label>
-                <input
-                  id="titleTe" name="titleTe" [(ngModel)]="titleTe"
-                  class="w-full px-4 py-3 bg-surface border border-border rounded-xl text-text text-lg font-semibold focus:outline-none focus:border-primary transition-colors"
-                />
-              </div>
-              <div>
-                <label for="excerptTe" class="block text-xs uppercase tracking-wide text-text2 mb-1.5">Excerpt (Telugu)</label>
-                <textarea
-                  id="excerptTe" name="excerptTe" [(ngModel)]="excerptTe" rows="2"
-                  class="w-full px-4 py-3 bg-surface border border-border rounded-xl text-text focus:outline-none focus:border-primary transition-colors text-sm"
-                ></textarea>
-              </div>
-              <div>
-                <label class="block text-xs uppercase tracking-wide text-text2 mb-1.5">Body (Telugu)</label>
-                <app-markdown-editor [(value)]="bodyMdTe" height="700px" placeholder="తెలుగులో వ్యాసం రాయండి…" />
-              </div>
-            }
-          </div>
-        </section>
-
-        <!-- ── Secondary: SEO + details, below the writing surface ── -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <section class="bg-card border border-border rounded-3xl overflow-hidden">
-            <div class="px-6 py-4 border-b border-border">
-              <h2 class="text-sm font-semibold">Search &amp; social</h2>
-              <p class="text-text2 text-xs mt-0.5">Falls back to title &amp; excerpt if blank.</p>
-            </div>
-            <div class="p-6 space-y-4">
-              <div>
-                <label for="seoTitle" class="block text-xs uppercase tracking-wide text-text2 mb-1.5">SEO title</label>
-                <input
-                  id="seoTitle" name="seoTitle" [(ngModel)]="seoTitle"
-                  class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl text-text focus:outline-none focus:border-primary transition-colors text-sm"
-                />
-              </div>
-              <div>
-                <label for="seoDescription" class="block text-xs uppercase tracking-wide text-text2 mb-1.5">SEO description</label>
-                <textarea
-                  id="seoDescription" name="seoDescription" [(ngModel)]="seoDescription" rows="3"
-                  class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl text-text focus:outline-none focus:border-primary transition-colors text-sm"
-                ></textarea>
-              </div>
-            </div>
-          </section>
-
-          <section class="bg-card border border-border rounded-3xl overflow-hidden">
-            <div class="px-6 py-4 border-b border-border">
-              <h2 class="text-sm font-semibold">Details</h2>
-            </div>
-            <div class="p-6 grid sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
-              <div>
-                <p class="text-text2 text-xs uppercase tracking-wide mb-0.5">Author</p>
-                <p>{{ a.author }}</p>
-              </div>
-              <div>
-                <p class="text-text2 text-xs uppercase tracking-wide mb-0.5">Last updated</p>
-                <p>{{ a.updatedAt | date: 'medium' }}</p>
-              </div>
-              <div class="sm:col-span-2">
-                <p class="text-text2 text-xs uppercase tracking-wide mb-1">Sources</p>
-                @if (a.sources.length) {
-                  <ul class="space-y-1">
-                    @for (s of a.sources; track s) {
-                      <li class="break-all text-primary text-xs">{{ s }}</li>
-                    }
-                  </ul>
-                } @else {
-                  <p class="text-text2 text-xs">None</p>
-                }
-              </div>
-              @if (a.faq?.length) {
-                <div class="sm:col-span-2">
-                  <p class="text-text2 text-xs uppercase tracking-wide mb-1">FAQ ({{ a.faq?.length }})</p>
-                  <ul class="space-y-2">
-                    @for (f of a.faq; track f.question) {
-                      <li>
-                        <p class="font-medium">{{ f.question }}</p>
-                        <p class="text-text2 text-xs">{{ f.answer }}</p>
-                      </li>
-                    }
-                  </ul>
-                </div>
-              }
-            </div>
-          </section>
-        </div>
-      </form>
+      @if (panelOpen()) {
+        <app-publish-panel
+          [(excerpt)]="excerpt"
+          [(excerptTe)]="excerptTe"
+          [(seoTitle)]="seoTitle"
+          [(seoDescription)]="seoDescription"
+          [(category)]="category"
+          [sources]="a.sources"
+          [faq]="a.faq ?? null"
+          [author]="a.author"
+          [updatedAt]="a.updatedAt"
+          [status]="a.status"
+          [saving]="autosaveStatus() === 'saving'"
+          (closed)="panelOpen.set(false)"
+          (saveDraft)="save()"
+          (publish)="publish()"
+        />
+      }
     }
   </div>
 </main>
