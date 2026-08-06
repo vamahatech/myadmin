@@ -1,6 +1,6 @@
 # Streamlined Article Editor Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Split the admin article editor into a distraction-free writing view (title + body only, autosaving) and a Publish slide-over panel (excerpt, category, SEO, read-only details), matching Medium's writing flow.
 
@@ -29,7 +29,7 @@
   - Read-only inputs: `sources = input<string[]>([])`, `faq = input<{ question: string; answer: string }[] | null>(null)`, `author = input('')`, `updatedAt = input('')`, `status = input<'DRAFT' | 'IN_REVIEW' | 'PUBLISHED'>('DRAFT')`, `saving = input(false)`
   - Outputs: `closed = output<void>()`, `saveDraft = output<void>()`, `publish = output<void>()`
 
-- [ ] **Step 1: Write the component class**
+- [x] **Step 1: Write the component class**
 
 ```typescript
 import { Component, input, model, output } from '@angular/core';
@@ -62,7 +62,7 @@ export class PublishPanelComponent {
 }
 ```
 
-- [ ] **Step 2: Write the template**
+- [x] **Step 2: Write the template**
 
 ```html
 <div class="fixed inset-0 z-30 flex justify-end">
@@ -177,12 +177,12 @@ export class PublishPanelComponent {
 </div>
 ```
 
-- [ ] **Step 3: Verify it compiles**
+- [x] **Step 3: Verify it compiles**
 
 Run: `npx tsc --noEmit -p tsconfig.json`
 Expected: no new errors
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/app/shared/components/publish-panel/publish-panel.component.ts src/app/shared/components/publish-panel/publish-panel.component.html
@@ -201,7 +201,7 @@ git commit -m "feat: add PublishPanelComponent for article story settings"
 - Consumes: `PublishPanelComponent` (Task 1) via `<app-publish-panel [(excerpt)]="excerpt" ... (closed)="panelOpen.set(false)" (saveDraft)="save()" (publish)="publish()" />`
 - Produces: same public behavior as before (load/save/publish against `AdminContentService`), plus `panelOpen: WritableSignal<boolean>` and `autosaveStatus: WritableSignal<'idle' | 'dirty' | 'saving' | 'saved' | 'error'>`
 
-- [ ] **Step 1: Write the new component class**
+- [x] **Step 1: Write the new component class**
 
 ```typescript
 import { Component, DestroyRef, inject, signal, OnInit } from '@angular/core';
@@ -357,7 +357,7 @@ export class AdminArticleComponent implements OnInit {
 
 Note: `excerptTe`/`category` were not previously sent by `update()` — `category` is now included since the publish panel edits it; `excerptTe` was already sent. This matches `Partial<Article>` on `AdminContentService.update()`, no service change needed.
 
-- [ ] **Step 2: Write the new template**
+- [x] **Step 2: Write the new template**
 
 ```html
 <main class="min-h-screen bg-bg text-text">
@@ -492,12 +492,12 @@ Note: `excerptTe`/`category` were not previously sent by `update()` — `categor
 
 Note: `[(excerpt)]="excerpt"` etc. work with plain (non-signal) parent properties — Angular's two-way binding syntax desugars to `[excerpt]="excerpt" (excerptChange)="excerpt = $event"`, which is valid on any assignable expression, not just signals. Panel edits won't trigger `markDirty()` automatically since they don't go through `(ngModelChange)`; that's acceptable per spec — "Save draft" in the panel saves immediately regardless of dirty state.
 
-- [ ] **Step 3: Verify it compiles**
+- [x] **Step 3: Verify it compiles**
 
 Run: `npx tsc --noEmit -p tsconfig.json`
 Expected: no new errors
 
-- [ ] **Step 4: Manual verification**
+- [x] **Step 4: Manual verification**
 
 Run: `npm start`, open an existing draft article, confirm:
 - Writing view shows only language toggle + title + body (no SEO/details visible)
@@ -507,7 +507,7 @@ Run: `npm start`, open an existing draft article, confirm:
 - Clicking "Publish" in the panel still shows the confirm dialog and behaves as before
 - Dark mode: toggle dark mode and confirm the panel and title input are readable
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/app/pages/apps/vamaha/admin-article/admin-article.component.ts src/app/pages/apps/vamaha/admin-article/admin-article.component.html
