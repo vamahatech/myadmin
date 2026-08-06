@@ -1,0 +1,110 @@
+<div class="fixed inset-0 z-30 flex justify-end">
+  <div class="absolute inset-0 bg-text/40" (click)="closed.emit()"></div>
+
+  <aside class="relative w-full max-w-md h-full bg-bg border-l border-border overflow-y-auto">
+    <header class="sticky top-0 bg-bg/95 backdrop-blur border-b border-border px-6 py-4 flex items-center justify-between">
+      <h2 class="text-sm font-semibold">Story settings</h2>
+      <button type="button" (click)="closed.emit()" class="text-text2 hover:text-text text-sm transition-colors">
+        Close ✕
+      </button>
+    </header>
+
+    <div class="p-6 space-y-6">
+      <div>
+        <label for="panelExcerpt" class="block text-xs uppercase tracking-wide text-text2 mb-1.5">
+          Excerpt <span class="normal-case tracking-normal text-text2">— the one-line summary in listings</span>
+        </label>
+        <textarea
+          id="panelExcerpt" name="panelExcerpt" rows="2"
+          [ngModel]="excerpt()" (ngModelChange)="excerpt.set($event)"
+          class="w-full px-4 py-3 bg-surface border border-border rounded-xl text-text focus:outline-none focus:border-primary transition-colors text-sm"
+        ></textarea>
+      </div>
+
+      <div>
+        <label for="panelCategory" class="block text-xs uppercase tracking-wide text-text2 mb-1.5">Category</label>
+        <input
+          id="panelCategory" name="panelCategory"
+          [ngModel]="category()" (ngModelChange)="category.set($event)"
+          class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl text-text focus:outline-none focus:border-primary transition-colors text-sm"
+        />
+      </div>
+
+      <div class="border-t border-border pt-6">
+        <h3 class="text-xs uppercase tracking-wide text-text2 mb-3">Search &amp; social</h3>
+        <div class="space-y-4">
+          <div>
+            <label for="panelSeoTitle" class="block text-xs uppercase tracking-wide text-text2 mb-1.5">SEO title</label>
+            <input
+              id="panelSeoTitle" name="panelSeoTitle"
+              [ngModel]="seoTitle()" (ngModelChange)="seoTitle.set($event)"
+              class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl text-text focus:outline-none focus:border-primary transition-colors text-sm"
+            />
+          </div>
+          <div>
+            <label for="panelSeoDescription" class="block text-xs uppercase tracking-wide text-text2 mb-1.5">SEO description</label>
+            <textarea
+              id="panelSeoDescription" name="panelSeoDescription" rows="3"
+              [ngModel]="seoDescription()" (ngModelChange)="seoDescription.set($event)"
+              class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl text-text focus:outline-none focus:border-primary transition-colors text-sm"
+            ></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="border-t border-border pt-6 space-y-4 text-sm">
+        <h3 class="text-xs uppercase tracking-wide text-text2 mb-1">Details</h3>
+        <div>
+          <p class="text-text2 text-xs uppercase tracking-wide mb-0.5">Author</p>
+          <p>{{ author() }}</p>
+        </div>
+        <div>
+          <p class="text-text2 text-xs uppercase tracking-wide mb-0.5">Last updated</p>
+          <p>{{ updatedAt() | date: 'medium' }}</p>
+        </div>
+        <div>
+          <p class="text-text2 text-xs uppercase tracking-wide mb-1">Sources</p>
+          @if (sources().length) {
+            <ul class="space-y-1">
+              @for (s of sources(); track s) {
+                <li class="break-all text-primary text-xs">{{ s }}</li>
+              }
+            </ul>
+          } @else {
+            <p class="text-text2 text-xs">None</p>
+          }
+        </div>
+        @if (faq()?.length) {
+          <div>
+            <p class="text-text2 text-xs uppercase tracking-wide mb-1">FAQ ({{ faq()?.length }})</p>
+            <ul class="space-y-2">
+              @for (f of faq(); track f.question) {
+                <li>
+                  <p class="font-medium">{{ f.question }}</p>
+                  <p class="text-text2 text-xs">{{ f.answer }}</p>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+      </div>
+    </div>
+
+    <footer class="sticky bottom-0 bg-bg/95 backdrop-blur border-t border-border px-6 py-4 flex items-center gap-3">
+      <button
+        type="button" (click)="saveDraft.emit()" [disabled]="saving()"
+        class="flex-1 py-2.5 px-4 border border-border hover:bg-surface disabled:opacity-50 text-text text-sm font-semibold rounded-xl transition-colors"
+      >
+        {{ saving() ? 'Saving…' : 'Save draft' }}
+      </button>
+      @if (status() !== 'PUBLISHED') {
+        <button
+          type="button" (click)="publish.emit()" [disabled]="saving()"
+          class="flex-1 py-2.5 px-4 bg-success hover:opacity-90 disabled:opacity-50 text-bg text-sm font-semibold rounded-xl transition-opacity"
+        >
+          Publish
+        </button>
+      }
+    </footer>
+  </aside>
+</div>
