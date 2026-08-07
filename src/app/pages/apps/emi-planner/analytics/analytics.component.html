@@ -95,19 +95,70 @@
         }
 
         @case ('features') {
-          <div class="bg-card border border-border rounded-3xl p-6 space-y-4">
+          <div class="bg-card border border-border rounded-3xl p-6 space-y-1">
             @if (featureBars().length === 0) {
               <p class="text-text2 text-sm">No events in this range.</p>
             }
             @for (e of featureBars(); track e.event) {
-              <div>
-                <div class="flex items-baseline justify-between mb-1 text-sm">
-                  <span class="font-medium">{{ e.event }}</span>
-                  <span class="text-text2 tabular-nums">{{ e.count }}</span>
-                </div>
-                <div class="h-2 rounded-full bg-surface overflow-hidden">
-                  <div class="h-full bg-primary rounded-full" [style.width.%]="e.widthPct"></div>
-                </div>
+              <div class="border-b border-border last:border-b-0">
+                <button
+                  type="button" (click)="toggleEventBreakdown(e.event)"
+                  class="w-full text-left py-3 group"
+                >
+                  <div class="flex items-center justify-between mb-1 text-sm">
+                    <span class="font-medium flex items-center gap-1.5">
+                      <span
+                        class="text-text2 text-xs transition-transform inline-block"
+                        [style.transform]="expandedEvent() === e.event ? 'rotate(90deg)' : 'rotate(0deg)'"
+                      >▸</span>
+                      {{ e.event }}
+                    </span>
+                    <span class="text-text2 tabular-nums">{{ e.count }}</span>
+                  </div>
+                  <div class="h-2 rounded-full bg-surface overflow-hidden">
+                    <div class="h-full bg-primary rounded-full" [style.width.%]="e.widthPct"></div>
+                  </div>
+                </button>
+
+                @if (expandedEvent() === e.event) {
+                  <div class="pb-4 pl-5 -mt-1">
+                    @if (breakdownLoading()) {
+                      <p class="text-text2 text-xs">Loading…</p>
+                    } @else if (breakdownError()) {
+                      <p class="text-danger text-xs">{{ breakdownError() }}</p>
+                    } @else if (breakdown(); as b) {
+                      @if (objectKeys(b.byProp).length === 0) {
+                        <p class="text-text2 text-xs">No additional detail tracked for this event.</p>
+                      } @else {
+                        <div class="space-y-3">
+                          @for (key of objectKeys(b.byProp); track key) {
+                            <div>
+                              <p class="text-text2 text-xs uppercase tracking-wide mb-1.5">{{ key }}</p>
+                              @if (b.byProp[key].length === 0) {
+                                <p class="text-text2 text-xs">No values recorded.</p>
+                              } @else {
+                                <div class="space-y-1.5">
+                                  @for (pv of b.byProp[key]; track pv.value) {
+                                    <div class="flex items-center gap-2 text-xs">
+                                      <span class="w-28 shrink-0 truncate" [title]="pv.value">{{ pv.value }}</span>
+                                      <div class="flex-1 h-1.5 rounded-full bg-surface overflow-hidden">
+                                        <div
+                                          class="h-full bg-accent rounded-full"
+                                          [style.width.%]="b.byProp[key][0].count > 0 ? (pv.count / b.byProp[key][0].count) * 100 : 0"
+                                        ></div>
+                                      </div>
+                                      <span class="text-text2 tabular-nums w-8 text-right">{{ pv.count }}</span>
+                                    </div>
+                                  }
+                                </div>
+                              }
+                            </div>
+                          }
+                        </div>
+                      }
+                    }
+                  </div>
+                }
               </div>
             }
           </div>

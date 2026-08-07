@@ -5,7 +5,7 @@ import { Meta } from '@angular/platform-browser';
 import { AppEventsService } from '../../../../core/services/app-events.service';
 import { PushAdminService } from '../../../../core/services/push-admin.service';
 import { FeedbackService } from '../../../../core/services/feedback.service';
-import { AppEventsSummary } from '../../../../models/app-events.model';
+import { AppEventsSummary, EventBreakdown } from '../../../../models/app-events.model';
 import {
   BroadcastResult,
   CredentialStatus,
@@ -80,6 +80,13 @@ export class AnalyticsComponent implements OnInit {
     }));
   });
 
+  /** Which event's prop breakdown is expanded in the Feature usage tab, if any. */
+  readonly expandedEvent = signal<string | null>(null);
+  readonly breakdownLoading = signal(false);
+  readonly breakdownError = signal('');
+  private readonly breakdownCache = new Map<string, EventBreakdown>();
+  readonly breakdown = signal<EventBreakdown | null>(null);
+
   readonly funnels = computed<FunnelResult[]>(() => {
     const s = this.summary();
     if (!s) return [];
@@ -124,6 +131,9 @@ export class AnalyticsComponent implements OnInit {
     this.load();
   }
 
+  /** Angular templates can't call global `Object.keys` directly. */
+  readonly objectKeys = Object.keys;
+
   setTab(tab: Tab): void {
     this.tab.set(tab);
     if (tab === 'push' && this.credential() === null) {
@@ -137,7 +147,40 @@ export class AnalyticsComponent implements OnInit {
   setDays(days: RangeDays): void {
     if (this.days() === days) return;
     this.days.set(days);
+    this.breakdownCache.clear();
+    this.expandedEvent.set(null);
+    this.breakdown.set(null);
     this.load();
+  }
+
+  toggleEventBreakdown(event: string): void {
+    if (this.expandedEvent() === event) {
+      this.expandedEvent.set(null);
+      return;
+    }
+    this.expandedEvent.set(event);
+    this.breakdownError.set('');
+
+    const cacheKey = `${event}:${this.days()}`;
+    const cached = this.breakdownCache.get(cacheKey);
+    if (cached) {
+      this.breakdown.set(cached);
+      return;
+    }
+
+    this.breakdown.set(null);
+    this.breakdownLoading.set(true);
+    this.appEvents.eventBreakdown(APP_SLUG, event, this.days()).subscribe({
+      next: (b) => {
+        this.breakdownCache.set(cacheKey, b);
+        this.breakdown.set(b);
+        this.breakdownLoading.set(false);
+      },
+      error: () => {
+        this.breakdownError.set('Could not load breakdown for this event.');
+        this.breakdownLoading.set(false);
+      },
+    });
   }
 
   load(): void {

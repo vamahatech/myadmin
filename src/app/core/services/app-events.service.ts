@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
-import { AppEventsSummary } from '../../models/app-events.model';
+import { AppEventsSummary, EventBreakdown } from '../../models/app-events.model';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -24,6 +24,14 @@ export class AppEventsService {
     return this.http
       .get<ApiResponse<AppEventsSummary>>(
         `${this.base}/apps/${appSlug}/events/summary?days=${days}`,
+      )
+      .pipe(map((res) => res.data));
+  }
+
+  eventBreakdown(appSlug: string, event: string, days = 30): Observable<EventBreakdown> {
+    return this.http
+      .get<ApiResponse<EventBreakdown>>(
+        `${this.base}/apps/${appSlug}/events/${event}/breakdown?days=${days}`,
       )
       .pipe(map((res) => res.data));
   }
