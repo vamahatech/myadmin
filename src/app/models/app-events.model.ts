@@ -11,4 +11,6 @@ export interface AppEventsSummary {
   totalEvents: number;
   uniqueInstalls: number;
   byEvent: AppEventCount[];
+  byAppVersion: { appVersion: string | null; count: number }[];
+  byOsMajor: { osMajor: string | null; count: number }[];
 }
