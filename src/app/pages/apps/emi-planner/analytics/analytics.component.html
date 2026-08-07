@@ -1,27 +1,99 @@
-<div class="max-w-[1800px] mx-auto px-6 lg:px-8 py-10 space-y-6">
+<div class="max-w-[1200px] mx-auto px-6 lg:px-8 py-10 space-y-6">
+
+  <div class="flex flex-wrap items-center justify-between gap-4">
+    <div class="inline-flex rounded-xl border border-border overflow-hidden text-sm">
+      @for (t of [['overview', 'Overview'], ['features', 'Feature usage'], ['funnels', 'Funnels']]; track t[0]) {
+        <button
+          type="button" (click)="setTab($any(t[0]))"
+          [class.bg-primary]="tab() === t[0]" [class.text-white]="tab() === t[0]"
+          [class.text-text2]="tab() !== t[0]"
+          class="px-4 py-2 font-medium transition-colors border-l border-border first:border-l-0"
+        >{{ t[1] }}</button>
+      }
+    </div>
+
+    <div class="inline-flex rounded-xl border border-border overflow-hidden text-sm">
+      @for (d of [7, 30, 90]; track d) {
+        <button
+          type="button" (click)="setDays($any(d))"
+          [class.bg-primary]="days() === d" [class.text-white]="days() === d"
+          [class.text-text2]="days() !== d"
+          class="px-3 py-1.5 font-medium transition-colors border-l border-border first:border-l-0"
+        >{{ d }}d</button>
+      }
+    </div>
+  </div>
+
   @if (loading()) {
     <p class="text-text2 text-sm">Loading…</p>
   } @else if (loadError()) {
     <p class="text-danger text-sm">{{ loadError() }}</p>
   } @else if (summary(); as s) {
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-      <div class="bg-card border border-border rounded-3xl p-6">
-        <p class="text-text2 text-xs uppercase tracking-wide mb-2">EMI Planner events (last {{ s.rangeDays }}d)</p>
-        <p class="text-3xl font-bold">{{ emiPlannerEvents() }}</p>
-      </div>
-      <div class="bg-card border border-border rounded-3xl p-6">
-        <p class="text-text2 text-xs uppercase tracking-wide mb-2">Unique visitors (site-wide)</p>
-        <p class="text-3xl font-bold">{{ s.uniqueVisitors }}</p>
-      </div>
-      <div class="bg-card border border-border rounded-3xl p-6">
-        <p class="text-text2 text-xs uppercase tracking-wide mb-2">Total events (site-wide)</p>
-        <p class="text-3xl font-bold">{{ s.totalEvents }}</p>
-      </div>
-    </div>
-    <p class="text-text2 text-xs">
-      Per-app breakdowns (countries, devices, browsers) aren't available yet —
-      the backend currently only filters event counts by app, not the other
-      dimensions.
-    </p>
+
+    @if (s.totalEvents === 0) {
+      <p class="text-text2 text-sm bg-card border border-border rounded-2xl p-5">
+        No events recorded for EMI Planner in the last {{ s.rangeDays }} days yet.
+      </p>
+    }
+
+    @switch (tab()) {
+
+      @case ('overview') {
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div class="bg-card border border-border rounded-3xl p-6">
+            <p class="text-text2 text-xs uppercase tracking-wide mb-2">Total in-app events (last {{ s.rangeDays }}d)</p>
+            <p class="text-3xl font-bold">{{ s.totalEvents }}</p>
+          </div>
+          <div class="bg-card border border-border rounded-3xl p-6">
+            <p class="text-text2 text-xs uppercase tracking-wide mb-2">Unique installs active</p>
+            <p class="text-3xl font-bold">{{ s.uniqueInstalls }}</p>
+          </div>
+          <div class="bg-card border border-border rounded-3xl p-6">
+            <p class="text-text2 text-xs uppercase tracking-wide mb-2">Events per active install</p>
+            <p class="text-3xl font-bold">{{ eventsPerInstall() | number: '1.1-1' }}</p>
+          </div>
+        </div>
+        <p class="text-text2 text-xs">
+          Counts come from EMI Planner's structure-only event stream (no IP, no geo, no free text —
+          only the events and prop keys allowlisted for this app).
+        </p>
+      }
+
+      @case ('features') {
+        <div class="bg-card border border-border rounded-3xl p-6 space-y-4">
+          @if (featureBars().length === 0) {
+            <p class="text-text2 text-sm">No events in this range.</p>
+          }
+          @for (e of featureBars(); track e.event) {
+            <div>
+              <div class="flex items-baseline justify-between mb-1 text-sm">
+                <span class="font-medium">{{ e.event }}</span>
+                <span class="text-text2 tabular-nums">{{ e.count }}</span>
+              </div>
+              <div class="h-2 rounded-full bg-surface overflow-hidden">
+                <div class="h-full bg-primary rounded-full" [style.width.%]="e.widthPct"></div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      @case ('funnels') {
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          @for (f of funnels(); track f.label) {
+            <div class="bg-card border border-border rounded-3xl p-6">
+              <p class="font-semibold mb-1">{{ f.label }}</p>
+              <p class="text-text2 text-xs mb-4">{{ f.fromEvent }} → {{ f.toEvent }}</p>
+              @if (f.rate === null) {
+                <p class="text-text2 text-sm">No {{ f.fromEvent }} events yet in this range.</p>
+              } @else {
+                <p class="text-3xl font-bold text-primary mb-1">{{ f.rate * 100 | number: '1.0-1' }}%</p>
+                <p class="text-text2 text-xs tabular-nums">{{ f.toCount }} of {{ f.fromCount }}</p>
+              }
+            </div>
+          }
+        </div>
+      }
+    }
   }
 </div>
