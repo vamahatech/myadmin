@@ -103,6 +103,14 @@ export class AnalyticsComponent implements OnInit {
     return s.previous ?? { totalEvents: 0, uniqueInstalls: 0, byEvent: [] };
   }
 
+  /** True when the previous period has zero events at all — not just this metric/event/funnel.
+   *  In that case every "New" badge would fire at once (every row has no baseline), which reads
+   *  as noise rather than a signal, so callers should show one explanatory note instead. */
+  readonly noPreviousData = computed(() => {
+    const s = this.summary();
+    return !!s && this.previousOrEmpty(s).totalEvents === 0;
+  });
+
   readonly previousEventsPerInstall = computed(() => {
     const s = this.summary();
     if (!s) return 0;

@@ -1,50 +1,61 @@
-<div class="min-h-screen md:h-screen flex flex-col md:flex-row bg-bg text-text">
-  <aside class="border-b md:border-b-0 md:border-r border-border md:w-64 md:shrink-0 flex flex-col md:h-screen md:overflow-y-auto">
-    <a
-      routerLink="/"
-      class="flex items-center gap-3 px-6 py-5 border-b border-border hover:bg-surface transition-colors"
-    >
-      <span class="ink-seal text-primary w-8 h-8 text-base">{{ appInitial }}</span>
-      <span class="flex items-center gap-2 min-w-0">
-        <span class="text-lg shrink-0">{{ appIcon }}</span>
-        <span class="text-base font-bold truncate">{{ appName }}</span>
-      </span>
-    </a>
-
-    <nav class="flex md:flex-col overflow-x-auto md:overflow-visible px-3 py-3 md:py-4 gap-1">
-      @for (item of navItems; track item.path) {
-        <a
-          [routerLink]="item.path ? [item.path] : ['.']"
-          routerLinkActive="bg-surface text-primary"
-          [routerLinkActiveOptions]="{ exact: item.path === '' }"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-text2 hover:text-text hover:bg-surface transition-colors whitespace-nowrap"
-        >
-          <span class="text-base">{{ item.icon }}</span>
-          {{ item.label }}
-        </a>
-      }
-    </nav>
-
-    <div class="md:mt-auto px-3 py-4 border-t border-border">
-      @if (auth.user(); as u) {
-        <p class="px-3 text-xs text-text2 mb-2 truncate">{{ u.name }} · {{ u.role }}</p>
-      }
-      <a
-        routerLink="/settings"
-        class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-text2 hover:text-text hover:bg-surface transition-colors"
-      >
-        Settings
+<div class="min-h-screen md:h-screen flex flex-col bg-bg text-text">
+  <header class="border-b border-border shrink-0">
+    <div class="px-6 py-4 flex items-center justify-between gap-4">
+      <a routerLink="/" class="flex items-center gap-3 hover:opacity-80 transition-opacity min-w-0">
+        <span class="ink-seal text-primary w-8 h-8 text-base shrink-0">{{ appInitial }}</span>
+        <span class="flex items-center gap-2 min-w-0">
+          <span class="text-lg shrink-0">{{ appIcon }}</span>
+          <span class="text-base font-bold truncate">{{ appName }}</span>
+        </span>
       </a>
-      <button
-        (click)="logout()"
-        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-text2 hover:text-text hover:bg-surface transition-colors text-left"
-      >
-        Sign out
-      </button>
-    </div>
-  </aside>
 
-  <main class="flex-1 min-w-0 md:h-screen md:overflow-y-auto" [class]="contentClass">
-    <router-outlet></router-outlet>
-  </main>
+      <div class="flex items-center gap-3 shrink-0">
+        @if (auth.user(); as u) {
+          <span class="text-right leading-tight hidden sm:block">
+            <span class="block text-sm font-medium text-text">{{ u.name }}</span>
+            <span class="block text-xs text-text2">{{ u.role }}</span>
+          </span>
+        }
+        <a
+          routerLink="/settings"
+          class="shrink-0 rounded-full p-1.5 hover:bg-surface transition-colors focus:outline focus:outline-2 focus:outline-offset-2 focus:[outline-color:var(--color-primary)]"
+          aria-label="Settings"
+        >
+          <svg class="w-5 h-5 text-text2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </a>
+        <button
+          (click)="logout()"
+          class="shrink-0 rounded-full p-1.5 hover:bg-surface transition-colors focus:outline focus:outline-2 focus:outline-offset-2 focus:[outline-color:var(--color-primary)]"
+          aria-label="Sign out"
+        >
+          <img src="/logout.svg" alt="" class="w-5 h-5" />
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="flex-1 min-h-0 flex flex-col md:flex-row">
+    <aside class="border-b md:border-b-0 md:border-r border-border md:w-64 md:shrink-0 flex flex-col md:h-full md:overflow-y-auto">
+      <nav class="flex md:flex-col overflow-x-auto md:overflow-visible px-3 py-3 md:py-4 gap-1">
+        @for (item of navItems; track item.path) {
+          <a
+            [routerLink]="item.path ? [item.path] : ['.']"
+            routerLinkActive="bg-surface text-primary"
+            [routerLinkActiveOptions]="{ exact: item.path === '' }"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-text2 hover:text-text hover:bg-surface transition-colors whitespace-nowrap"
+          >
+            <span class="text-base">{{ item.icon }}</span>
+            {{ item.label }}
+          </a>
+        }
+      </nav>
+    </aside>
+
+    <main class="flex-1 min-w-0 md:h-full md:overflow-y-auto" [class]="contentClass">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
 </div>
