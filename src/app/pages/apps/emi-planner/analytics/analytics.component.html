@@ -1,8 +1,8 @@
-<div class="max-w-[1200px] mx-auto px-6 lg:px-8 py-10 space-y-6">
+<div class="max-w-[1800px] mx-auto px-6 lg:px-8 py-10 space-y-6">
 
   <div class="flex flex-wrap items-center justify-between gap-4">
     <div class="inline-flex rounded-xl border border-border overflow-hidden text-sm">
-      @for (t of [['overview', 'Overview'], ['features', 'Feature usage'], ['funnels', 'Funnels'], ['push', 'Push & retention'], ['feedback', 'Feedback']]; track t[0]) {
+      @for (t of [['overview', 'Overview'], ['features', 'Feature usage'], ['funnels', 'Funnels']]; track t[0]) {
         <button
           type="button" (click)="setTab($any(t[0]))"
           [class.bg-primary]="tab() === t[0]" [class.text-white]="tab() === t[0]"
@@ -12,18 +12,44 @@
       }
     </div>
 
-    @if (tab() === 'overview' || tab() === 'features' || tab() === 'funnels') {
+    <div class="relative flex items-center gap-2">
       <div class="inline-flex rounded-xl border border-border overflow-hidden text-sm">
-        @for (d of [7, 30, 90]; track d) {
+        @for (d of [1, 7, 30, 90]; track d) {
           <button
             type="button" (click)="setDays($any(d))"
-            [class.bg-primary]="days() === d" [class.text-white]="days() === d"
-            [class.text-text2]="days() !== d"
+            [class.bg-primary]="days() === d && !customRange()" [class.text-white]="days() === d && !customRange()"
+            [class.text-text2]="days() !== d || customRange()"
             class="px-3 py-1.5 font-medium transition-colors border-l border-border first:border-l-0"
           >{{ d }}d</button>
         }
+        <button
+          type="button" (click)="toggleCustomPicker()"
+          [class.bg-primary]="!!customRange()" [class.text-white]="!!customRange()"
+          [class.text-text2]="!customRange()"
+          class="px-3 py-1.5 font-medium transition-colors border-l border-border"
+        >{{ customRange() ? (customRange()!.from + ' → ' + customRange()!.to) : 'Custom' }}</button>
       </div>
-    }
+
+      @if (showCustomPicker()) {
+        <div class="absolute top-full right-0 mt-2 z-10 bg-card border border-border rounded-2xl p-4 shadow-xl w-72 space-y-3">
+          <div class="flex items-center gap-2">
+            <label class="text-xs text-text2 w-10 shrink-0">From</label>
+            <input type="date" [(ngModel)]="customFrom" class="flex-1 px-2.5 py-1.5 bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-primary transition-colors" />
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="text-xs text-text2 w-10 shrink-0">To</label>
+            <input type="date" [(ngModel)]="customTo" class="flex-1 px-2.5 py-1.5 bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-primary transition-colors" />
+          </div>
+          @if (customRangeError()) {
+            <p class="text-danger text-xs">{{ customRangeError() }}</p>
+          }
+          <button
+            type="button" (click)="applyCustomRange()"
+            class="w-full py-2 bg-primary hover:bg-accent text-white text-sm font-semibold rounded-lg transition-colors"
+          >Apply</button>
+        </div>
+      }
+    </div>
   </div>
 
   <!-- ── Overview / Feature usage / Funnels — driven by app-events summary ── -->
@@ -36,30 +62,78 @@
 
       @if (s.totalEvents === 0) {
         <p class="text-text2 text-sm bg-card border border-border rounded-2xl p-5">
-          No events recorded for EMI Planner in the last {{ s.rangeDays }} days yet.
+          No events recorded for EMI Planner {{ rangeDescription() }} yet.
         </p>
+      }
+
+      @if (tab() === 'overview' && anomalies().length > 0) {
+        <div class="flex flex-wrap items-center gap-2 text-sm bg-gold/10 border border-gold/30 text-gold rounded-xl px-4 py-3">
+          <span class="font-semibold">Heads up —</span>
+          @for (a of anomalies(); track a.key) {
+            <span>
+              {{ a.label }} {{ a.delta! >= 0 ? 'jumped' : 'dropped' }}
+              <span class="font-semibold">{{ (a.delta! >= 0 ? a.delta! : -a.delta!) | number: '1.0-1' }}%</span>
+              vs. {{ previousPeriodLabel() | lowercase }}@if (!$last) { · }
+            </span>
+          }
+        </div>
       }
 
       @switch (tab()) {
 
         @case ('overview') {
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <div class="bg-card border border-border rounded-3xl p-6">
-              <p class="text-text2 text-xs uppercase tracking-wide mb-2">Total in-app events (last {{ s.rangeDays }}d)</p>
-              <p class="text-3xl font-bold">{{ s.totalEvents }}</p>
-            </div>
-            <div class="bg-card border border-border rounded-3xl p-6">
-              <p class="text-text2 text-xs uppercase tracking-wide mb-2">Unique installs active</p>
-              <p class="text-3xl font-bold">{{ s.uniqueInstalls }}</p>
-            </div>
-            <div class="bg-card border border-border rounded-3xl p-6">
-              <p class="text-text2 text-xs uppercase tracking-wide mb-2">Events per active install</p>
-              <p class="text-3xl font-bold">{{ eventsPerInstall() | number: '1.1-1' }}</p>
-            </div>
+            @for (stat of overviewStats(); track stat.key) {
+              <div class="bg-card border border-border rounded-3xl overflow-hidden">
+                <p class="text-text2 text-xs uppercase tracking-wide px-6 pt-6 pb-2">{{ stat.label }}</p>
+
+                @if (stat.spark) {
+                  <svg viewBox="0 0 100 28" preserveAspectRatio="none" class="w-full h-7 px-0">
+                    <polyline
+                      [attr.points]="stat.spark"
+                      fill="none"
+                      class="stroke-primary"
+                      stroke-width="2.5"
+                      vector-effect="non-scaling-stroke"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                }
+
+                <div class="grid grid-cols-3 divide-x divide-border mt-2">
+                  <div class="px-5 pb-6">
+                    <p class="text-text2 text-[11px] mb-1 truncate">{{ currentPeriodLabel() }}</p>
+                    <p class="text-2xl font-bold tabular-nums">{{ stat.current | number: stat.format }}</p>
+                  </div>
+                  <div class="px-5 pb-6">
+                    <p class="text-text2 text-[11px] mb-1 truncate">{{ previousPeriodLabel() }}</p>
+                    <p
+                      class="text-2xl font-bold tabular-nums"
+                      [class.text-gold]="stat.previous === 0" [class.text-text]="stat.previous !== 0"
+                    >{{ stat.previous === 0 ? 0 : (stat.previous | number: stat.format) }}</p>
+                  </div>
+                  <div class="px-5 pb-6">
+                    <p class="text-text2 text-[11px] mb-1 truncate">Change</p>
+                    @if (stat.delta !== null) {
+                      <p
+                        class="text-2xl font-bold tabular-nums"
+                        [class.text-success]="stat.delta >= 0" [class.text-danger]="stat.delta < 0"
+                      >{{ stat.delta >= 0 ? '+' : '−' }}{{ (stat.delta >= 0 ? stat.delta : -stat.delta) | number: '1.0-1' }}%</p>
+                    } @else if (stat.current > 0) {
+                      <p class="text-2xl font-bold text-gold">New</p>
+                    } @else {
+                      <p class="text-2xl font-bold text-text2">—</p>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
           </div>
           <p class="text-text2 text-xs">
             Counts come from EMI Planner's structure-only event stream (no IP, no geo, no free text —
-            only the events and prop keys allowlisted for this app).
+            only the events and prop keys allowlisted for this app). {{ currentPeriodLabel() }} is compared against
+            {{ previousPeriodLabel() | lowercase }}{{ days() === 1 ? '' : ', the equal-length period right before it' }}.
           </p>
 
           @if (s.byAppVersion.length || s.byOsMajor.length) {
@@ -113,7 +187,18 @@
                       >▸</span>
                       {{ e.event }}
                     </span>
-                    <span class="text-text2 tabular-nums">{{ e.count }}</span>
+                    <span class="flex items-center gap-2">
+                      @if (e.delta !== null) {
+                        <span
+                          class="text-[11px] font-semibold px-1.5 py-0.5 rounded-full"
+                          [class.text-success]="e.delta >= 0" [class.bg-success/10]="e.delta >= 0"
+                          [class.text-danger]="e.delta < 0" [class.bg-danger/10]="e.delta < 0"
+                        >{{ e.delta >= 0 ? '▲' : '▼' }} {{ (e.delta >= 0 ? e.delta : -e.delta) | number: '1.0-1' }}%</span>
+                      } @else if (e.count > 0) {
+                        <span class="text-[11px] font-semibold px-1.5 py-0.5 rounded-full bg-gold/15 text-gold">New</span>
+                      }
+                      <span class="text-text2 tabular-nums">{{ e.count }}</span>
+                    </span>
                   </div>
                   <div class="h-2 rounded-full bg-surface overflow-hidden">
                     <div class="h-full bg-primary rounded-full" [style.width.%]="e.widthPct"></div>
@@ -165,7 +250,7 @@
         }
 
         @case ('funnels') {
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
             @for (f of funnels(); track f.label) {
               <div class="bg-card border border-border rounded-3xl p-6">
                 <p class="font-semibold mb-1">{{ f.label }}</p>
@@ -173,8 +258,22 @@
                 @if (f.rate === null) {
                   <p class="text-text2 text-sm">No {{ f.fromEvent }} events yet in this range.</p>
                 } @else {
-                  <p class="text-3xl font-bold text-primary mb-1">{{ f.rate * 100 | number: '1.0-1' }}%</p>
+                  <div class="flex items-baseline gap-2 flex-wrap mb-1">
+                    <p class="text-3xl font-bold text-primary">{{ f.rate * 100 | number: '1.0-1' }}%</p>
+                    @if (f.ratePointsDelta !== null) {
+                      <span
+                        class="text-[11px] font-semibold px-1.5 py-0.5 rounded-full"
+                        [class.text-success]="f.ratePointsDelta >= 0" [class.bg-success/10]="f.ratePointsDelta >= 0"
+                        [class.text-danger]="f.ratePointsDelta < 0" [class.bg-danger/10]="f.ratePointsDelta < 0"
+                      >{{ f.ratePointsDelta >= 0 ? '▲' : '▼' }} {{ (f.ratePointsDelta >= 0 ? f.ratePointsDelta : -f.ratePointsDelta) | number: '1.0-1' }}pp</span>
+                    } @else if (f.previousRate === null) {
+                      <span class="text-[11px] font-semibold px-1.5 py-0.5 rounded-full bg-gold/15 text-gold">New</span>
+                    }
+                  </div>
                   <p class="text-text2 text-xs tabular-nums">{{ f.toCount }} of {{ f.fromCount }}</p>
+                  @if (f.previousRate !== null) {
+                    <p class="text-text2 text-[11px] mt-1">vs. {{ (f.previousRate * 100 | number: '1.0-1') }}% previously</p>
+                  }
                 }
               </div>
             }
@@ -184,185 +283,5 @@
     }
   }
 
-  <!-- ── Push & retention ─────────────────────────────────────────── -->
-  @if (tab() === 'push') {
-    @if (pushLoadError()) {
-      <p class="text-danger text-sm">{{ pushLoadError() }}</p>
-    }
-
-    @if (credential(); as c) {
-      @if (!c.configured) {
-        <p class="text-sm bg-danger/10 border border-danger/30 text-danger rounded-xl px-4 py-3">
-          Firebase not configured — broadcasting and the dormancy cron are no-ops until
-          FIREBASE_SERVICE_ACCOUNT_JSON is set on the backend.
-        </p>
-      }
-    }
-
-    <div class="bg-card border border-border rounded-3xl p-6">
-      <p class="font-semibold mb-4">Registered devices ({{ tokens().length }})</p>
-      @if (tokens().length === 0) {
-        <p class="text-text2 text-sm">No devices registered yet.</p>
-      } @else {
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead class="text-text2 text-left">
-              <tr>
-                <th class="py-2 pr-4">Install</th>
-                <th class="py-2 pr-4">Platform</th>
-                <th class="py-2 pr-4">Registered</th>
-                <th class="py-2 pr-4">Last dormancy push</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (t of tokens(); track t.installId) {
-                <tr class="border-t border-border">
-                  <td class="py-2 pr-4 font-mono">{{ t.installId.slice(0, 8) }}…</td>
-                  <td class="py-2 pr-4">{{ t.platform }}</td>
-                  <td class="py-2 pr-4">{{ t.createdAt | date: 'medium' }}</td>
-                  <td class="py-2 pr-4">{{ t.lastDormancyPushAt ? (t.lastDormancyPushAt | date: 'medium') : '—' }}</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      }
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div class="bg-card border border-border rounded-3xl p-6">
-        <p class="font-semibold mb-4">Send broadcast</p>
-        <div class="space-y-3">
-          <input
-            [(ngModel)]="broadcastTitle"
-            placeholder="Title"
-            class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl text-text focus:outline-none focus:border-primary transition-colors text-sm"
-          />
-          <textarea
-            [(ngModel)]="broadcastBody"
-            placeholder="Body"
-            rows="3"
-            class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl text-text focus:outline-none focus:border-primary transition-colors text-sm"
-          ></textarea>
-          @if (broadcastStatus() === 'error') {
-            <p class="text-danger text-sm">{{ broadcastError() }}</p>
-          }
-          @if (broadcastResult(); as r) {
-            <p class="text-success text-sm">
-              @if (lastActionLabel() === 'cron') {
-                Cron run:
-                @if (r.candidates !== undefined) { {{ r.candidates }} candidates · }
-                Sent: {{ r.sent }}
-              } @else {
-                Broadcast sent: {{ r.sent }}
-              }
-              @if (r.failed !== undefined) { · Failed: {{ r.failed }} }
-              · Stale removed: {{ r.staleRemoved }}
-            </p>
-          }
-          <button
-            type="button" (click)="sendBroadcast()"
-            [disabled]="broadcastStatus() === 'sending' || !credential()?.configured || tokens().length === 0"
-            class="py-2.5 px-5 bg-primary hover:bg-accent disabled:opacity-50 text-white text-sm font-semibold rounded-xl transition-colors"
-          >
-            {{ broadcastStatus() === 'sending' ? 'Sending…' : 'Send to all devices' }}
-          </button>
-        </div>
-      </div>
-
-      <div class="bg-card border border-border rounded-3xl p-6">
-        <p class="font-semibold mb-4">Cron run history</p>
-        <button
-          type="button" (click)="runCronNow()"
-          [disabled]="cronRunning()"
-          class="mb-4 text-sm border border-border hover:bg-surface rounded-xl px-4 py-2 transition-colors disabled:opacity-50"
-        >
-          {{ cronRunning() ? 'Running…' : 'Run dormancy check now' }}
-        </button>
-        @if (cronRuns().length === 0) {
-          <p class="text-text2 text-sm">No runs yet.</p>
-        } @else {
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-              <thead class="text-text2 text-left">
-                <tr>
-                  <th class="py-2 pr-4">Ran at</th>
-                  <th class="py-2 pr-4">Candidates</th>
-                  <th class="py-2 pr-4">Sent</th>
-                  <th class="py-2 pr-4">Stale removed</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (r of cronRuns(); track r.id) {
-                  <tr class="border-t border-border">
-                    <td class="py-2 pr-4">{{ r.ranAt | date: 'medium' }}</td>
-                    <td class="py-2 pr-4">{{ r.candidates }}</td>
-                    <td class="py-2 pr-4">{{ r.sent }}</td>
-                    <td class="py-2 pr-4">{{ r.staleRemoved }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        }
-      </div>
-    </div>
-  }
-
-  <!-- ── Feedback ─────────────────────────────────────────────────── -->
-  @if (tab() === 'feedback') {
-    <div class="flex items-center justify-between gap-4">
-      <div class="inline-flex rounded-xl border border-border overflow-hidden text-sm">
-        @for (opt of [['', 'All'], ['NEW', 'New'], ['READ', 'Read'], ['ARCHIVED', 'Archived']]; track opt[0]) {
-          <button
-            type="button" (click)="setFeedbackStatusFilter($any(opt[0]))"
-            [class.bg-primary]="feedbackStatusFilter() === opt[0]" [class.text-white]="feedbackStatusFilter() === opt[0]"
-            [class.text-text2]="feedbackStatusFilter() !== opt[0]"
-            class="px-3 py-1.5 font-medium transition-colors border-l border-border first:border-l-0"
-          >{{ opt[1] }}</button>
-        }
-      </div>
-      <p class="text-text2 text-xs">{{ feedbackTotal() }} total</p>
-    </div>
-
-    @if (feedbackLoading()) {
-      <p class="text-text2 text-sm">Loading…</p>
-    } @else if (feedbackLoadError()) {
-      <p class="text-danger text-sm">{{ feedbackLoadError() }}</p>
-    } @else if (feedbackItems().length === 0) {
-      <p class="text-text2 text-sm bg-card border border-border rounded-2xl p-5">No feedback yet.</p>
-    } @else {
-      <div class="space-y-3">
-        @for (f of feedbackItems(); track f.id) {
-          <div class="bg-card border border-border rounded-2xl p-5">
-            <div class="flex items-start justify-between gap-4 mb-2">
-              <div class="flex items-center gap-2 text-xs text-text2">
-                <span
-                  class="px-2 py-0.5 rounded-full border border-border"
-                  [class.text-primary]="f.status === 'NEW'"
-                >{{ f.status }}</span>
-                @if (f.rating) { <span>★ {{ f.rating }}/5</span> }
-                <span>{{ f.createdAt | date: 'medium' }}</span>
-                @if (f.platform) { <span>· {{ f.platform }}</span> }
-                @if (f.appVersion) { <span>· v{{ f.appVersion }}</span> }
-              </div>
-              <div class="flex gap-2 shrink-0">
-                @if (f.status !== 'READ') {
-                  <button type="button" (click)="markFeedback(f.id, 'READ')" class="text-xs text-primary hover:text-accent transition-colors">Mark read</button>
-                }
-                @if (f.status !== 'ARCHIVED') {
-                  <button type="button" (click)="markFeedback(f.id, 'ARCHIVED')" class="text-xs text-text2 hover:text-text transition-colors">Archive</button>
-                }
-              </div>
-            </div>
-            <p class="text-sm mb-1">{{ f.message }}</p>
-            @if (f.email) {
-              <p class="text-text2 text-xs">{{ f.name || 'Anonymous' }} · {{ f.email }}</p>
-            }
-          </div>
-        }
-      </div>
-    }
-  }
 
 </div>

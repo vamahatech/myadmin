@@ -33,6 +33,7 @@ export const routes: Routes = [
       navItems: [
         { label: 'Articles', icon: '📰', path: '' },
         { label: 'Push notifications', icon: '🔔', path: 'push' },
+        { label: 'Feedback', icon: '🔔', path: 'feedback' },
       ],
     },
     children: [
@@ -80,7 +81,11 @@ export const routes: Routes = [
     data: {
       appName: 'EMI Planner',
       appIcon: '📊',
-      navItems: [{ label: 'Analytics', icon: '📊', path: 'analytics' }],
+      navItems: [
+        { label: 'Analytics', icon: '📊', path: 'analytics' },
+        { label: 'Push & retention', icon: '🔔', path: 'push' },
+        { label: 'Feedback', icon: '💬', path: 'feedback' },
+      ],
     },
     children: [
       {
@@ -93,6 +98,20 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/apps/emi-planner/analytics/analytics.component').then(
             m => m.AnalyticsComponent,
+          ),
+      },
+      {
+        path: 'push',
+        loadComponent: () =>
+          import('./pages/apps/emi-planner/push/push.component').then(
+            m => m.PushComponent,
+          ),
+      },
+      {
+        path: 'feedback',
+        loadComponent: () =>
+          import('./pages/apps/emi-planner/feedback/feedback.component').then(
+            m => m.FeedbackComponent,
           ),
       },
     ],

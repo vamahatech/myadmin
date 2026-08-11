@@ -1,23 +1,42 @@
 import { Component, computed, inject, signal, OnInit } from '@angular/core';
-import { DecimalPipe, DatePipe } from '@angular/common';
+import { DecimalPipe, LowerCasePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Meta } from '@angular/platform-browser';
 import { AppEventsService } from '../../../../core/services/app-events.service';
-import { PushAdminService } from '../../../../core/services/push-admin.service';
-import { FeedbackService } from '../../../../core/services/feedback.service';
-import { AppEventsSummary, EventBreakdown } from '../../../../models/app-events.model';
 import {
-  BroadcastResult,
-  CredentialStatus,
-  PushCronRunRow,
-  PushTokenRow,
-} from '../../../../models/push-admin.model';
-import { FeedbackRow, FeedbackStatus } from '../../../../models/feedback.model';
+  AppEventCount,
+  AppEventsPreviousSummary,
+  AppEventsSummary,
+  AppEventsTimeseries,
+  EventBreakdown,
+} from '../../../../models/app-events.model';
 
 const APP_SLUG = 'emi-planner';
 
-type Tab = 'overview' | 'features' | 'funnels' | 'push' | 'feedback';
-type RangeDays = 7 | 30 | 90;
+type Tab = 'overview' | 'features' | 'funnels';
+type RangeDays = 1 | 7 | 30 | 90;
+
+/** A large enough swing to surface as a heads-up banner, not just a colored badge. */
+const ANOMALY_THRESHOLD_PCT = 30;
+
+/** % change vs. the previous period; null when there's no baseline to compare against
+ *  (previous period had zero — showing "New" or "—" reads better than a divide-by-zero). */
+function pctDelta(current: number, previous: number): number | null {
+  if (previous === 0) return null;
+  return ((current - previous) / previous) * 100;
+}
+
+/** Normalizes a series of values into an SVG polyline `points` string (viewBox 0 0 100 28). */
+function sparklinePoints(values: number[]): string {
+  if (values.length === 0) return '';
+  const width = 100;
+  const height = 28;
+  const max = Math.max(...values, 1);
+  const stepX = values.length > 1 ? width / (values.length - 1) : 0;
+  return values
+    .map((v, i) => `${(i * stepX).toFixed(1)},${(height - (v / max) * height).toFixed(1)}`)
+    .join(' ');
+}
 
 interface FunnelStep {
   label: string;
@@ -29,6 +48,9 @@ interface FunnelResult extends FunnelStep {
   fromCount: number;
   toCount: number;
   rate: number | null; // null when fromCount is 0 — nothing to convert from
+  previousRate: number | null;
+  /** Percentage-point change in conversion rate (not % change of the rate itself — pp reads better for ratios). */
+  ratePointsDelta: number | null;
 }
 
 /** Feature-adoption funnels worth watching, defined against EMI Planner's real
@@ -45,22 +67,28 @@ const FUNNELS: FunnelStep[] = [
 @Component({
   selector: 'app-analytics',
   standalone: true,
-  imports: [DecimalPipe, DatePipe, FormsModule],
+  imports: [DecimalPipe, LowerCasePipe, FormsModule],
   templateUrl: './analytics.component.html',
 })
 export class AnalyticsComponent implements OnInit {
   private readonly appEvents = inject(AppEventsService);
-  private readonly push = inject(PushAdminService);
-  private readonly feedback = inject(FeedbackService);
   private readonly meta = inject(Meta);
 
   readonly tab = signal<Tab>('overview');
   readonly days = signal<RangeDays>(30);
 
-  // ── Usage (app-events) ──────────────────────────────────────────
+  /** Set together, or not at all — a custom range overrides `days` entirely when present. */
+  readonly customRange = signal<{ from: string; to: string } | null>(null);
+  readonly showCustomPicker = signal(false);
+  customFrom = '';
+  customTo = '';
+  readonly customRangeError = signal('');
+
   readonly summary = signal<AppEventsSummary | null>(null);
   readonly loading = signal(true);
   readonly loadError = signal('');
+
+  readonly timeseries = signal<AppEventsTimeseries | null>(null);
 
   /** Events per install — a rough "how much does an active user actually do" signal. */
   readonly eventsPerInstall = computed(() => {
@@ -69,15 +97,119 @@ export class AnalyticsComponent implements OnInit {
     return s.totalEvents / s.uniqueInstalls;
   });
 
-  /** byEvent, already sorted by the backend — just attach a relative bar width. */
+  /** Falls back to zeros when talking to a backend that predates the `previous` field,
+   *  so an unrolled-back deploy degrades to "no comparison" instead of a broken page. */
+  private previousOrEmpty(s: AppEventsSummary): AppEventsPreviousSummary {
+    return s.previous ?? { totalEvents: 0, uniqueInstalls: 0, byEvent: [] };
+  }
+
+  readonly previousEventsPerInstall = computed(() => {
+    const s = this.summary();
+    if (!s) return 0;
+    const previous = this.previousOrEmpty(s);
+    if (previous.uniqueInstalls === 0) return 0;
+    return previous.totalEvents / previous.uniqueInstalls;
+  });
+
+  readonly totalEventsDelta = computed(() => {
+    const s = this.summary();
+    return s ? pctDelta(s.totalEvents, this.previousOrEmpty(s).totalEvents) : null;
+  });
+
+  readonly uniqueInstallsDelta = computed(() => {
+    const s = this.summary();
+    return s ? pctDelta(s.uniqueInstalls, this.previousOrEmpty(s).uniqueInstalls) : null;
+  });
+
+  readonly eventsPerInstallDelta = computed(() =>
+    pctDelta(this.eventsPerInstall(), this.previousEventsPerInstall()),
+  );
+
+  /** days=1 compares calendar days (today/yesterday); everything else is a rolling window;
+   *  a custom range compares the picked dates against the equal-length period right before it. */
+  readonly currentPeriodLabel = computed(() => {
+    const range = this.customRange();
+    if (range) return `${range.from} → ${range.to}`;
+    return this.days() === 1 ? 'Today' : `Last ${this.days()}d`;
+  });
+  readonly previousPeriodLabel = computed(() =>
+    this.customRange() ? 'Previous period' : this.days() === 1 ? 'Yesterday' : `Previous ${this.days()}d`,
+  );
+  readonly rangeDescription = computed(() => {
+    if (this.customRange()) return 'in the selected range';
+    return this.days() === 1 ? 'today' : `in the last ${this.days()} days`;
+  });
+
+  /** Daily-bucketed series from the timeseries endpoint, one array per stat — feeds the sparklines. */
+  readonly sparklineSeries = computed(() => {
+    const t = this.timeseries();
+    if (!t || t.points.length === 0) return { events: [], installs: [], perInstall: [] };
+    return {
+      events: t.points.map((p) => p.totalEvents),
+      installs: t.points.map((p) => p.uniqueInstalls),
+      perInstall: t.points.map((p) => (p.uniqueInstalls > 0 ? p.totalEvents / p.uniqueInstalls : 0)),
+    };
+  });
+
+  /** The 3 Overview stat cards, each carrying its own current/previous pair, delta, and sparkline —
+   *  driven from one array so the template renders one card layout instead of three copies. */
+  readonly overviewStats = computed(() => {
+    const s = this.summary();
+    if (!s) return [];
+    const previous = this.previousOrEmpty(s);
+    const series = this.sparklineSeries();
+    return [
+      {
+        key: 'events',
+        label: 'Total in-app events',
+        current: s.totalEvents,
+        previous: previous.totalEvents,
+        delta: this.totalEventsDelta(),
+        format: '1.0-0',
+        spark: sparklinePoints(series.events),
+      },
+      {
+        key: 'installs',
+        label: 'Unique installs active',
+        current: s.uniqueInstalls,
+        previous: previous.uniqueInstalls,
+        delta: this.uniqueInstallsDelta(),
+        format: '1.0-0',
+        spark: sparklinePoints(series.installs),
+      },
+      {
+        key: 'perInstall',
+        label: 'Events per active install',
+        current: this.eventsPerInstall(),
+        previous: this.previousEventsPerInstall(),
+        delta: this.eventsPerInstallDelta(),
+        format: '1.1-1',
+        spark: sparklinePoints(series.perInstall),
+      },
+    ];
+  });
+
+  /** Swings big enough to flag as a heads-up banner rather than just a colored badge. */
+  readonly anomalies = computed(() =>
+    this.overviewStats().filter((s) => s.delta !== null && Math.abs(s.delta) >= ANOMALY_THRESHOLD_PCT),
+  );
+
+  /** byEvent, already sorted by the backend — attach a relative bar width plus the delta
+   *  vs. the same event's count in the previous period, so feature adoption trends show up here too. */
   readonly featureBars = computed(() => {
     const s = this.summary();
     if (!s || s.byEvent.length === 0) return [];
     const max = s.byEvent[0].count;
-    return s.byEvent.map((e) => ({
-      ...e,
-      widthPct: max > 0 ? Math.round((e.count / max) * 100) : 0,
-    }));
+    const previousByEvent = new Map(this.previousOrEmpty(s).byEvent.map((e) => [e.event, e.count]));
+    return s.byEvent.map((e) => {
+      const previousCount = previousByEvent.get(e.event) ?? 0;
+      return {
+        ...e,
+        widthPct: max > 0 ? Math.round((e.count / max) * 100) : 0,
+        previousCount,
+        delta: pctDelta(e.count, previousCount),
+      };
+    });
   });
 
   /** Which event's prop breakdown is expanded in the Feature usage tab, if any. */
@@ -90,41 +222,29 @@ export class AnalyticsComponent implements OnInit {
   readonly funnels = computed<FunnelResult[]>(() => {
     const s = this.summary();
     if (!s) return [];
-    const countOf = (event: string) =>
-      s.byEvent.find((e) => e.event === event)?.count ?? 0;
+    const countOf = (byEvent: AppEventCount[], event: string) =>
+      byEvent.find((e) => e.event === event)?.count ?? 0;
+    const previousByEvent = this.previousOrEmpty(s).byEvent;
 
     return FUNNELS.map((f) => {
-      const fromCount = countOf(f.fromEvent);
-      const toCount = countOf(f.toEvent);
+      const fromCount = countOf(s.byEvent, f.fromEvent);
+      const toCount = countOf(s.byEvent, f.toEvent);
+      const rate = fromCount > 0 ? toCount / fromCount : null;
+
+      const previousFromCount = countOf(previousByEvent, f.fromEvent);
+      const previousToCount = countOf(previousByEvent, f.toEvent);
+      const previousRate = previousFromCount > 0 ? previousToCount / previousFromCount : null;
+
       return {
         ...f,
         fromCount,
         toCount,
-        rate: fromCount > 0 ? toCount / fromCount : null,
+        rate,
+        previousRate,
+        ratePointsDelta: rate !== null && previousRate !== null ? (rate - previousRate) * 100 : null,
       };
     });
   });
-
-  // ── Push & retention ─────────────────────────────────────────────
-  readonly credential = signal<CredentialStatus | null>(null);
-  readonly tokens = signal<PushTokenRow[]>([]);
-  readonly cronRuns = signal<PushCronRunRow[]>([]);
-  readonly pushLoadError = signal('');
-
-  broadcastTitle = '';
-  broadcastBody = '';
-  readonly broadcastStatus = signal<'idle' | 'sending' | 'error'>('idle');
-  readonly broadcastResult = signal<BroadcastResult | null>(null);
-  readonly broadcastError = signal('');
-  readonly lastActionLabel = signal<'broadcast' | 'cron' | null>(null);
-  readonly cronRunning = signal(false);
-
-  // ── Feedback ─────────────────────────────────────────────────────
-  readonly feedbackItems = signal<FeedbackRow[]>([]);
-  readonly feedbackTotal = signal(0);
-  readonly feedbackLoading = signal(false);
-  readonly feedbackLoadError = signal('');
-  readonly feedbackStatusFilter = signal<FeedbackStatus | ''>('');
 
   ngOnInit(): void {
     this.meta.updateTag({ name: 'robots', content: 'noindex, nofollow' });
@@ -136,17 +256,35 @@ export class AnalyticsComponent implements OnInit {
 
   setTab(tab: Tab): void {
     this.tab.set(tab);
-    if (tab === 'push' && this.credential() === null) {
-      this.loadPush();
-    }
-    if (tab === 'feedback' && this.feedbackItems().length === 0) {
-      this.loadFeedback();
-    }
   }
 
   setDays(days: RangeDays): void {
-    if (this.days() === days) return;
+    if (this.days() === days && !this.customRange()) return;
     this.days.set(days);
+    this.customRange.set(null);
+    this.showCustomPicker.set(false);
+    this.breakdownCache.clear();
+    this.expandedEvent.set(null);
+    this.breakdown.set(null);
+    this.load();
+  }
+
+  toggleCustomPicker(): void {
+    this.showCustomPicker.set(!this.showCustomPicker());
+  }
+
+  applyCustomRange(): void {
+    if (!this.customFrom || !this.customTo) {
+      this.customRangeError.set('Pick both a start and end date.');
+      return;
+    }
+    if (this.customFrom > this.customTo) {
+      this.customRangeError.set('Start date must be before the end date.');
+      return;
+    }
+    this.customRangeError.set('');
+    this.customRange.set({ from: this.customFrom, to: this.customTo });
+    this.showCustomPicker.set(false);
     this.breakdownCache.clear();
     this.expandedEvent.set(null);
     this.breakdown.set(null);
@@ -186,7 +324,8 @@ export class AnalyticsComponent implements OnInit {
   load(): void {
     this.loading.set(true);
     this.loadError.set('');
-    this.appEvents.summary(APP_SLUG, this.days()).subscribe({
+    const range = this.customRange();
+    this.appEvents.summary(APP_SLUG, this.days(), range?.from, range?.to).subscribe({
       next: (s) => {
         this.summary.set(s);
         this.loading.set(false);
@@ -196,120 +335,15 @@ export class AnalyticsComponent implements OnInit {
         this.loading.set(false);
       },
     });
+    this.loadTimeseries();
   }
 
-  // ── Push & retention ─────────────────────────────────────────────
-
-  private refreshTokens(): void {
-    this.push.listTokens(APP_SLUG).subscribe({
-      next: (rows) => this.tokens.set(rows),
-      error: () => this.pushLoadError.set('Could not refresh registered devices.'),
-    });
-  }
-
-  loadPush(): void {
-    this.pushLoadError.set('');
-    this.push.getCredentialStatus().subscribe({
-      next: (status) => this.credential.set(status),
-      error: () => this.pushLoadError.set('Could not load credential status.'),
-    });
-    this.refreshTokens();
-    this.push.getCronRuns(APP_SLUG).subscribe({
-      next: (rows) => this.cronRuns.set(rows),
-      error: () => this.pushLoadError.set('Could not load cron run history.'),
-    });
-  }
-
-  sendBroadcast(): void {
-    if (this.broadcastStatus() === 'sending') return;
-    const title = this.broadcastTitle.trim();
-    const body = this.broadcastBody.trim();
-    if (!title || !body) {
-      this.broadcastStatus.set('error');
-      this.broadcastError.set('Title and body are both required.');
-      return;
-    }
-    if (this.tokens().length === 0) {
-      this.broadcastStatus.set('error');
-      this.broadcastError.set('No devices registered for this app yet.');
-      return;
-    }
-    if (!confirm(`Send this notification to all ${this.tokens().length} registered device(s)?`)) {
-      return;
-    }
-    this.broadcastStatus.set('sending');
-    this.broadcastError.set('');
-    this.broadcastResult.set(null);
-    this.lastActionLabel.set(null);
-    this.push.broadcast(APP_SLUG, { title, body }).subscribe({
-      next: (result) => {
-        this.broadcastResult.set(result);
-        this.lastActionLabel.set('broadcast');
-        this.broadcastStatus.set('idle');
-        this.broadcastTitle = '';
-        this.broadcastBody = '';
-        this.refreshTokens();
-      },
-      error: () => {
-        this.broadcastStatus.set('error');
-        this.broadcastError.set('Broadcast failed. Please try again.');
-      },
-    });
-  }
-
-  runCronNow(): void {
-    if (this.cronRunning()) return;
-    this.cronRunning.set(true);
-    this.broadcastResult.set(null);
-    this.lastActionLabel.set(null);
-    this.push.runCronNow(APP_SLUG).subscribe({
-      next: (result) => {
-        this.cronRunning.set(false);
-        this.push.getCronRuns(APP_SLUG).subscribe({
-          next: (rows) => this.cronRuns.set(rows),
-          error: () => this.pushLoadError.set('Could not load cron run history.'),
-        });
-        this.broadcastResult.set(result);
-        this.lastActionLabel.set('cron');
-        this.refreshTokens();
-      },
-      error: () => {
-        this.cronRunning.set(false);
-        this.pushLoadError.set('Running the dormancy check failed.');
-      },
-    });
-  }
-
-  // ── Feedback ─────────────────────────────────────────────────────
-
-  loadFeedback(): void {
-    this.feedbackLoading.set(true);
-    this.feedbackLoadError.set('');
-    const status = this.feedbackStatusFilter();
-    this.feedback
-      .findAll({ app: APP_SLUG, status: status || undefined, limit: 50 })
-      .subscribe({
-        next: (page) => {
-          this.feedbackItems.set(page.items);
-          this.feedbackTotal.set(page.meta.total);
-          this.feedbackLoading.set(false);
-        },
-        error: () => {
-          this.feedbackLoadError.set('Could not load feedback.');
-          this.feedbackLoading.set(false);
-        },
-      });
-  }
-
-  setFeedbackStatusFilter(status: FeedbackStatus | ''): void {
-    this.feedbackStatusFilter.set(status);
-    this.loadFeedback();
-  }
-
-  markFeedback(id: string, status: FeedbackStatus): void {
-    this.feedback.updateStatus(id, status).subscribe({
-      next: () => this.loadFeedback(),
-      error: () => this.feedbackLoadError.set('Could not update feedback status.'),
+  private loadTimeseries(): void {
+    const range = this.customRange();
+    this.appEvents.timeseries(APP_SLUG, this.days(), range?.from, range?.to).subscribe({
+      // Sparklines are a nice-to-have — a failed fetch just means no sparkline, not a page error.
+      next: (t) => this.timeseries.set(t),
+      error: () => this.timeseries.set(null),
     });
   }
 }

@@ -3,7 +3,11 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
-import { AppEventsSummary, EventBreakdown } from '../../models/app-events.model';
+import {
+  AppEventsSummary,
+  AppEventsTimeseries,
+  EventBreakdown,
+} from '../../models/app-events.model';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -20,10 +24,20 @@ export class AppEventsService {
   private readonly http = inject(HttpClient);
   private readonly base = environment.apiBaseUrl;
 
-  summary(appSlug: string, days = 30): Observable<AppEventsSummary> {
+  summary(appSlug: string, days = 30, from?: string, to?: string): Observable<AppEventsSummary> {
+    const query = from && to ? `from=${from}&to=${to}` : `days=${days}`;
     return this.http
       .get<ApiResponse<AppEventsSummary>>(
-        `${this.base}/apps/${appSlug}/events/summary?days=${days}`,
+        `${this.base}/apps/${appSlug}/events/summary?${query}`,
+      )
+      .pipe(map((res) => res.data));
+  }
+
+  timeseries(appSlug: string, days = 30, from?: string, to?: string): Observable<AppEventsTimeseries> {
+    const query = from && to ? `from=${from}&to=${to}` : `days=${days}`;
+    return this.http
+      .get<ApiResponse<AppEventsTimeseries>>(
+        `${this.base}/apps/${appSlug}/events/timeseries?${query}`,
       )
       .pipe(map((res) => res.data));
   }

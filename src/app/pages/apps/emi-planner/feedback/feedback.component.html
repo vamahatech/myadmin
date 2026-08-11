@@ -1,0 +1,89 @@
+<div class="max-w-[1800px] mx-auto px-6 lg:px-8 py-10 space-y-6">
+
+  <div class="flex flex-wrap items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-display font-semibold">Feedback</h1>
+      <p class="text-text2 text-sm mt-1">What EMI Planner users are telling us, straight from the app.</p>
+    </div>
+    <div class="inline-flex rounded-xl border border-border overflow-hidden text-sm">
+      @for (opt of [['', 'All'], ['NEW', 'New'], ['READ', 'Read'], ['ARCHIVED', 'Archived']]; track opt[0]) {
+        <button
+          type="button" (click)="setStatusFilter($any(opt[0]))"
+          [class.bg-primary]="statusFilter() === opt[0]" [class.text-white]="statusFilter() === opt[0]"
+          [class.text-text2]="statusFilter() !== opt[0]"
+          class="px-4 py-2 font-medium transition-colors border-l border-border first:border-l-0"
+        >{{ opt[1] }}</button>
+      }
+    </div>
+  </div>
+
+  <div class="flex items-center justify-between text-xs text-text2">
+    <p>{{ total() }} {{ statusFilter() ? (statusFilter() | lowercase) : '' }} item{{ total() === 1 ? '' : 's' }}</p>
+  </div>
+
+  @if (loading()) {
+    <p class="text-text2 text-sm">Loading…</p>
+  } @else if (loadError()) {
+    <p class="text-danger text-sm">{{ loadError() }}</p>
+  } @else if (items().length === 0) {
+    <div class="text-center py-16 bg-card border border-border rounded-3xl">
+      <p class="text-3xl mb-2">💬</p>
+      <p class="text-text2 text-sm">No feedback here yet.</p>
+    </div>
+  } @else {
+    <div class="grid grid-cols-1 2xl:grid-cols-2 gap-3 items-start">
+      @for (f of items(); track f.id) {
+        <div
+          class="bg-card border border-border rounded-2xl pl-5 pr-5 py-4 flex gap-4 border-l-4 transition-all hover:-translate-y-0.5 hover:shadow-lg"
+          [class.border-l-gold]="f.status === 'NEW'"
+          [class.border-l-primary]="f.status === 'READ'"
+          [class.border-l-border]="f.status === 'ARCHIVED'"
+        >
+          <div class="w-9 h-9 rounded-full bg-primary/15 text-primary font-semibold text-sm flex items-center justify-center shrink-0">
+            {{ initial(f) }}
+          </div>
+
+          <div class="min-w-0 flex-1">
+            <div class="flex items-start justify-between gap-4 mb-1.5">
+              <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-text2">
+                <span class="font-medium text-text">{{ f.name || 'Anonymous' }}</span>
+                @if (f.email) { <span>{{ f.email }}</span> }
+                <span>·</span>
+                <span>{{ f.createdAt | date: 'MMM d, y, h:mm a' }}</span>
+                @if (f.platform) { <span>· {{ f.platform }}</span> }
+                @if (f.appVersion) { <span>· v{{ f.appVersion }}</span> }
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                @if (f.rating) {
+                  <span class="text-gold text-xs" [title]="f.rating + '/5'">
+                    @for (s of stars(f.rating); track s) {
+                      <span [class.opacity-30]="s >= f.rating!">★</span>
+                    }
+                  </span>
+                }
+                <span
+                  class="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full"
+                  [class.bg-gold/15]="f.status === 'NEW'" [class.text-gold]="f.status === 'NEW'"
+                  [class.bg-primary/10]="f.status === 'READ'" [class.text-primary]="f.status === 'READ'"
+                  [class.bg-surface]="f.status === 'ARCHIVED'" [class.text-text2]="f.status === 'ARCHIVED'"
+                >{{ f.status }}</span>
+              </div>
+            </div>
+
+            <p class="text-sm leading-relaxed">{{ f.message }}</p>
+
+            <div class="flex gap-3 mt-2">
+              @if (f.status !== 'READ') {
+                <button type="button" (click)="mark(f.id, 'READ')" class="text-xs font-medium text-primary hover:text-accent transition-colors">Mark read</button>
+              }
+              @if (f.status !== 'ARCHIVED') {
+                <button type="button" (click)="mark(f.id, 'ARCHIVED')" class="text-xs font-medium text-text2 hover:text-text transition-colors">Archive</button>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+</div>
