@@ -25,16 +25,30 @@
 
       <div>
         <label for="password" class="block text-xs uppercase tracking-wide text-text2 mb-2">Password</label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          [(ngModel)]="password"
-          required
-          autocomplete="current-password"
-          class="w-full px-4 py-3 bg-surface border-2 border-border rounded-xl text-text placeholder:text-text2 focus:outline-none focus:border-primary transition-colors"
-          placeholder="••••••••"
-        />
+        <div class="relative">
+          <input
+            id="password"
+            name="password"
+            [type]="showPassword() ? 'text' : 'password'"
+            [(ngModel)]="password"
+            required
+            autocomplete="current-password"
+            class="w-full px-4 py-3 pr-12 bg-surface border-2 border-border rounded-xl text-text placeholder:text-text2 focus:outline-none focus:border-primary transition-colors"
+            placeholder="••••••••"
+          />
+          <button
+            type="button"
+            (click)="togglePasswordVisibility()"
+            [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-text2 hover:text-text transition-colors"
+          >
+            <img
+              [src]="showPassword() ? 'hidepassword.svg' : 'showpassord.svg'"
+              alt=""
+              class="w-5 h-5"
+            />
+          </button>
+        </div>
       </div>
 
       @if (error()) {

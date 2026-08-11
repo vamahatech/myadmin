@@ -1,0 +1,153 @@
+<div class="max-w-3xl mx-auto px-6 lg:px-8 py-10">
+  <a routerLink="/apps/vamaha" class="text-sm text-text2 hover:text-text transition-colors">
+    ← Articles
+  </a>
+
+  @switch (mode()) {
+    @case ('choose') {
+      <h1 class="text-2xl font-bold mt-4 mb-8">New article</h1>
+
+      <div class="grid sm:grid-cols-2 gap-5">
+        <button
+          type="button" (click)="mode.set('manual')"
+          class="text-left bg-card border border-border hover:border-primary rounded-3xl p-6 md:p-8 transition-colors"
+        >
+          <span class="text-2xl">✍️</span>
+          <h2 class="text-lg font-bold mt-3 mb-1.5">Write manually</h2>
+          <p class="text-text2 text-sm">
+            Start a blank draft and write it by hand in the editor. Free — no
+            generation cost.
+          </p>
+        </button>
+
+        <button
+          type="button" (click)="mode.set('generate')"
+          class="text-left bg-card border border-border hover:border-primary rounded-3xl p-6 md:p-8 transition-colors"
+        >
+          <span class="text-2xl">✨</span>
+          <h2 class="text-lg font-bold mt-3 mb-1.5">Generate a draft</h2>
+          <p class="text-text2 text-sm">
+            Give a topic and trusted source URLs (RBI / SEBI). The draft is
+            grounded in those sources and saved for your review.
+          </p>
+        </button>
+      </div>
+    }
+
+    @case ('manual') {
+      <button type="button" (click)="mode.set('choose')" class="text-sm text-text2 hover:text-text transition-colors mt-4">
+        ← Choose a different way to start
+      </button>
+      <h1 class="text-2xl font-bold mt-4 mb-1">Write manually</h1>
+      <p class="text-text2 text-sm mb-6">
+        Start a blank draft and write it by hand in the editor. You can add
+        the Telugu translation for the app later.
+      </p>
+
+      <form
+        (ngSubmit)="writeNew()"
+        class="bg-card border border-border rounded-3xl p-6 md:p-8 flex flex-col sm:flex-row gap-4 sm:items-end"
+      >
+        <div class="flex-1">
+          <label for="newTitle" class="block text-sm text-text2 mb-1.5">Article title</label>
+          <input
+            id="newTitle"
+            name="newTitle"
+            [(ngModel)]="newTitle"
+            class="w-full px-4 py-3 bg-surface border border-border rounded-xl text-text placeholder:text-text2 focus:outline-none focus:border-primary transition-colors"
+            placeholder="What a repo-rate cut really does to your EMI"
+          />
+        </div>
+        <button
+          type="submit"
+          [disabled]="newStatus() === 'creating'"
+          class="py-3 px-6 bg-primary hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-2xl transition-colors whitespace-nowrap"
+        >
+          {{ newStatus() === 'creating' ? 'Creating…' : 'Start writing →' }}
+        </button>
+      </form>
+      @if (newError()) {
+        <p class="text-danger text-sm mt-3">{{ newError() }}</p>
+      }
+    }
+
+    @case ('generate') {
+      <button type="button" (click)="mode.set('choose')" class="text-sm text-text2 hover:text-text transition-colors mt-4">
+        ← Choose a different way to start
+      </button>
+      <h1 class="text-2xl font-bold mt-4 mb-1">Generate a draft</h1>
+      <p class="text-text2 text-sm mb-6">
+        Give a topic and trusted source URLs (RBI / SEBI). The draft is
+        grounded in those sources and saved for your review — nothing is
+        published.
+      </p>
+
+      <form
+        (ngSubmit)="generate()"
+        class="bg-card border border-border rounded-3xl p-6 md:p-8 space-y-5"
+      >
+        <div>
+          <label for="topic" class="block text-sm text-text2 mb-1.5">Topic</label>
+          <input
+            id="topic"
+            name="topic"
+            [(ngModel)]="topic"
+            class="w-full px-4 py-3 bg-surface border border-border rounded-xl text-text placeholder:text-text2 focus:outline-none focus:border-primary transition-colors"
+            placeholder="How an RBI repo-rate change affects your home loan EMI"
+          />
+        </div>
+
+        <div>
+          <label for="sources" class="block text-sm text-text2 mb-1.5">
+            Source URLs <span class="text-text2">(one per line, 1–6)</span>
+          </label>
+          <textarea
+            id="sources"
+            name="sources"
+            [(ngModel)]="sourcesText"
+            rows="3"
+            class="w-full px-4 py-3 bg-surface border border-border rounded-xl text-text placeholder:text-text2 focus:outline-none focus:border-primary transition-colors font-mono text-sm"
+            placeholder="https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12528"
+          ></textarea>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-5">
+          <div>
+            <label for="category" class="block text-sm text-text2 mb-1.5">Category</label>
+            <input
+              id="category"
+              name="category"
+              [(ngModel)]="category"
+              class="w-full px-4 py-3 bg-surface border border-border rounded-xl text-text focus:outline-none focus:border-primary transition-colors"
+              placeholder="update"
+            />
+          </div>
+          <div>
+            <label for="guidance" class="block text-sm text-text2 mb-1.5">
+              Guidance <span class="text-text2">(optional)</span>
+            </label>
+            <input
+              id="guidance"
+              name="guidance"
+              [(ngModel)]="guidance"
+              class="w-full px-4 py-3 bg-surface border border-border rounded-xl text-text placeholder:text-text2 focus:outline-none focus:border-primary transition-colors"
+              placeholder="Keep it beginner-friendly"
+            />
+          </div>
+        </div>
+
+        @if (genError()) {
+          <p class="text-danger text-sm">{{ genError() }}</p>
+        }
+
+        <button
+          type="submit"
+          [disabled]="genStatus() === 'running'"
+          class="py-3.5 px-6 bg-primary hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-2xl transition-colors"
+        >
+          {{ genStatus() === 'running' ? 'Drafting… (~30s)' : 'Generate draft' }}
+        </button>
+      </form>
+    }
+  }
+</div>

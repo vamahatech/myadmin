@@ -53,6 +53,16 @@ export const routes: Routes = [
     ],
   },
   {
+    // Must precede 'articles/:id' — static segments don't win over
+    // parameterized ones by registration order alone.
+    path: 'apps/vamaha/articles/new',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./pages/apps/vamaha/new-article/new-article.component').then(
+        m => m.NewArticleComponent,
+      ),
+  },
+  {
     path: 'apps/vamaha/articles/:id',
     canActivate: [authGuard],
     loadComponent: () =>

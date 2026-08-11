@@ -20,10 +20,15 @@ export class LoginComponent implements OnInit {
   readonly status = signal<'idle' | 'submitting' | 'error'>('idle');
   readonly error = signal<string>('');
   readonly pressed = signal(false);
+  readonly showPassword = signal(false);
 
   /** Presses the ink-seal on the submit button; the animation clears the flag itself. */
   stamp(): void {
     this.pressed.set(true);
+  }
+
+  togglePasswordVisibility(): void {
+    this.showPassword.update((v) => !v);
   }
 
   ngOnInit(): void {
