@@ -16,6 +16,35 @@ body {
   margin: 0;
 }
 
+h1,
+h2,
+h3 {
+  color: var(--color-text);
+}
+
+form label {
+  color: var(--color-text) !important;
+  font-size: 0.875rem !important;
+  font-weight: 700 !important;
+}
+
+form input:not([type='checkbox']):not([type='radio']):not([type='submit']),
+form select,
+form textarea {
+  background-color: var(--color-card) !important;
+  color: var(--color-text) !important;
+}
+
+form input::placeholder,
+form textarea::placeholder {
+  color: var(--color-text2);
+}
+
+form button[type='submit'] {
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+}
+
 h1, h2, h3, .font-display {
   font-family: 'Fraunces', 'Hind', Georgia, serif;
   letter-spacing: -0.015em;
@@ -61,22 +90,94 @@ h1, h2, h3, .font-display {
   animation: ledger-row-in 0.4s ease-out both;
 }
 
-/* Global API loading overlay — dual-ring spinner shown while any HTTP
-   request tracked by LoadingService is in flight. */
-.loading-dual-ring {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: 4px solid var(--color-border);
-  border-top-color: var(--color-primary);
-  border-right-color: var(--color-accent);
-  animation: loading-dual-ring-spin 0.8s linear infinite;
+/* Global API loading overlay — the shell's own ink-seal stamping itself,
+   shown while any HTTP request tracked by LoadingService is in flight.
+   The mark presses down (same beat as .ink-seal--pressed) and each press
+   leaves a ring of ink that blooms outward and fades, as if being stamped
+   onto the page underneath the overlay. */
+.loading-stamp {
+  position: relative;
+  width: 256px;
+  height: 256px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-@keyframes loading-dual-ring-spin {
-  to {
-    transform: rotate(360deg);
-  }
+.loading-stamp__mark {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 184px;
+  height: 184px;
+  border-radius: 9999px;
+  border: 7px solid var(--color-primary);
+  background: var(--color-bg);
+  color: var(--color-primary);
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 80px;
+  animation: loading-stamp-press 1.4s ease-in-out infinite;
+}
+
+.loading-stamp__ring {
+  position: absolute;
+  width: 184px;
+  height: 184px;
+  border-radius: 9999px;
+  border: 7px solid var(--color-gold);
+  opacity: 0;
+  animation: loading-stamp-bloom 1.4s ease-out infinite;
+}
+
+@keyframes loading-stamp-press {
+  0%, 100% { transform: rotate(-8deg) scale(1);    border-color: var(--color-primary); color: var(--color-primary); }
+  35%      { transform: rotate(-8deg) scale(0.82); border-color: var(--color-gold);    color: var(--color-gold); }
+  50%      { transform: rotate(-8deg) scale(1);    border-color: var(--color-primary); color: var(--color-primary); }
+}
+
+@keyframes loading-stamp-bloom {
+  0%, 45% { opacity: 0;    transform: scale(0.82); border-color: var(--color-gold); }
+  55%     { opacity: 0.55;                         border-color: var(--color-gold); }
+  80%     { opacity: 0.35;                         border-color: var(--color-accent); }
+  100%    { opacity: 0;    transform: scale(1.9);  border-color: var(--color-primary); }
+}
+
+/* Extended-wait state — a request has run past EXTENDED_WAIT_MS. The press
+   and bloom keep their shape but hand color off to a slower 4-hue cycle
+   (green → gold → light green → blue), so a long wait visibly keeps moving
+   instead of looking stuck on one color. */
+@keyframes loading-stamp-press-shape {
+  0%, 100% { transform: rotate(-8deg) scale(1); }
+  35%      { transform: rotate(-8deg) scale(0.82); }
+  50%      { transform: rotate(-8deg) scale(1); }
+}
+
+@keyframes loading-stamp-bloom-shape {
+  0%, 45% { opacity: 0;    transform: scale(0.82); }
+  55%     { opacity: 0.55; }
+  100%    { opacity: 0;    transform: scale(1.9); }
+}
+
+@keyframes loading-stamp-color-cycle {
+  0%, 100% { border-color: var(--color-primary); color: var(--color-primary); }
+  25%      { border-color: var(--color-gold);    color: var(--color-gold); }
+  50%      { border-color: var(--color-accent);  color: var(--color-accent); }
+  75%      { border-color: var(--color-blue);    color: var(--color-blue); }
+}
+
+.loading-stamp--extended .loading-stamp__mark {
+  animation:
+    loading-stamp-press-shape 1.4s ease-in-out infinite,
+    loading-stamp-color-cycle 3.6s linear infinite;
+}
+
+.loading-stamp--extended .loading-stamp__ring {
+  animation:
+    loading-stamp-bloom-shape 1.4s ease-out infinite,
+    loading-stamp-color-cycle 3.6s linear infinite reverse;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -85,8 +186,11 @@ h1, h2, h3, .font-display {
     animation: none;
   }
 
-  .loading-dual-ring {
-    animation-duration: 2s;
+  .loading-stamp__mark,
+  .loading-stamp__ring,
+  .loading-stamp--extended .loading-stamp__mark,
+  .loading-stamp--extended .loading-stamp__ring {
+    animation-duration: 2.8s;
   }
 }
 

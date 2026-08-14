@@ -3,6 +3,7 @@ import { LoadingService } from '../../../core/services/loading.service';
 
 const SHOW_DELAY_MS = 150;
 const MIN_VISIBLE_MS = 300;
+const EXTENDED_WAIT_MS = 3000;
 
 @Component({
   selector: 'app-loading-overlay',
@@ -12,9 +13,11 @@ const MIN_VISIBLE_MS = 300;
 export class LoadingOverlayComponent {
   private readonly loading = inject(LoadingService);
   readonly visible = signal(false);
+  readonly extended = signal(false);
 
   private showTimer: ReturnType<typeof setTimeout> | null = null;
   private hideTimer: ReturnType<typeof setTimeout> | null = null;
+  private extendedTimer: ReturnType<typeof setTimeout> | null = null;
   private shownAt = 0;
 
   constructor() {
@@ -27,6 +30,10 @@ export class LoadingOverlayComponent {
             this.showTimer = null;
             this.shownAt = Date.now();
             this.visible.set(true);
+            this.extendedTimer = setTimeout(() => {
+              this.extendedTimer = null;
+              this.extended.set(true);
+            }, EXTENDED_WAIT_MS);
           }, SHOW_DELAY_MS);
         }
       } else {
@@ -37,6 +44,8 @@ export class LoadingOverlayComponent {
           this.hideTimer = setTimeout(() => {
             this.hideTimer = null;
             this.visible.set(false);
+            this.cancelExtended();
+            this.extended.set(false);
           }, remaining);
         }
       }
@@ -54,6 +63,13 @@ export class LoadingOverlayComponent {
     if (this.hideTimer) {
       clearTimeout(this.hideTimer);
       this.hideTimer = null;
+    }
+  }
+
+  private cancelExtended(): void {
+    if (this.extendedTimer) {
+      clearTimeout(this.extendedTimer);
+      this.extendedTimer = null;
     }
   }
 }

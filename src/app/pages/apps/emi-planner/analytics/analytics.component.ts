@@ -17,7 +17,7 @@ type Tab = 'overview' | 'features' | 'funnels';
 type RangeDays = 1 | 7 | 30 | 90;
 
 /** A large enough swing to surface as a heads-up banner, not just a colored badge. */
-const ANOMALY_THRESHOLD_PCT = 30;
+const ANOMALY_THRESHOLD_PCT = 1;
 
 /** % change vs. the previous period; null when there's no baseline to compare against
  *  (previous period had zero — showing "New" or "—" reads better than a divide-by-zero). */
@@ -75,7 +75,7 @@ export class AnalyticsComponent implements OnInit {
   private readonly meta = inject(Meta);
 
   readonly tab = signal<Tab>('overview');
-  readonly days = signal<RangeDays>(30);
+  readonly days = signal<RangeDays>(1);
 
   /** Set together, or not at all — a custom range overrides `days` entirely when present. */
   readonly customRange = signal<{ from: string; to: string } | null>(null);
