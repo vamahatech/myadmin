@@ -40,4 +40,13 @@ export const APP_REGISTRY: AppTile[] = [
     tagline: 'Child food safety verdicts, products, and moderation.',
     authMode: 'service-credential',
   },
+  {
+    id: 'renewloop',
+    name: 'RenewLoop',
+    icon: '💰',
+    accentColor: 'var(--color-primary)',
+    route: '/apps/renewloop/users',
+    tagline: 'Subscription renewals: user accounts and push notifications.',
+    authMode: 'service-credential',
+  },
 ];

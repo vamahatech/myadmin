@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { verdiqSessionGuard } from './core/guards/verdiq-session.guard';
+import { renewloopSessionGuard } from './core/guards/renewloop-session.guard';
 
 export const routes: Routes = [
   {
@@ -221,6 +222,37 @@ export const routes: Routes = [
         path: 'users',
         loadComponent: () =>
           import('./pages/apps/verdiq/users/users').then(m => m.Users),
+      },
+    ],
+  },
+  {
+    path: 'apps/renewloop',
+    canActivate: [authGuard, renewloopSessionGuard],
+    loadComponent: () =>
+      import('./shared/components/app-shell/app-shell.component').then(
+        m => m.AppShellComponent,
+      ),
+    data: {
+      appName: 'RenewLoop',
+      appIcon: '💰',
+      navItems: [
+        { label: 'Users', icon: '👥', path: 'users' },
+        { label: 'Notifications', icon: '🔔', path: 'notifications' },
+      ],
+    },
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'users' },
+      {
+        path: 'users',
+        loadComponent: () =>
+          import('./pages/apps/renewloop/users/users').then(m => m.RenewloopUsers),
+      },
+      {
+        path: 'notifications',
+        loadComponent: () =>
+          import('./pages/apps/renewloop/notifications/notifications').then(
+            m => m.RenewloopNotifications,
+          ),
       },
     ],
   },

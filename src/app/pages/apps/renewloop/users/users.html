@@ -1,0 +1,92 @@
+<div class="min-h-screen bg-bg text-text">
+  <div class="max-w-[1400px] mx-auto px-6 lg:px-8 py-10 space-y-8">
+    <section class="flex items-center justify-between gap-4 flex-wrap">
+      <div>
+        <h1 class="text-2xl font-bold">Users</h1>
+        <p class="text-text2 text-sm">RenewLoop end users and their subscription activity.</p>
+      </div>
+      <div class="flex gap-2 flex-wrap items-center">
+        <input
+          [(ngModel)]="search"
+          (keyup.enter)="onSearch()"
+          placeholder="Search name or email…"
+          class="border border-border rounded-lg px-3 py-2 bg-surface text-sm"
+        />
+        <button (click)="onSearch()" class="border border-border rounded-lg px-4 py-2 text-sm">Search</button>
+
+        <select [(ngModel)]="sortBy" (ngModelChange)="onFilterChange()" class="border border-border rounded-lg px-3 py-2 bg-surface text-sm">
+          <option value="createdAt">Sort: Joined</option>
+          <option value="name">Sort: Name</option>
+        </select>
+        <select [(ngModel)]="sortDir" (ngModelChange)="onFilterChange()" class="border border-border rounded-lg px-3 py-2 bg-surface text-sm">
+          <option value="desc">Descending</option>
+          <option value="asc">Ascending</option>
+        </select>
+        <select [(ngModel)]="activeFilter" (ngModelChange)="onFilterChange()" class="border border-border rounded-lg px-3 py-2 bg-surface text-sm">
+          <option value="">All subscriptions</option>
+          <option value="true">Has active subscription</option>
+          <option value="false">No active subscription</option>
+        </select>
+      </div>
+    </section>
+
+    @if (error()) {
+      <p class="text-sm text-red-600">{{ error() }}</p>
+    }
+
+    @if (loading()) {
+      <p class="text-text2 text-sm">Loading…</p>
+    } @else if (page(); as p) {
+      @if (p.users.length === 0) {
+        <p class="text-text2 text-sm">No users found.</p>
+      } @else {
+        <div class="overflow-x-auto border border-border rounded-xl">
+          <table class="w-full text-sm">
+            <thead class="bg-surface text-text2 text-left">
+              <tr>
+                <th class="px-4 py-2">Name</th>
+                <th class="px-4 py-2">Email</th>
+                <th class="px-4 py-2">Active subscriptions</th>
+                <th class="px-4 py-2">Joined</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (u of p.users; track u.id) {
+                <tr class="border-t border-border">
+                  <td class="px-4 py-2">{{ u.name }}</td>
+                  <td class="px-4 py-2">{{ u.email }}</td>
+                  <td class="px-4 py-2">
+                    @if (u.activeSubscriptionCount > 0) {
+                      <span class="text-xs font-medium px-2 py-1 rounded-full bg-green-500/10 text-green-600">{{ u.activeSubscriptionCount }}</span>
+                    } @else {
+                      <span class="text-xs text-text2">0</span>
+                    }
+                  </td>
+                  <td class="px-4 py-2">{{ u.createdAt | date: 'mediumDate' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="flex items-center gap-3 text-sm">
+          <button
+            (click)="goToPage(p.pagination.page - 1)"
+            [disabled]="p.pagination.page <= 1"
+            class="border border-border rounded-lg px-3 py-1 disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span class="text-text2">Page {{ p.pagination.page }} of {{ p.pagination.totalPages }} · {{ p.pagination.total }} total</span>
+          <button
+            (click)="goToPage(p.pagination.page + 1)"
+            [disabled]="p.pagination.page >= p.pagination.totalPages"
+            class="border border-border rounded-lg px-3 py-1 disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      }
+    }
+  </div>
+</div>
