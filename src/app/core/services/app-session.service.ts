@@ -2,16 +2,18 @@ import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { VerdiqAuthService } from './verdiq/verdiq-auth';
+import { RenewloopAuthService } from './renewloop/renewloop-auth';
 
 /**
  * Cross-backend silent-login for apps whose backend differs from
- * vamaha-backend (currently just Verdiq). VerdiqAuthService already persists
- * its token via StorageService, so this only logs in when no token exists
- * yet this browser session.
+ * vamaha-backend (currently Verdiq and RenewLoop). Each auth service already
+ * persists its own token via its own StorageService, so this only logs in
+ * when no valid token exists yet this browser session.
  */
 @Injectable({ providedIn: 'root' })
 export class AppSessionService {
   private readonly verdiqAuth = inject(VerdiqAuthService);
+  private readonly renewloopAuth = inject(RenewloopAuthService);
 
   async ensureVerdiqSession(): Promise<void> {
     if (this.verdiqAuth.getToken() && !this.verdiqAuth.isTokenExpired()) return;
@@ -23,10 +25,23 @@ export class AppSessionService {
     );
   }
 
-  /** Clears the verdiq-backend session (token + user signal). Called from
-   * AuthService.logout() so signing out of the shell doesn't leave a
-   * verdiq service-account JWT behind in localStorage. */
+  async ensureRenewloopSession(): Promise<void> {
+    if (this.renewloopAuth.getToken() && !this.renewloopAuth.isTokenExpired()) return;
+    await firstValueFrom(
+      this.renewloopAuth.login({
+        email: environment.renewloop.serviceEmail,
+        password: environment.renewloop.servicePassword,
+      }),
+    );
+  }
+
+  /** Clears every service-credential session. Called from AuthService.logout()
+   * so signing out of the shell doesn't leave a service-account JWT behind
+   * in localStorage for any app backend. Keeps its existing name (it's
+   * already called from AuthService.logout()) even though it now clears
+   * both sessions — renaming it repo-wide is out of scope here. */
   clearVerdiqSession(): void {
     this.verdiqAuth.logout();
+    this.renewloopAuth.logout();
   }
 }
