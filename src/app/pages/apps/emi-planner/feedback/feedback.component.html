@@ -1,9 +1,9 @@
-<div class="max-w-[1800px] mx-auto px-6 lg:px-8 py-10 space-y-6">
+<div class="page">
 
-  <div class="flex flex-wrap items-center justify-between gap-4">
-    <div>
-      <h1 class="text-2xl font-display font-semibold">Feedback</h1>
-      <p class="text-text2 text-sm mt-1">What EMI Planner users are telling us, straight from the app.</p>
+  <div class="page-head">
+    <div class="min-w-0">
+      <h1>Feedback</h1>
+      <p class="muted">What EMI Planner users are telling us, straight from the app.</p>
     </div>
     <div class="inline-flex rounded-xl border border-border overflow-hidden text-sm">
       @for (opt of [['', 'All'], ['NEW', 'New'], ['READ', 'Read'], ['ARCHIVED', 'Archived']]; track opt[0]) {
@@ -22,11 +22,11 @@
   </div>
 
   @if (loading()) {
-    <p class="text-text2 text-sm">Loading…</p>
+    <div class="card state">Loading…</div>
   } @else if (loadError()) {
-    <p class="text-danger text-sm">{{ loadError() }}</p>
+    <div class="card state error" role="alert">{{ loadError() }}</div>
   } @else if (items().length === 0) {
-    <div class="text-center py-16 bg-card border border-border rounded-3xl">
+    <div class="text-center py-16 bg-card border border-border rounded-xl">
       <p class="text-3xl mb-2">💬</p>
       <p class="text-text2 text-sm">No feedback here yet.</p>
     </div>
@@ -34,7 +34,7 @@
     <div class="grid grid-cols-1 2xl:grid-cols-2 gap-3 items-start">
       @for (f of items(); track f.id) {
         <div
-          class="bg-card border border-border rounded-2xl pl-5 pr-5 py-4 flex gap-4 border-l-4 transition-all hover:-translate-y-0.5 hover:shadow-lg"
+          class="bg-card border border-border rounded-2xl pl-5 pr-5 py-4 flex gap-4 border-l-4"
           [class.border-l-gold]="f.status === 'NEW'"
           [class.border-l-primary]="f.status === 'READ'"
           [class.border-l-border]="f.status === 'ARCHIVED'"

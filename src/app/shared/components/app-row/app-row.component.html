@@ -1,0 +1,50 @@
+<ng-template #body>
+  <span class="font-display text-[23px] leading-7 text-text2 tabular-nums w-7 sm:w-10 shrink-0">
+    {{ number() }}
+  </span>
+
+  <span
+    class="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-lg overflow-hidden bg-card ring-1 ring-border flex items-center justify-center">
+    <img [src]="'/' + app().icon" alt="" class="w-full h-full object-cover" />
+  </span>
+
+  <span class="flex-1 min-w-0">
+    <span class="block text-base sm:text-lg leading-6 font-semibold text-text">{{ app().name }}</span>
+    @if (showDescription()) {
+      <span class="block text-sm leading-[21px] text-text2 mt-0.5">{{ app().tagline }}</span>
+    }
+    @if (disabled()) {
+      <span class="inline-block mt-1 text-[11px] font-medium uppercase tracking-wide text-text2">
+        {{ disabledReason() }}
+      </span>
+    }
+  </span>
+
+  @if (!disabled()) {
+    <span
+      class="w-6 h-6 shrink-0 flex items-center justify-center text-text2 [@media(hover:hover)]:group-hover:text-text [@media(hover:hover)]:group-hover:translate-x-[3px] transition-[color,transform] duration-150 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
+      aria-hidden="true">
+      @if (action() === 'arrow') {
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14M13 6l6 6-6 6" />
+        </svg>
+      } @else {
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M7 17 17 7M8 7h9v9" />
+        </svg>
+      }
+    </span>
+  }
+</ng-template>
+
+@if (disabled()) {
+  <div [class]="rowClass() + ' opacity-60 cursor-not-allowed'" aria-disabled="true">
+    <ng-container [ngTemplateOutlet]="body" />
+  </div>
+} @else {
+  <a
+    [routerLink]="app().route"
+    [class]="rowClass() + ' [@media(hover:hover)]:hover:bg-hover active:bg-pressed focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus'">
+    <ng-container [ngTemplateOutlet]="body" />
+  </a>
+}

@@ -1,9 +1,9 @@
-<div class="max-w-[1800px] mx-auto px-6 lg:px-8 py-10 space-y-6">
+<div class="page">
 
-  <div class="flex flex-wrap items-start justify-between gap-4">
-    <div>
-      <h1 class="text-2xl font-display font-semibold">Push &amp; retention</h1>
-      <p class="text-text2 text-sm mt-1">Broadcast to registered devices and watch the dormancy cron.</p>
+  <div class="page-head">
+    <div class="min-w-0">
+      <h1>Push &amp; retention</h1>
+      <p class="muted">Broadcast to registered devices and watch the dormancy cron.</p>
     </div>
     <div class="flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full border"
       [class.border-success]="credential()?.configured"
@@ -25,27 +25,27 @@
   </div>
 
   @if (loadError()) {
-    <p class="text-danger text-sm">{{ loadError() }}</p>
+    <div class="card state error" role="alert">{{ loadError() }}</div>
   }
 
   <!-- ── Stat strip ─────────────────────────────────────────────── -->
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-    <div class="bg-card border border-border rounded-3xl p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg">
+    <div class="bg-card border border-border rounded-xl p-5">
       <p class="text-text2 text-xs uppercase tracking-wide mb-1.5">Registered devices</p>
       <p class="text-3xl font-bold">{{ tokens().length }}</p>
     </div>
-    <div class="bg-card border border-border rounded-3xl p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg">
+    <div class="bg-card border border-border rounded-xl p-5">
       <p class="text-text2 text-xs uppercase tracking-wide mb-1.5">Cron runs</p>
       <p class="text-3xl font-bold">{{ cronRuns().length }}</p>
     </div>
-    <div class="bg-card border border-border rounded-3xl p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg">
+    <div class="bg-card border border-border rounded-xl p-5">
       <p class="text-text2 text-xs uppercase tracking-wide mb-1.5">Reached last run</p>
       <p class="text-3xl font-bold">{{ cronRuns()[0]?.sent ?? '—' }}</p>
     </div>
   </div>
 
   <!-- ── Composer + live preview ───────────────────────────────── -->
-  <div class="bg-card border border-border rounded-3xl p-6 lg:p-8">
+  <div class="bg-card border border-border rounded-xl p-6 lg:p-8">
     <p class="font-semibold mb-5">Send broadcast</p>
     <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,640px)_320px] gap-8 items-start">
 
@@ -54,14 +54,14 @@
           [(ngModel)]="broadcastTitle"
           placeholder="Notification title"
           maxlength="65"
-          class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl text-text focus:outline-none focus:border-primary transition-colors text-sm"
+          class="input"
         />
         <textarea
           [(ngModel)]="broadcastBody"
           placeholder="Notification body"
           rows="4"
           maxlength="240"
-          class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl text-text focus:outline-none focus:border-primary transition-colors text-sm resize-none"
+          class="input resize-none"
         ></textarea>
 
         @if (broadcastStatus() === 'error') {
@@ -85,14 +85,14 @@
           <button
             type="button" (click)="sendBroadcast()"
             [disabled]="broadcastStatus() === 'sending' || !credential()?.configured || tokens().length === 0"
-            class="py-2.5 px-5 bg-primary hover:bg-accent disabled:opacity-50 text-white text-sm font-semibold rounded-xl transition-colors"
+            class="btn"
           >
             {{ broadcastStatus() === 'sending' ? 'Sending…' : 'Send to all devices' }}
           </button>
           <button
             type="button" (click)="runCronNow()"
             [disabled]="cronRunning()"
-            class="text-sm border border-border hover:bg-surface rounded-xl px-4 py-2.5 transition-colors disabled:opacity-50"
+            class="btn btn-secondary"
           >
             {{ cronRunning() ? 'Running…' : 'Run dormancy check' }}
           </button>
@@ -102,7 +102,7 @@
       <!-- Live notification preview -->
       <div class="order-1 lg:order-2 mx-auto lg:mx-0">
         <p class="text-text2 text-xs uppercase tracking-wide mb-3 text-center lg:text-left">Live preview</p>
-        <div class="w-[260px] rounded-[2.25rem] border border-border bg-gradient-to-b from-surface to-bg p-3 shadow-xl">
+        <div class="w-[260px] rounded-[2.25rem] border border-border bg-gradient-to-b from-surface to-bg p-3 shadow-md">
           <div class="rounded-[1.75rem] bg-bg overflow-hidden">
             <div class="h-6 flex items-center justify-center">
               <div class="w-16 h-1.5 rounded-full bg-border"></div>
@@ -132,7 +132,7 @@
 
   <!-- ── Devices + cron history ───────────────────────────────── -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <div class="bg-card border border-border rounded-3xl p-6">
+    <div class="bg-card border border-border rounded-xl p-6">
       <p class="font-semibold mb-4">Registered devices ({{ tokens().length }})</p>
       @if (tokens().length === 0) {
         <p class="text-text2 text-sm">No devices registered yet.</p>
@@ -153,7 +153,7 @@
       }
     </div>
 
-    <div class="bg-card border border-border rounded-3xl p-6">
+    <div class="bg-card border border-border rounded-xl p-6">
       <p class="font-semibold mb-4">Cron run history</p>
       @if (cronRuns().length === 0) {
         <p class="text-text2 text-sm">No runs yet.</p>

@@ -1,148 +1,49 @@
+/* Verdiq app scope.
+   Verdiq's pages and component styles were written against their own
+   token names (--bg, --primary, --avoid, …). Those names are kept so the
+   per-component .sass files still work, but every one now resolves to the
+   platform token in styles/colors.css — Verdiq renders with the same palette,
+   type and components (.btn, .card, .input, .pill, .page-head, .data-table,
+   defined once in styles.css) as every other app.
+   Only Verdiq-specific layout helpers live below. */
 .verdiq-app {
-  --bg: #f6f7f9;
-  --surface: #ffffff;
-  --border: #e3e6ea;
-  --text: #1a1f26;
-  --text-muted: #667085;
-  --primary: #2563eb;
-  --primary-ink: #ffffff;
-  --ok: #16a34a;
-  --caution: #d97706;
-  --avoid: #dc2626;
-  --shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.1);
-
-  background: var(--bg);
-  color: var(--text);
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
+  --bg: var(--color-bg);
+  --surface: var(--color-card);
+  --border: var(--color-border);
+  --text: var(--color-text);
+  --text-muted: var(--color-text2);
+  --primary: var(--color-primary);
+  --primary-ink: #fff;
+  --ok: var(--color-success);
+  --caution: var(--color-warning);
+  --avoid: var(--color-danger);
+  --shadow: none;
 }
 
-.verdiq-app a {
-  color: var(--primary);
+.verdiq-app a:not(.btn) {
+  color: var(--color-primary);
   text-decoration: none;
 }
 
-.verdiq-app .card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: var(--shadow);
-}
-
-.verdiq-app .btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: .5rem;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  padding: .55rem 1rem;
-  font-size: .9rem;
-  font-weight: 600;
-  cursor: pointer;
-  background: var(--primary);
-  color: var(--primary-ink);
-}
-
-.verdiq-app .btn:disabled {
-  opacity: .6;
-  cursor: not-allowed;
-}
-
-.verdiq-app .btn-ghost {
-  background: transparent;
-  color: var(--text);
-  border-color: var(--border);
-}
-
-.verdiq-app .btn-danger {
-  background: var(--avoid);
-  color: #fff;
-}
-
-.verdiq-app .icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: .35rem;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  cursor: pointer;
-  line-height: 0;
-}
-
-.verdiq-app .icon-btn:hover:not(:disabled) {
-  background: var(--bg);
-}
-
-.verdiq-app .icon-btn:disabled {
-  opacity: .5;
-  cursor: not-allowed;
-}
-
-.verdiq-app .icon-danger {
-  color: var(--avoid);
-}
-
-.verdiq-app .input {
-  width: 100%;
-  padding: .55rem .7rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: .9rem;
-  background: var(--surface);
-  color: var(--text);
-}
-
-.verdiq-app .page {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-.verdiq-app .page-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.verdiq-app .page-head h1 {
-  margin: 0 0 .2rem;
-  font-size: 1.5rem;
-}
-
-.verdiq-app .muted {
-  color: var(--text-muted);
-  margin: 0;
-  font-size: .9rem;
+.verdiq-app a:not(.btn):hover {
+  text-decoration: underline;
 }
 
 .verdiq-app .panel {
-  padding: 1.25rem;
+  padding: 20px;
 }
 
 .verdiq-app .panel h2 {
-  margin: 0 0 .3rem;
-  font-size: 1.05rem;
-}
-
-.verdiq-app .state {
-  padding: 1.25rem;
-  color: var(--text-muted);
-}
-
-.verdiq-app .state.error {
-  color: var(--avoid);
-  background: #fef2f2;
-  border-color: #fecaca;
+  margin: 0 0 4px;
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 600;
 }
 
 .verdiq-app .cols {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: 16px;
 }
 
 @media (max-width: 900px) {
@@ -154,94 +55,43 @@
 .verdiq-app .mini-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: .85rem;
-  margin-top: .6rem;
+  font-size: 13px;
+  margin-top: 8px;
 }
 
 .verdiq-app .mini-table th {
   text-align: left;
-  padding: .5rem .6rem;
-  border-bottom: 1px solid var(--border);
-  color: var(--text-muted);
-  font-size: .72rem;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text2);
+  font-size: 12px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: .04em;
+  letter-spacing: 0.04em;
 }
 
 .verdiq-app .mini-table td {
-  padding: .5rem .6rem;
-  border-bottom: 1px solid #f0f2f5;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-border);
 }
 
-.verdiq-app .mini-table .num {
+.verdiq-app .mini-table .num,
+.verdiq-app .data-table .num {
   text-align: right;
 }
 
-.verdiq-app .table-scroll {
-  overflow-x: auto;
-}
-
-.verdiq-app .grid {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: .88rem;
-}
-
-.verdiq-app .grid th {
-  text-align: left;
-  padding: .7rem .9rem;
-  border-bottom: 1px solid var(--border);
-  color: var(--text-muted);
-  font-size: .75rem;
-  text-transform: uppercase;
-  letter-spacing: .04em;
-}
-
-.verdiq-app .grid td {
-  padding: .65rem .9rem;
-  border-bottom: 1px solid #f0f2f5;
-  vertical-align: top;
-}
-
-.verdiq-app .grid tbody tr:hover {
-  background: #fafbfc;
-}
-
-.verdiq-app .grid .strong {
+.verdiq-app .data-table .strong {
   font-weight: 600;
 }
 
-.verdiq-app .grid .mono {
+.verdiq-app .data-table .mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: .82rem;
-  color: var(--text-muted);
+  font-size: 13px;
+  color: var(--color-text2);
 }
 
-.verdiq-app .grid .empty {
+.verdiq-app .data-table .empty {
   text-align: center;
-  padding: 1.5rem;
-  color: var(--text-muted);
-}
-
-.verdiq-app .pill {
-  display: inline-block;
-  padding: .12rem .5rem;
-  border-radius: 999px;
-  font-size: .74rem;
-  font-weight: 600;
-}
-
-.verdiq-app .pill.yes {
-  background: #ecfdf3;
-  color: var(--ok);
-}
-
-.verdiq-app .pill.no {
-  background: #fef3f2;
-  color: var(--avoid);
-}
-
-.verdiq-app .pill.neutral {
-  background: #eef2f7;
-  color: var(--text-muted);
+  padding: 24px;
+  color: var(--color-text2);
 }

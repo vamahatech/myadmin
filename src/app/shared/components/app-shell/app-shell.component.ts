@@ -1,29 +1,35 @@
-import { Component, inject, OnInit } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Component, inject, OnInit, signal } from '@angular/core';
+import { ActivatedRoute, Router, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { AppNavItem, findApp } from '../../../core/models/app-registry.model';
+import { GlobalHeaderComponent } from '../global-header/global-header.component';
+import { AppSidebarComponent } from '../app-sidebar/app-sidebar.component';
 
-export interface AppShellNavItem {
-  label: string;
-  icon: string;
-  path: string;
-}
-
+/**
+ * Layout shared by every studio app: global header, the app's own sidebar
+ * navigation (from route data), and a padded content area. Apps differ only
+ * in the `appId` / `navItems` they pass through route data.
+ */
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [RouterOutlet, GlobalHeaderComponent, AppSidebarComponent],
   templateUrl: './app-shell.component.html',
 })
 export class AppShellComponent implements OnInit {
-  readonly auth = inject(AuthService);
+  private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
-  readonly appName = this.route.snapshot.data['appName'] as string;
-  readonly appIcon = this.route.snapshot.data['appIcon'] as string;
-  readonly navItems = this.route.snapshot.data['navItems'] as AppShellNavItem[];
-  readonly contentClass = this.route.snapshot.data['contentClass'] as string | undefined;
-  readonly appInitial = this.appName.charAt(0).toUpperCase();
+  private readonly data = this.route.snapshot.data;
+  readonly appName = this.data['appName'] as string;
+  readonly app = findApp(this.data['appId'] as string);
+  readonly navItems = this.data['navItems'] as AppNavItem[];
+  /** Optional app-scoped class (e.g. Verdiq's legacy token scope). */
+  readonly contentClass = this.data['contentClass'] as string | undefined;
+  readonly basePath = '/' + (this.route.snapshot.routeConfig?.path ?? '');
+
+  readonly navOpen = signal(false);
 
   ngOnInit(): void {
     void this.loadUser();
@@ -36,10 +42,5 @@ export class AppShellComponent implements OnInit {
       this.auth.logout();
       void this.router.navigate(['/login']);
     }
-  }
-
-  logout(): void {
-    this.auth.logout();
-    void this.router.navigate(['/login']);
   }
 }

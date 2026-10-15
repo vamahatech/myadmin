@@ -1,13 +1,13 @@
 export const environment = {
   production: false,
-  apiBaseUrl: 'https://backend-usqv.onrender.com/api',
+  apiBaseUrl: 'http://localhost:9991/api',
   siteUrl: 'https://vamaha.tech',
   verdiq: {
-    apiBaseUrl: 'https://know-ingredients-backend.onrender.com',
+    apiBaseUrl: 'http://localhost:3009',
     // Fill in a real verdiq-backend admin account before running locally —
     // never commit real values here.
-  serviceEmail: 'REPLACE_WITH_SERVICE_ACCOUNT_EMAIL',
-    servicePassword: 'REPLACE_WITH_SERVICE_ACCOUNT_PASSWORD',
+    serviceEmail: 'vamsi973@yahoo.com',
+    servicePassword: 'kapilNoteBook@9$',
   },
   renewloop: {
     // sbmint backend — update once it's deployed; local dev for now.
@@ -15,7 +15,7 @@ export const environment = {
     // Created via ADMIN_EMAIL/ADMIN_PASSWORD_HASH in the sbmint backend's
     // .env (see backend/.env.example). Fill in a real account before
     // running locally — never commit real values here.
-    serviceEmail: 'REPLACE_WITH_SERVICE_ACCOUNT_EMAIL',
-    servicePassword: 'REPLACE_WITH_SERVICE_ACCOUNT_PASSWORD',
+    serviceEmail: 'vamsi973@yahoo.com',
+    servicePassword: 'ALI8hlTSXRm38taXZR!',
   },
 };

@@ -1,4 +1,5 @@
-<div class="max-w-[1800px] mx-auto px-6 lg:px-8 py-10 space-y-6">
+<div class="page">
+  <app-page-header title="Usage analytics" description="How people use the EMI Planner loan calculator." />
 
   <div class="flex flex-wrap items-center justify-between gap-4">
     <div class="inline-flex rounded-xl border border-border overflow-hidden text-sm">
@@ -31,21 +32,21 @@
       </div>
 
       @if (showCustomPicker()) {
-        <div class="absolute top-full right-0 mt-2 z-10 bg-card border border-border rounded-2xl p-4 shadow-xl w-72 space-y-3">
+        <div class="absolute top-full right-0 mt-2 z-10 bg-card border border-border rounded-xl p-4 shadow-md w-72 space-y-3">
           <div class="flex items-center gap-2">
             <label class="text-xs text-text2 w-10 shrink-0">From</label>
-            <input type="date" [(ngModel)]="customFrom" class="flex-1 px-2.5 py-1.5 bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-primary transition-colors" />
+            <input type="date" [(ngModel)]="customFrom" class="input flex-1" />
           </div>
           <div class="flex items-center gap-2">
             <label class="text-xs text-text2 w-10 shrink-0">To</label>
-            <input type="date" [(ngModel)]="customTo" class="flex-1 px-2.5 py-1.5 bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-primary transition-colors" />
+            <input type="date" [(ngModel)]="customTo" class="input flex-1" />
           </div>
           @if (customRangeError()) {
             <p class="text-danger text-xs">{{ customRangeError() }}</p>
           }
           <button
             type="button" (click)="applyCustomRange()"
-            class="w-full py-2 bg-primary hover:bg-accent text-white text-sm font-semibold rounded-lg transition-colors"
+            class="btn w-full"
           >Apply</button>
         </div>
       }
@@ -55,9 +56,9 @@
   <!-- ── Overview / Feature usage / Funnels — driven by app-events summary ── -->
   @if (tab() === 'overview' || tab() === 'features' || tab() === 'funnels') {
     @if (loading()) {
-      <p class="text-text2 text-sm">Loading…</p>
+      <div class="card state">Loading…</div>
     } @else if (loadError()) {
-      <p class="text-danger text-sm">{{ loadError() }}</p>
+      <div class="card state error" role="alert">{{ loadError() }}</div>
     } @else if (summary(); as s) {
 
       @if (s.totalEvents === 0) {
@@ -89,7 +90,7 @@
         @case ('overview') {
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
             @for (stat of overviewStats(); track stat.key) {
-              <div class="bg-card border border-border rounded-3xl overflow-hidden">
+              <div class="bg-card border border-border rounded-xl overflow-hidden">
                 <p class="text-text2 text-xs uppercase tracking-wide px-6 pt-6 pb-2">{{ stat.label }}</p>
 
                 @if (stat.spark) {
@@ -144,7 +145,7 @@
           @if (s.byAppVersion.length || s.byOsMajor.length) {
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
               @if (s.byAppVersion.length) {
-                <div class="bg-card border border-border rounded-3xl p-6">
+                <div class="bg-card border border-border rounded-xl p-6">
                   <p class="text-text2 text-xs uppercase tracking-wide mb-3">App version</p>
                   <div class="space-y-3">
                     @for (v of s.byAppVersion; track v.appVersion) {
@@ -165,7 +166,7 @@
                 </div>
               }
               @if (s.byOsMajor.length) {
-                <div class="bg-card border border-border rounded-3xl p-6">
+                <div class="bg-card border border-border rounded-xl p-6">
                   <p class="text-text2 text-xs uppercase tracking-wide mb-3">OS</p>
                   <div class="space-y-3">
                     @for (o of s.byOsMajor; track o.osMajor) {
@@ -190,7 +191,7 @@
         }
 
         @case ('features') {
-          <div class="bg-card border border-border rounded-3xl p-6 space-y-1">
+          <div class="bg-card border border-border rounded-xl p-6 space-y-1">
             @if (featureBars().length === 0) {
               <p class="text-text2 text-sm">No events in this range.</p>
             }
@@ -273,7 +274,7 @@
         @case ('funnels') {
           <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
             @for (f of funnels(); track f.label) {
-              <div class="bg-card border border-border rounded-3xl p-6">
+              <div class="bg-card border border-border rounded-xl p-6">
                 <p class="font-semibold mb-1">{{ f.label }}</p>
                 <p class="text-text2 text-xs mb-4">{{ f.fromEvent }} → {{ f.toEvent }}</p>
                 @if (f.rate === null) {

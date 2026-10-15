@@ -1,53 +1,53 @@
-<div class="min-h-screen bg-bg text-text">
-  <div class="max-w-[1800px] mx-auto px-6 lg:px-8 py-10 space-y-12">
-    <!-- ── App selector + credential status ────────── -->
-    <section class="flex items-center gap-4 flex-wrap">
-      <label class="text-sm">
-        App:
-        <select [(ngModel)]="selectedApp" (ngModelChange)="onAppChange()" class="ml-2 border border-border rounded-lg px-3 py-1.5 bg-surface">
-          @for (app of apps; track app) {
-            <option [value]="app">{{ app }}</option>
-          }
-        </select>
-      </label>
-      @if (credential(); as c) {
-        @if (c.configured) {
-          <span class="text-xs font-medium px-3 py-1.5 rounded-full bg-green-500/10 text-green-600">Firebase configured</span>
-        } @else {
-          <span class="text-xs font-medium px-3 py-1.5 rounded-full bg-red-500/10 text-red-600">Not configured — cron is a no-op</span>
-        }
+<div class="page">
+  <app-page-header title="Push notifications" description="Registered devices, broadcasts and the dormancy cron.">
+    @if (credential(); as c) {
+      @if (c.configured) {
+        <span class="badge badge-success">Firebase configured</span>
+      } @else {
+        <span class="badge badge-danger">Not configured — cron is a no-op</span>
       }
+    }
+  </app-page-header>
+
+    <!-- ── App selector ────────── -->
+    <section class="flex items-center gap-3 flex-wrap">
+      <label for="push-app" class="text-sm font-semibold text-text">App</label>
+      <select id="push-app" [(ngModel)]="selectedApp" (ngModelChange)="onAppChange()" class="input w-auto min-w-[200px]">
+        @for (app of apps; track app) {
+          <option [value]="app">{{ app }}</option>
+        }
+      </select>
     </section>
 
     @if (loadError()) {
-      <p class="text-sm text-red-600">{{ loadError() }}</p>
+      <div class="card state error" role="alert">{{ loadError() }}</div>
     }
 
     <!-- ── Registered devices ────────── -->
     <section>
-      <h2 class="text-xl font-bold mb-4">Registered devices ({{ tokens().length }})</h2>
+      <h2 class="section-title mb-4">Registered devices ({{ tokens().length }})</h2>
       @if (loading()) {
-        <p class="text-text2 text-sm">Loading…</p>
+        <div class="card state">Loading devices…</div>
       } @else if (tokens().length === 0) {
-        <p class="text-text2 text-sm">No devices registered yet.</p>
+        <div class="card state">No devices registered yet.</div>
       } @else {
-        <div class="overflow-x-auto border border-border rounded-xl">
-          <table class="w-full text-sm">
-            <thead class="bg-surface text-text2 text-left">
+        <div class="card table-scroll">
+          <table class="data-table">
+            <thead>
               <tr>
-                <th class="px-4 py-2">Install ID</th>
-                <th class="px-4 py-2">Platform</th>
-                <th class="px-4 py-2">Registered</th>
-                <th class="px-4 py-2">Last dormancy push</th>
+                <th>Install ID</th>
+                <th>Platform</th>
+                <th>Registered</th>
+                <th>Last dormancy push</th>
               </tr>
             </thead>
             <tbody>
               @for (t of tokens(); track t.installId) {
-                <tr class="border-t border-border">
-                  <td class="px-4 py-2 font-mono">{{ t.installId.slice(0, 8) }}…</td>
-                  <td class="px-4 py-2">{{ t.platform }}</td>
-                  <td class="px-4 py-2">{{ t.createdAt | date: 'medium' }}</td>
-                  <td class="px-4 py-2">{{ t.lastDormancyPushAt ? (t.lastDormancyPushAt | date: 'medium') : '—' }}</td>
+                <tr>
+                  <td class="font-mono">{{ t.installId.slice(0, 8) }}…</td>
+                  <td>{{ t.platform }}</td>
+                  <td>{{ t.createdAt | date: 'medium' }}</td>
+                  <td>{{ t.lastDormancyPushAt ? (t.lastDormancyPushAt | date: 'medium') : '—' }}</td>
                 </tr>
               }
             </tbody>
@@ -57,26 +57,28 @@
     </section>
 
     <!-- ── Send broadcast + Cron run history ────────── -->
-    <section class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div>
-        <h2 class="text-xl font-bold mb-4">Send broadcast</h2>
-        <div class="space-y-3">
+        <h2 class="section-title mb-4">Send broadcast</h2>
+        <div class="card p-5 space-y-3">
           <input
             [(ngModel)]="broadcastTitle"
             placeholder="Title"
-            class="w-full border border-border rounded-lg px-3 py-2 bg-surface"
+            aria-label="Broadcast title"
+            class="input"
           />
           <textarea
             [(ngModel)]="broadcastBody"
             placeholder="Body"
+            aria-label="Broadcast body"
             rows="3"
-            class="w-full border border-border rounded-lg px-3 py-2 bg-surface"
+            class="input"
           ></textarea>
           @if (broadcastStatus() === 'error') {
-            <p class="text-sm text-red-600">{{ broadcastError() }}</p>
+            <p class="text-sm text-danger" role="alert">{{ broadcastError() }}</p>
           }
           @if (broadcastResult(); as r) {
-            <p class="text-sm text-green-600">
+            <p class="text-sm text-success" role="status">
               @if (lastActionLabel() === 'cron') {
                 Cron run:
                 @if (r.candidates !== undefined) { {{ r.candidates }} candidates · }
@@ -90,14 +92,14 @@
             </p>
           }
           @if (credential() && !credential()?.configured) {
-            <p class="text-sm text-amber-600">Set FIREBASE_SERVICE_ACCOUNT_JSON on Render first — broadcasting is disabled until then.</p>
+            <p class="text-sm text-warning">Set FIREBASE_SERVICE_ACCOUNT_JSON on Render first — broadcasting is disabled until then.</p>
           } @else if (tokens().length === 0) {
             <p class="text-sm text-text2">No devices registered for this app yet — nothing to broadcast to.</p>
           }
           <button
             (click)="sendBroadcast()"
             [disabled]="broadcastStatus() === 'sending' || !credential()?.configured || tokens().length === 0"
-            class="bg-primary text-white rounded-xl px-4 py-2 text-sm font-medium disabled:opacity-50"
+            class="btn"
           >
             {{ broadcastStatus() === 'sending' ? 'Sending…' : 'Send to all devices' }}
           </button>
@@ -105,34 +107,36 @@
       </div>
 
       <div>
-        <h2 class="text-xl font-bold mb-4">Cron run history</h2>
+        <div class="flex items-center justify-between gap-3 mb-4 flex-wrap">
+          <h2 class="section-title">Cron run history</h2>
         <button
           (click)="runCronNow()"
           [disabled]="cronRunning()"
-          class="mb-4 text-sm border border-border hover:bg-surface rounded-xl px-4 py-2 transition-colors disabled:opacity-50"
+          class="btn btn-secondary"
         >
           {{ cronRunning() ? 'Running…' : 'Run dormancy check now' }}
         </button>
+        </div>
         @if (cronRuns().length === 0) {
-          <p class="text-text2 text-sm">No runs yet.</p>
+          <div class="card state">No runs yet.</div>
         } @else {
-          <div class="overflow-x-auto border border-border rounded-xl">
-            <table class="w-full text-sm">
-              <thead class="bg-surface text-text2 text-left">
+          <div class="card table-scroll">
+            <table class="data-table">
+              <thead>
                 <tr>
-                  <th class="px-4 py-2">Ran at</th>
-                  <th class="px-4 py-2">Candidates</th>
-                  <th class="px-4 py-2">Sent</th>
-                  <th class="px-4 py-2">Stale removed</th>
+                  <th>Ran at</th>
+                  <th>Candidates</th>
+                  <th>Sent</th>
+                  <th>Stale removed</th>
                 </tr>
               </thead>
               <tbody>
                 @for (r of cronRuns(); track r.id) {
-                  <tr class="border-t border-border">
-                    <td class="px-4 py-2">{{ r.ranAt | date: 'medium' }}</td>
-                    <td class="px-4 py-2">{{ r.candidates }}</td>
-                    <td class="px-4 py-2">{{ r.sent }}</td>
-                    <td class="px-4 py-2">{{ r.staleRemoved }}</td>
+                  <tr>
+                    <td>{{ r.ranAt | date: 'medium' }}</td>
+                    <td>{{ r.candidates }}</td>
+                    <td>{{ r.sent }}</td>
+                    <td>{{ r.staleRemoved }}</td>
                   </tr>
                 }
               </tbody>
@@ -141,5 +145,4 @@
         }
       </div>
     </section>
-  </div>
 </div>

@@ -9,11 +9,12 @@ import {
   PushCronRunRow,
   PushTokenRow,
 } from '../../../../models/push-admin.model';
+import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
 
 @Component({
   selector: 'app-admin-push',
   standalone: true,
-  imports: [FormsModule, DatePipe],
+  imports: [FormsModule, DatePipe, PageHeaderComponent],
   templateUrl: './admin-push.component.html',
 })
 export class AdminPushComponent implements OnInit {

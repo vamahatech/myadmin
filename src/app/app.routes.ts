@@ -29,12 +29,11 @@ export const routes: Routes = [
         m => m.AppShellComponent,
       ),
     data: {
+      appId: 'vamaha',
       appName: 'Vamaha',
-      appIcon: '📝',
       navItems: [
-        { label: 'Articles', icon: '📰', path: '' },
-        { label: 'Push notifications', icon: '🔔', path: 'push' },
-        { label: 'Feedback', icon: '🔔', path: 'feedback' },
+        { label: 'Articles', icon: 'file-text', path: '', activePrefixes: ['articles'] },
+        { label: 'Push notifications', icon: 'bell', path: 'push' },
       ],
     },
     children: [
@@ -52,25 +51,23 @@ export const routes: Routes = [
             m => m.AdminPushComponent,
           ),
       },
+      {
+        // Must precede 'articles/:id' — static segments don't win over
+        // parameterized ones by registration order alone.
+        path: 'articles/new',
+        loadComponent: () =>
+          import('./pages/apps/vamaha/new-article/new-article.component').then(
+            m => m.NewArticleComponent,
+          ),
+      },
+      {
+        path: 'articles/:id',
+        loadComponent: () =>
+          import('./pages/apps/vamaha/admin-article/admin-article.component').then(
+            m => m.AdminArticleComponent,
+          ),
+      },
     ],
-  },
-  {
-    // Must precede 'articles/:id' — static segments don't win over
-    // parameterized ones by registration order alone.
-    path: 'apps/vamaha/articles/new',
-    canActivate: [authGuard],
-    loadComponent: () =>
-      import('./pages/apps/vamaha/new-article/new-article.component').then(
-        m => m.NewArticleComponent,
-      ),
-  },
-  {
-    path: 'apps/vamaha/articles/:id',
-    canActivate: [authGuard],
-    loadComponent: () =>
-      import('./pages/apps/vamaha/admin-article/admin-article.component').then(
-        m => m.AdminArticleComponent,
-      ),
   },
   {
     path: 'apps/emi-planner',
@@ -80,12 +77,12 @@ export const routes: Routes = [
         m => m.AppShellComponent,
       ),
     data: {
+      appId: 'emi-planner',
       appName: 'EMI Planner',
-      appIcon: '📊',
       navItems: [
-        { label: 'Analytics', icon: '📊', path: 'analytics' },
-        { label: 'Push & retention', icon: '🔔', path: 'push' },
-        { label: 'Feedback', icon: '💬', path: 'feedback' },
+        { label: 'Analytics', icon: 'bar-chart', path: 'analytics' },
+        { label: 'Push & retention', icon: 'bell', path: 'push' },
+        { label: 'Feedback', icon: 'message', path: 'feedback' },
       ],
     },
     children: [
@@ -125,23 +122,23 @@ export const routes: Routes = [
         m => m.AppShellComponent,
       ),
     data: {
+      appId: 'verdiq',
       appName: 'Verdiq',
-      appIcon: '🧩',
       contentClass: 'verdiq-app',
       navItems: [
-        { label: 'Overview', icon: '📊', path: 'overview' },
-        { label: 'Products', icon: '📦', path: 'products' },
-        { label: 'Coverage & gaps', icon: '🎯', path: 'coverage' },
-        { label: 'Verdict review', icon: '⚖️', path: 'verdicts' },
-        { label: 'Additives (INS)', icon: '🧪', path: 'additives' },
-        { label: 'Double standards', icon: '🌍', path: 'double-standards' },
-        { label: 'Alternatives', icon: '🔄', path: 'alternatives' },
-        { label: 'Analytics', icon: '📈', path: 'analytics' },
-        { label: 'Submissions', icon: '📥', path: 'submissions' },
-        { label: 'Reports', icon: '🚩', path: 'reports' },
-        { label: 'Feedback', icon: '💬', path: 'feedback' },
-        { label: 'Ingest review', icon: '🛒', path: 'ingest' },
-        { label: 'Users & testers', icon: '👨‍👩‍👧', path: 'users' },
+        { label: 'Overview', icon: 'layout', path: 'overview' },
+        { label: 'Products', icon: 'package', path: 'products' },
+        { label: 'Coverage & gaps', icon: 'target', path: 'coverage' },
+        { label: 'Verdict review', icon: 'scale', path: 'verdicts' },
+        { label: 'Additives (INS)', icon: 'flask', path: 'additives' },
+        { label: 'Double standards', icon: 'globe', path: 'double-standards' },
+        { label: 'Alternatives', icon: 'repeat', path: 'alternatives' },
+        { label: 'Analytics', icon: 'trending-up', path: 'analytics' },
+        { label: 'Submissions', icon: 'inbox', path: 'submissions' },
+        { label: 'Reports', icon: 'flag', path: 'reports' },
+        { label: 'Feedback', icon: 'message', path: 'feedback' },
+        { label: 'Ingest review', icon: 'cart', path: 'ingest' },
+        { label: 'Users & testers', icon: 'users', path: 'users' },
       ],
     },
     children: [
@@ -233,11 +230,11 @@ export const routes: Routes = [
         m => m.AppShellComponent,
       ),
     data: {
+      appId: 'renewloop',
       appName: 'RenewLoop',
-      appIcon: '💰',
       navItems: [
-        { label: 'Users', icon: '👥', path: 'users' },
-        { label: 'Notifications', icon: '🔔', path: 'notifications' },
+        { label: 'Users', icon: 'users', path: 'users' },
+        { label: 'Notifications', icon: 'bell', path: 'notifications' },
       ],
     },
     children: [

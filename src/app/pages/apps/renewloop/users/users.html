@@ -1,28 +1,26 @@
-<div class="min-h-screen bg-bg text-text">
-  <div class="max-w-[1400px] mx-auto px-6 lg:px-8 py-10 space-y-8">
-    <section class="flex items-center justify-between gap-4 flex-wrap">
-      <div>
-        <h1 class="text-2xl font-bold">Users</h1>
-        <p class="text-text2 text-sm">RenewLoop end users and their subscription activity.</p>
-      </div>
+<div class="page">
+    <app-page-header title="Users" description="RenewLoop end users and their subscription activity." />
+
+    <section class="flex items-center" aria-label="Search and filters">
       <div class="flex gap-2 flex-wrap items-center">
         <input
           [(ngModel)]="search"
           (keyup.enter)="onSearch()"
           placeholder="Search name or email…"
-          class="border border-border rounded-lg px-3 py-2 bg-surface text-sm"
+          aria-label="Search users by name or email"
+          class="input w-full sm:w-64"
         />
-        <button (click)="onSearch()" class="border border-border rounded-lg px-4 py-2 text-sm">Search</button>
+        <button (click)="onSearch()" class="btn btn-secondary">Search</button>
 
-        <select [(ngModel)]="sortBy" (ngModelChange)="onFilterChange()" class="border border-border rounded-lg px-3 py-2 bg-surface text-sm">
+        <select aria-label="Sort by" [(ngModel)]="sortBy" (ngModelChange)="onFilterChange()" class="input w-auto">
           <option value="createdAt">Sort: Joined</option>
           <option value="name">Sort: Name</option>
         </select>
-        <select [(ngModel)]="sortDir" (ngModelChange)="onFilterChange()" class="border border-border rounded-lg px-3 py-2 bg-surface text-sm">
+        <select aria-label="Sort direction" [(ngModel)]="sortDir" (ngModelChange)="onFilterChange()" class="input w-auto">
           <option value="desc">Descending</option>
           <option value="asc">Ascending</option>
         </select>
-        <select [(ngModel)]="activeFilter" (ngModelChange)="onFilterChange()" class="border border-border rounded-lg px-3 py-2 bg-surface text-sm">
+        <select aria-label="Subscription filter" [(ngModel)]="activeFilter" (ngModelChange)="onFilterChange()" class="input w-auto">
           <option value="">All subscriptions</option>
           <option value="true">Has active subscription</option>
           <option value="false">No active subscription</option>
@@ -31,38 +29,38 @@
     </section>
 
     @if (error()) {
-      <p class="text-sm text-red-600">{{ error() }}</p>
+      <div class="card state error" role="alert">{{ error() }}</div>
     }
 
     @if (loading()) {
-      <p class="text-text2 text-sm">Loading…</p>
+      <div class="card state">Loading users…</div>
     } @else if (page(); as p) {
       @if (p.users.length === 0) {
-        <p class="text-text2 text-sm">No users found.</p>
+        <div class="card state">No users found.</div>
       } @else {
-        <div class="overflow-x-auto border border-border rounded-xl">
-          <table class="w-full text-sm">
-            <thead class="bg-surface text-text2 text-left">
+        <div class="card table-scroll">
+          <table class="data-table">
+            <thead>
               <tr>
-                <th class="px-4 py-2">Name</th>
-                <th class="px-4 py-2">Email</th>
-                <th class="px-4 py-2">Active subscriptions</th>
-                <th class="px-4 py-2">Joined</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Active subscriptions</th>
+                <th>Joined</th>
               </tr>
             </thead>
             <tbody>
               @for (u of p.users; track u.id) {
-                <tr class="border-t border-border">
-                  <td class="px-4 py-2">{{ u.name }}</td>
-                  <td class="px-4 py-2">{{ u.email }}</td>
-                  <td class="px-4 py-2">
+                <tr>
+                  <td>{{ u.name }}</td>
+                  <td>{{ u.email }}</td>
+                  <td>
                     @if (u.activeSubscriptionCount > 0) {
-                      <span class="text-xs font-medium px-2 py-1 rounded-full bg-green-500/10 text-green-600">{{ u.activeSubscriptionCount }}</span>
+                      <span class="badge badge-success">{{ u.activeSubscriptionCount }} active</span>
                     } @else {
-                      <span class="text-xs text-text2">0</span>
+                      <span class="badge badge-neutral">None</span>
                     }
                   </td>
-                  <td class="px-4 py-2">{{ u.createdAt | date: 'mediumDate' }}</td>
+                  <td>{{ u.createdAt | date: 'mediumDate' }}</td>
                 </tr>
               }
             </tbody>
@@ -73,7 +71,7 @@
           <button
             (click)="goToPage(p.pagination.page - 1)"
             [disabled]="p.pagination.page <= 1"
-            class="border border-border rounded-lg px-3 py-1 disabled:opacity-50"
+            class="btn btn-secondary btn-sm"
           >
             Previous
           </button>
@@ -81,12 +79,11 @@
           <button
             (click)="goToPage(p.pagination.page + 1)"
             [disabled]="p.pagination.page >= p.pagination.totalPages"
-            class="border border-border rounded-lg px-3 py-1 disabled:opacity-50"
+            class="btn btn-secondary btn-sm"
           >
             Next
           </button>
         </div>
       }
     }
-  </div>
 </div>

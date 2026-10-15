@@ -4,11 +4,14 @@ import { RouterLink } from '@angular/router';
 import { Meta } from '@angular/platform-browser';
 import { AdminContentService } from '../../../../core/services/admin-content.service';
 import { Article } from '../../../../models/article.model';
+import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
+import { StatusBadgeComponent } from '../../../../shared/components/status-badge/status-badge.component';
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [RouterLink, DatePipe],
+  imports: [RouterLink, DatePipe, PageHeaderComponent, StatusBadgeComponent, IconComponent],
   templateUrl: './admin-dashboard.component.html',
 })
 export class AdminDashboardComponent implements OnInit {

@@ -9,13 +9,15 @@ import { Article } from '../../../../models/article.model';
 import { MarkdownEditorComponent } from '../../../../shared/components/markdown-editor/markdown-editor.component';
 import { PublishPanelComponent } from '../../../../shared/components/publish-panel/publish-panel.component';
 import { environment } from '../../../../../environments/environment';
+import { StatusBadgeComponent } from '../../../../shared/components/status-badge/status-badge.component';
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
 
 const AUTOSAVE_DEBOUNCE_MS = 2000;
 
 @Component({
   selector: 'app-admin-article',
   standalone: true,
-  imports: [FormsModule, RouterLink, MarkdownEditorComponent, PublishPanelComponent],
+  imports: [FormsModule, RouterLink, MarkdownEditorComponent, PublishPanelComponent, StatusBadgeComponent, IconComponent],
   templateUrl: './admin-article.component.html',
 })
 export class AdminArticleComponent implements OnInit {

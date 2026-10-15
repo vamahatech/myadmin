@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 
 import { RenewloopAdminApi } from '../../../../core/services/renewloop/admin-api';
 import { SortBy, SortDir, UsersPage } from '../../../../core/models/renewloop/user.model';
+import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
 
 @Component({
   selector: 'app-renewloop-users',
   standalone: true,
-  imports: [DatePipe, FormsModule],
+  imports: [DatePipe, FormsModule, PageHeaderComponent],
   templateUrl: './users.html',
 })
 export class RenewloopUsers {

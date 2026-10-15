@@ -3,11 +3,13 @@ import { FormsModule } from '@angular/forms';
 
 import { RenewloopAdminApi } from '../../../../core/services/renewloop/admin-api';
 import { SendNotificationResult, UserRow } from '../../../../core/models/renewloop/user.model';
+import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
 
 @Component({
   selector: 'app-renewloop-notifications',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, PageHeaderComponent, IconComponent],
   templateUrl: './notifications.html',
 })
 export class RenewloopNotifications {

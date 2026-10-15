@@ -1,0 +1,44 @@
+<button
+  #trigger
+  type="button"
+  (click)="toggle()"
+  [attr.aria-expanded]="open()"
+  aria-controls="app-switcher-panel"
+  aria-haspopup="true"
+  [attr.aria-label]="'Current application: ' + current().name + '. Switch application'"
+  class="flex items-center gap-2 min-h-11 min-w-0 rounded-lg px-2 hover:bg-hover active:bg-pressed transition-colors duration-150 motion-reduce:transition-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus">
+  <img [src]="'/' + current().icon" alt="" class="w-6 h-6 shrink-0 rounded-md object-cover ring-1 ring-border" />
+  <span class="text-sm font-semibold text-text truncate">{{ current().name }}</span>
+  <app-icon name="chevron-down" [size]="16" class="text-text2" />
+</button>
+
+@if (open()) {
+  <div
+    id="app-switcher-panel"
+    class="absolute left-0 top-full mt-2 w-72 max-w-[calc(100vw-32px)] z-40 rounded-xl border border-border bg-card shadow-md py-2">
+    <p class="px-4 pt-1 pb-2 text-[11px] font-medium uppercase tracking-wide text-text2">Applications</p>
+    @for (app of apps; track app.id) {
+      <a
+        [routerLink]="app.route"
+        (click)="close()"
+        [attr.aria-current]="app.id === current().id ? 'true' : null"
+        class="flex items-center gap-3 min-h-11 px-4 text-sm hover:bg-hover active:bg-pressed focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus"
+        [class.font-semibold]="app.id === current().id">
+        <img [src]="'/' + app.icon" alt="" class="w-6 h-6 shrink-0 rounded-md object-cover ring-1 ring-border" />
+        <span class="flex-1 truncate text-text">{{ app.name }}</span>
+        @if (app.id === current().id) {
+          <app-icon name="check" [size]="16" class="text-primary" />
+        }
+      </a>
+    }
+    <div class="border-t border-border mt-2 pt-2">
+      <a
+        routerLink="/"
+        (click)="close()"
+        class="flex items-center gap-3 min-h-11 px-4 text-sm text-text hover:bg-hover active:bg-pressed focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus">
+        <app-icon name="apps" [size]="16" class="text-text2" />
+        All applications
+      </a>
+    </div>
+  </div>
+}

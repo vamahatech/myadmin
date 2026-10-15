@@ -10,6 +10,7 @@ import {
   AppEventsTimeseries,
   EventBreakdown,
 } from '../../../../models/app-events.model';
+import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
 
 const APP_SLUG = 'emi-planner';
 
@@ -67,7 +68,7 @@ const FUNNELS: FunnelStep[] = [
 @Component({
   selector: 'app-analytics',
   standalone: true,
-  imports: [DecimalPipe, LowerCasePipe, FormsModule],
+  imports: [DecimalPipe, LowerCasePipe, FormsModule, PageHeaderComponent],
   templateUrl: './analytics.component.html',
 })
 export class AnalyticsComponent implements OnInit {

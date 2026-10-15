@@ -1,58 +1,39 @@
-<div class="max-w-[1800px] mx-auto px-6 lg:px-8 py-10">
-  <section>
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="text-xl font-bold">Articles</h2>
-      <div class="flex items-center gap-4">
-        <button
-          (click)="loadArticles()"
-          class="text-sm text-text2 hover:text-text transition-colors"
-        >
-          Refresh
-        </button>
-        <a
-          routerLink="/apps/vamaha/articles/new"
-          class="py-2 px-4 bg-primary hover:bg-accent text-white text-sm font-semibold rounded-xl transition-colors"
-        >
-          + Add
-        </a>
-      </div>
-    </div>
+<div class="page">
+  <app-page-header title="Articles" description="Finance articles for the website and the EMI Planner app.">
+    <button type="button" class="btn btn-secondary" (click)="loadArticles()" [disabled]="loading()">
+      <app-icon name="refresh" [size]="16" />
+      Refresh
+    </button>
+    <a routerLink="/apps/vamaha/articles/new" class="btn">
+      <app-icon name="plus" [size]="16" />
+      Add article
+    </a>
+  </app-page-header>
 
-    @if (loading()) {
-      <p class="text-text2 text-sm">Loading…</p>
-    } @else if (loadError()) {
-      <p class="text-danger text-sm">{{ loadError() }}</p>
-    } @else if (articles().length === 0) {
-      <p class="text-text2 text-sm">
-        No articles yet. <a routerLink="/apps/vamaha/articles/new" class="text-primary hover:text-accent">Write your first one</a>.
-      </p>
-    } @else {
-      <div class="border border-border rounded-3xl overflow-hidden divide-y divide-border">
-        @for (a of articles(); track a.id) {
-          <a
-            [routerLink]="['/apps/vamaha/articles', a.id]"
-            class="flex items-center justify-between gap-4 px-5 py-4 hover:bg-surface transition-colors"
-          >
-            <div class="min-w-0">
-              <p class="font-medium truncate">{{ a.title }}</p>
-              <p class="text-text2 text-xs mt-0.5">
+  @if (loading()) {
+    <div class="card state">Loading articles…</div>
+  } @else if (loadError()) {
+    <div class="card state error" role="alert">{{ loadError() }}</div>
+  } @else if (articles().length === 0) {
+    <div class="card state">
+      No articles yet.
+      <a routerLink="/apps/vamaha/articles/new" class="text-primary font-semibold hover:underline">Write your first one</a>.
+    </div>
+  } @else {
+    <ul class="list" aria-label="Articles">
+      @for (a of articles(); track a.id) {
+        <li>
+          <a [routerLink]="['/apps/vamaha/articles', a.id]" class="list-row">
+            <div class="min-w-0 flex-1">
+              <p class="text-[15px] leading-6 font-semibold text-text break-words">{{ a.title }}</p>
+              <p class="text-xs leading-[18px] text-text2 mt-0.5 break-all">
                 /{{ a.slug }} · updated {{ a.updatedAt | date: 'mediumDate' }}
               </p>
             </div>
-            <span
-              class="shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full"
-              [class.bg-success]="a.status === 'PUBLISHED'"
-              [class.text-bg]="a.status === 'PUBLISHED'"
-              [class.bg-surface]="a.status !== 'PUBLISHED'"
-              [class.text-text2]="a.status !== 'PUBLISHED'"
-              [class.border]="a.status !== 'PUBLISHED'"
-              [class.border-border]="a.status !== 'PUBLISHED'"
-            >
-              {{ a.status }}
-            </span>
+            <app-status-badge [status]="a.status" />
           </a>
-        }
-      </div>
-    }
-  </section>
+        </li>
+      }
+    </ul>
+  }
 </div>

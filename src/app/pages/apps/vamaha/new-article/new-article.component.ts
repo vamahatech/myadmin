@@ -4,13 +4,14 @@ import { Router, RouterLink } from '@angular/router';
 import { Meta } from '@angular/platform-browser';
 import { AuthService } from '../../../../core/services/auth.service';
 import { AdminContentService } from '../../../../core/services/admin-content.service';
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
 
 type CreationMode = 'choose' | 'manual' | 'generate';
 
 @Component({
   selector: 'app-new-article',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, IconComponent],
   templateUrl: './new-article.component.html',
 })
 export class NewArticleComponent {

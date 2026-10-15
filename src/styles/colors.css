@@ -14,12 +14,20 @@
   --color-border:  #E7E0CB;
 
   --color-primary: #2F6B3F;
+  --color-primary-hover: #275A35;
   --color-accent:  #4F9A60;
-  --color-success: #2F8F4F;
-  --color-danger:  #BD4E2E;
+  --color-success: #287A45;
+  --color-warning: #A66A16;
+  --color-danger:  #B83B32;
   --color-gold:    #B07D0F;
 
   --color-blue:    #2F6B8F;
+
+  /* Directory interaction states (studio home) */
+  --color-sage:    #728B72;
+  --color-hover:   #F0F3EA;
+  --color-pressed: #E9EEE3;
+  --color-focus:   #315FE8;
 
   --nav-bg: rgba(251, 249, 239, 0.85);
 }
@@ -33,10 +41,17 @@ html.dark {
   --color-border:  #2B4031;
 
   --color-primary: #3E8E5A;
+  --color-primary-hover: #357A4D;
   --color-accent:  #7FB77E;
   --color-success: #6FC18A;
+  --color-warning: #E0A64A;
   --color-danger:  #E08763;
   --color-gold:    #F7C85C;
+
+  --color-sage:    #93AC92;
+  --color-hover:   #172A1D;
+  --color-pressed: #1E3526;
+  --color-focus:   #7C9BFF;
 
   --nav-bg: rgba(14, 26, 18, 0.88);
 }

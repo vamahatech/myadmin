@@ -40,12 +40,21 @@ form textarea::placeholder {
   color: var(--color-text2);
 }
 
-form button[type='submit'] {
+/* Legacy form defaults; platform .btn buttons opt out so buttons look the
+   same inside and outside forms. */
+form button[type='submit']:not(.btn) {
   font-size: 1rem !important;
   font-weight: 700 !important;
 }
 
-h1, h2, h3, .font-display {
+/* Platform typography: Manrope everywhere, headings included, so every app
+   reads as one product. Fraunces is opt-in via .font-display for the few
+   signature marks (ink seal, loading stamp, directory row numbers). */
+h1, h2, h3 {
+  letter-spacing: -0.01em;
+}
+
+.font-display {
   font-family: 'Fraunces', 'Hind', Georgia, serif;
   letter-spacing: -0.015em;
 }
@@ -205,4 +214,387 @@ input:-webkit-autofill:focus {
   -webkit-box-shadow: 0 0 0px 1000px var(--color-surface) inset;
   box-shadow: 0 0 0px 1000px var(--color-surface) inset;
   transition: background-color 9999s ease-in-out 0s;
+}
+
+/* ============================================================
+   Platform component layer — shared by every app in the console.
+   Lives in Tailwind's components layer: above preflight (so button
+   resets don't win), below utilities (so a page can still tweak one
+   property with a utility class). Colors come only from colors.css.
+   ============================================================ */
+@layer components {
+  /* Content padding of the app shell. Pages never set their own outer
+     padding; .page-toolbar uses the same values to bleed edge-to-edge. */
+  :root {
+    --page-px: 16px;
+    --page-py: 24px;
+  }
+  @media (min-width: 768px) {
+    :root { --page-px: 24px; --page-py: 28px; }
+  }
+  @media (min-width: 1200px) {
+    :root { --page-px: 32px; --page-py: 32px; }
+  }
+
+  .shell-content {
+    padding: var(--page-py) var(--page-px);
+  }
+
+  /* Full-bleed sticky bar at the top of a page (e.g. the article editor). */
+  .page-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    margin: calc(var(--page-py) * -1) calc(var(--page-px) * -1) var(--page-py);
+    padding: 12px var(--page-px);
+    background: color-mix(in srgb, var(--color-bg) 88%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  /* ── Page layout ─────────────────────────────────────────── */
+  .page {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .page-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px 16px;
+  }
+
+  .page-head h1 {
+    margin: 0;
+    font-size: 24px;
+    line-height: 32px;
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .page-head__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .muted {
+    margin: 0;
+    color: var(--color-text2);
+    font-size: 14px;
+    line-height: 21px;
+  }
+
+  .page-head .muted {
+    margin-top: 4px;
+  }
+
+  .section-title {
+    margin: 0;
+    font-size: 18px;
+    line-height: 26px;
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  /* ── Surfaces ────────────────────────────────────────────── */
+  .card {
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+  }
+
+  .list {
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .list > * + * {
+    border-top: 1px solid var(--color-border);
+  }
+
+  .list-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 20px;
+    min-height: 64px;
+    transition: background-color 150ms;
+  }
+
+  a.list-row:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: -2px;
+  }
+
+  @media (hover: hover) {
+    a.list-row:hover,
+    button.list-row:hover {
+      background: var(--color-hover);
+    }
+  }
+
+  a.list-row:active {
+    background: var(--color-pressed);
+  }
+
+  .state {
+    padding: 20px;
+    color: var(--color-text2);
+    font-size: 14px;
+  }
+
+  .state.error {
+    color: var(--color-danger);
+    background: color-mix(in srgb, var(--color-danger) 6%, var(--color-card));
+    border-color: color-mix(in srgb, var(--color-danger) 25%, var(--color-border));
+  }
+
+  /* ── Buttons ─────────────────────────────────────────────── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 0 16px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    text-decoration: none;
+    background: var(--color-primary);
+    color: #fff;
+    transition: background-color 150ms, border-color 150ms, color 150ms;
+  }
+
+  .btn:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+  }
+
+  .btn:focus-visible,
+  .icon-btn:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  .btn:disabled,
+  .btn[aria-disabled="true"],
+  .icon-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .btn-secondary,
+  .btn-ghost {
+    background: var(--color-card);
+    color: var(--color-text);
+    border-color: var(--color-border);
+  }
+
+  .btn-secondary:hover:not(:disabled),
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--color-hover);
+  }
+
+  .btn-tertiary {
+    background: transparent;
+    color: var(--color-text2);
+  }
+
+  .btn-tertiary:hover:not(:disabled) {
+    background: var(--color-hover);
+    color: var(--color-text);
+  }
+
+  .btn-danger {
+    background: var(--color-danger);
+    color: #fff;
+  }
+
+  .btn-danger:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-danger) 85%, #000);
+  }
+
+  .btn-sm {
+    min-height: 32px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--color-text2);
+    cursor: pointer;
+    line-height: 0;
+    transition: background-color 150ms, color 150ms;
+  }
+
+  .icon-btn:hover:not(:disabled) {
+    background: var(--color-hover);
+    color: var(--color-text);
+  }
+
+  .icon-danger {
+    color: var(--color-danger);
+  }
+
+  /* ── Forms ───────────────────────────────────────────────── */
+  .input {
+    width: 100%;
+    min-height: 40px;
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 20px;
+    background: var(--color-card);
+    color: var(--color-text);
+    transition: border-color 150ms, box-shadow 150ms;
+  }
+
+  .input:focus {
+    outline: none;
+    border-color: var(--color-focus);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-focus) 18%, transparent);
+  }
+
+  .input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .input[aria-invalid="true"] {
+    border-color: var(--color-danger);
+  }
+
+  .field-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .field-help {
+    margin-top: 6px;
+    font-size: 12px;
+    line-height: 18px;
+    color: var(--color-text2);
+  }
+
+  .field-error {
+    margin-top: 6px;
+    font-size: 12px;
+    line-height: 18px;
+    color: var(--color-danger);
+  }
+
+  /* ── Status badges ───────────────────────────────────────────
+     .pill is the legacy Verdiq name; .badge is the platform name. Both
+     carry a text label, so state never depends on color alone. */
+  .badge,
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 22px;
+    padding: 0 8px;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 600;
+    white-space: nowrap;
+    background: var(--color-surface);
+    color: var(--color-text2);
+  }
+
+  .badge-success,
+  .pill.yes {
+    background: color-mix(in srgb, var(--color-success) 10%, var(--color-card));
+    border-color: color-mix(in srgb, var(--color-success) 30%, var(--color-card));
+    color: var(--color-success);
+  }
+
+  .badge-warning {
+    background: color-mix(in srgb, var(--color-warning) 10%, var(--color-card));
+    border-color: color-mix(in srgb, var(--color-warning) 30%, var(--color-card));
+    color: color-mix(in srgb, var(--color-warning) 80%, var(--color-text));
+  }
+
+  .badge-danger,
+  .pill.no {
+    background: color-mix(in srgb, var(--color-danger) 8%, var(--color-card));
+    border-color: color-mix(in srgb, var(--color-danger) 28%, var(--color-card));
+    color: var(--color-danger);
+  }
+
+  .badge-info {
+    background: color-mix(in srgb, var(--color-blue) 10%, var(--color-card));
+    border-color: color-mix(in srgb, var(--color-blue) 28%, var(--color-card));
+    color: var(--color-blue);
+  }
+
+  .badge-neutral,
+  .pill.neutral {
+    background: var(--color-surface);
+    border-color: var(--color-border);
+    color: var(--color-text2);
+  }
+
+  /* ── Data table ──────────────────────────────────────────── */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+
+  .data-table th {
+    text-align: left;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text2);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  .data-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: top;
+  }
+
+  .data-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  @media (hover: hover) {
+    .data-table tbody tr:hover {
+      background: var(--color-hover);
+    }
+  }
+
+  .table-scroll {
+    overflow-x: auto;
+  }
 }

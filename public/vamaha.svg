@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-20 -32 330 330" role="img" aria-label="Vamaha">
+  <defs>
+    <linearGradient id="vamaha-gradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#168BFF"/>
+      <stop offset="55%" stop-color="#365BEE"/>
+      <stop offset="100%" stop-color="#6D38D8"/>
+    </linearGradient>
+  </defs>
+  <path d="M18 18 H88 L145 135 L202 18 H272 L177 218 Q145 278 113 218 Z" fill="url(#vamaha-gradient)"/>
+  <path d="M145 135 L177 190 L202 135 L272 18 H202 Z" fill="#493FE0" opacity=".9"/>
+</svg>

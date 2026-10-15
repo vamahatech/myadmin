@@ -1,35 +1,33 @@
-<div class="min-h-screen bg-bg text-text">
-  <div class="max-w-[1400px] mx-auto px-6 lg:px-8 py-10 space-y-12">
-    <section>
-      <h1 class="text-2xl font-bold">Push notifications</h1>
-      <p class="text-text2 text-sm">Broadcast to every registered device, or target specific users.</p>
-    </section>
+<div class="page">
+    <app-page-header title="Push notifications" description="Broadcast to every registered device, or target specific users." />
 
-    <section class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
       <div>
-        <h2 class="text-xl font-bold mb-4">Broadcast to all users</h2>
-        <div class="space-y-3">
+        <h2 class="section-title mb-4">Broadcast to all users</h2>
+        <div class="card p-5 space-y-3">
           <input
             [(ngModel)]="broadcastTitle"
             placeholder="Title"
-            class="w-full border border-border rounded-lg px-3 py-2 bg-surface"
+            aria-label="Broadcast title"
+            class="input"
           />
           <textarea
             [(ngModel)]="broadcastBody"
             placeholder="Body"
+            aria-label="Broadcast body"
             rows="3"
-            class="w-full border border-border rounded-lg px-3 py-2 bg-surface"
+            class="input"
           ></textarea>
           @if (broadcastStatus() === 'error') {
-            <p class="text-sm text-red-600">{{ broadcastError() }}</p>
+            <p class="text-sm text-danger">{{ broadcastError() }}</p>
           }
           @if (broadcastResult(); as r) {
-            <p class="text-sm text-green-600">Delivered: {{ r.successCount }} · Failed: {{ r.failureCount }}</p>
+            <p class="text-sm text-success">Delivered: {{ r.successCount }} · Failed: {{ r.failureCount }}</p>
           }
           <button
             (click)="sendBroadcast()"
             [disabled]="broadcastStatus() === 'sending'"
-            class="bg-primary text-white rounded-xl px-4 py-2 text-sm font-medium disabled:opacity-50"
+            class="btn"
           >
             {{ broadcastStatus() === 'sending' ? 'Sending…' : 'Send to all devices' }}
           </button>
@@ -37,26 +35,27 @@
       </div>
 
       <div>
-        <h2 class="text-xl font-bold mb-4">Send to specific users</h2>
-        <div class="space-y-3">
+        <h2 class="section-title mb-4">Send to specific users</h2>
+        <div class="card p-5 space-y-3">
           <input
             [(ngModel)]="userSearch"
             (keyup.enter)="searchUsers()"
             placeholder="Search by name or email…"
-            class="w-full border border-border rounded-lg px-3 py-2 bg-surface"
+            aria-label="Search users by name or email"
+            class="input"
           />
-          <button (click)="searchUsers()" class="text-xs border border-border rounded-lg px-3 py-1">Search</button>
+          <button (click)="searchUsers()" class="btn btn-secondary btn-sm">Search</button>
 
           @if (userSearchLoading()) {
-            <p class="text-text2 text-sm">Searching…</p>
+            <p class="muted" role="status">Searching…</p>
           } @else if (userResults().length > 0) {
-            <ul class="border border-border rounded-lg divide-y divide-border">
+            <ul class="border border-border rounded-lg divide-y divide-border overflow-hidden">
               @for (u of userResults(); track u.id) {
                 <li>
-                  <button (click)="toggleUser(u)" class="w-full text-left px-3 py-2 text-sm hover:bg-surface flex items-center justify-between">
+                  <button type="button" (click)="toggleUser(u)" [attr.aria-pressed]="isSelected(u)" class="w-full text-left px-3 min-h-11 text-sm hover:bg-hover flex items-center justify-between gap-3">
                     <span>{{ u.name }} — {{ u.email }}</span>
                     @if (isSelected(u)) {
-                      <span class="text-xs text-primary font-medium">Selected</span>
+                      <span class="badge badge-success">Selected</span>
                     }
                   </button>
                 </li>
@@ -69,9 +68,9 @@
               <p class="text-sm font-medium">Selected ({{ selectedUsers().length }}):</p>
               <ul class="flex flex-wrap gap-2">
                 @for (u of selectedUsers(); track u.id) {
-                  <li class="text-xs border border-border rounded-full px-3 py-1 flex items-center gap-2 bg-surface">
+                  <li class="badge badge-neutral pr-1">
                     {{ u.email }}
-                    <button (click)="removeSelected(u)" class="text-text2 hover:text-red-600">✕</button>
+                    <button type="button" (click)="removeSelected(u)" class="icon-btn w-6 h-6 hover:text-danger" [attr.aria-label]="'Remove ' + u.email"><app-icon name="x" [size]="14" /></button>
                   </li>
                 }
               </ul>
@@ -79,24 +78,26 @@
               <input
                 [(ngModel)]="targetedTitle"
                 placeholder="Title"
-                class="w-full border border-border rounded-lg px-3 py-2 bg-surface"
+                aria-label="Message title"
+                class="input"
               />
               <textarea
                 [(ngModel)]="targetedBody"
                 placeholder="Body"
+                aria-label="Message body"
                 rows="3"
-                class="w-full border border-border rounded-lg px-3 py-2 bg-surface"
+                class="input"
               ></textarea>
               @if (targetedStatus() === 'error') {
-                <p class="text-sm text-red-600">{{ targetedError() }}</p>
+                <p class="text-sm text-danger">{{ targetedError() }}</p>
               }
               @if (targetedResult(); as r) {
-                <p class="text-sm text-green-600">Delivered: {{ r.successCount }} · Failed: {{ r.failureCount }}</p>
+                <p class="text-sm text-success">Delivered: {{ r.successCount }} · Failed: {{ r.failureCount }}</p>
               }
               <button
                 (click)="sendTargeted()"
                 [disabled]="targetedStatus() === 'sending'"
-                class="bg-primary text-white rounded-xl px-4 py-2 text-sm font-medium disabled:opacity-50"
+                class="btn"
               >
                 {{ targetedStatus() === 'sending' ? 'Sending…' : 'Send' }}
               </button>
@@ -105,5 +106,4 @@
         </div>
       </div>
     </section>
-  </div>
 </div>
