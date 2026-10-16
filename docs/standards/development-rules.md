@@ -61,17 +61,20 @@ card
 |---|---|
 | Page title / breadcrumb | `app-page-header` |
 | Summary numbers | `.kpi-grid` + `.kpi` (`__label/__body/__icon/__value/__foot`) + `.stat__delta` |
-| List toolbar | `.card-toolbar` + `__group`, `.select-field`, `.search-field` |
+| List toolbar | `.card-toolbar` + `__group`, `.select-field` (`.w-full` in forms), `.search-field` |
 | Tables | `.data-table.is-compact`, `.th-sort`, `.col-check`, `.avatar` |
 | Paging | `app-pagination` (numbered, first/prev/next/last) |
 | Empty / loading | `app-empty-state`, `app-skeleton` |
 | Dialogs | `app-modal`, `ConfirmService`, `confirm-delete-modal` (type-to-confirm) |
+| Triage (status + note) | the modal pattern in `renewloop/feedback` and `renewloop/errors` |
 | Notifications | `push-composer`, `push-console` |
 | Icons | `app-icon` (add paths to `ICONS`; no icon libraries, no emoji) |
 
 When a pattern appears on a **second** app, promote it to `shared/` instead of copying it.
-Planned promotions: the user picker combobox (now in RenewLoop Activity), the KPI card (as a
-component), the activity table, and the errors/feedback issue table.
+Planned promotions when the second app needs them: the user picker combobox (RenewLoop
+Activity), the KPI card (as a component), the activity table, the feedback inbox and error
+issue table with their triage modal, and the error reporter + interceptor for Angular/Ionic
+apps (RenewLoop `submint`).
 
 ## 4. Backend endpoint rules (every app backend)
 

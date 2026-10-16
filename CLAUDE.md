@@ -34,7 +34,8 @@ they get header + sidebar; `activePrefixes: ['articles']` keeps "Articles" highl
 **Adding an app:** add an `AppTile` to `core/models/app-registry.model.ts` (logo file in `public/`),
 add a route with `AppShellComponent` + data as above. Directory, app switcher and shell pick it up.
 `tagline` shows in the directory, switcher panel and sidebar header; `accentColor` (a `var(--color-…)` token)
-drives the switcher dot and the sidebar's active marker via `--app-accent`.
+drives the switcher dot and the sidebar's active marker via `--app-accent`. Optional `crashConsoleUrl`
+(native crash console, e.g. Play Console Android vitals) is linked from the app's Errors page.
 Nav items may carry `group` (sidebar section label + command-palette entry); Verdiq uses Insights/Catalog/Moderation/Admin.
 
 ## Shared components (src/app/shared/components/)
@@ -48,7 +49,8 @@ Nav items may carry `group` (sidebar section label + command-palette entry); Ver
 - `modal` (focus moves in, Tab trapped, Esc, focus returns) · `confirm-delete-modal` (type-to-confirm for irreversible deletes)
 - `confirm-dialog` + `ConfirmService.ask({title, message, confirmLabel, tone})` → `Promise<boolean>`. Never `window.confirm()`.
 - `toaster` + `ToastService.success/error/info` — outcomes of actions (saved, sent). Blocking load errors stay inline (`.state.error`).
-- `empty-state` (icon, title, body, projected action) · `skeleton` (`variant` rows/stats/cards) · `pagination` (page, pageSize, total)
+- `empty-state` (icon, title, body, projected action) · `skeleton` (`variant` rows/stats/cards) · `pagination` (page, pageSize, total; "Showing x–y of n" + first/prev/numbered/next/last, always visible)
+- `shared/utils/avatar.ts` — `initials(name)` + `avatarColor(id)` (stable palette token per person) for the `.avatar` class
 - `push-composer` (labelled title/message, counters, lock-screen preview) · `push-console` (whole retention-push page; wrappers pass app slugs)
 - `theme-switch` + `ThemeService` (light/dark/system → `html.dark`; pre-boot script in index.html; key `vamaha_admin_theme`)
 - `command-palette` + `CommandPaletteService` — Ctrl/⌘+K; apps, every route's `navItems`, actions. Mounted in app.html
@@ -72,9 +74,14 @@ Nav items may carry `group` (sidebar section label + command-palette entry); Ver
   `.input` (also select/textarea) · `.field-label` · `.field-help` · `.field-error`
   `.badge` + `.badge-{success,warning,danger,info,neutral}` (`.pill.yes/.no/.neutral` = legacy Verdiq aliases)
   `.data-table` inside `.card.table-scroll` · `.page-toolbar` (full-bleed sticky bar, e.g. editor)
-  `.stat` + `__label/__value/__hint/__row/__delta(.up/.down/.new)` in `.stat-grid` (`.stat.is-alert`) · `.segmented` (every filter/tab group: buttons with `aria-pressed`, `.segmented__count`)
-  `.card-toolbar` (+ `__group`) on top of a list card · `.search-field` (icon + `.input`) · `.th-sort` in `<th aria-sort>` · `.skeleton` · `.kbd` · `.fb-new` (unread rail)
-- List page references: `vamaha/admin-dashboard` (stats + toolbar + grid rows), `renewloop/users` (toolbar + sortable table + pagination), `verdiq/products/products-list`.
+  `.stat` + `__label/__value/__hint/__row/__delta(.up/.down/.new)` in `.stat-grid` (`.stat.is-alert`) · `.segmented` (2–3 mutually exclusive views only: buttons with `aria-pressed`, `.segmented__count`; list filters with more options use `.select-field`)
+  `.card-toolbar` (+ `__group`: left = title + count badge, right = filters + search) on top of a list card · `.search-field` (icon + `.input`) · `.select-field` (native `<select class="input">` + trailing `chevron-down` icon; `.select-field.w-full` in forms) · `.th-sort` in `<th aria-sort>` (always show a sort icon; idle = `chevrons-up-down` with `.sort-idle`) · `.skeleton` · `.kbd` · `.fb-new` (unread rail)
+  `.data-table.is-compact` (tinted sentence-case header, 6px rows, middle-aligned) · `.col-check` (row-select checkbox column) · `tr.is-selected` · `.avatar` (initials; tint with `--avatar-color`) · `.icon-btn.is-sm` (30px, dense tables)
+  `.kpi-grid` + `.kpi` (`__label`, `__body`, `__icon` tinted by `--kpi-color`, `__value`, `__foot` with `.stat__delta` chip): summary cards above a list
+- List page references: `vamaha/admin-dashboard` (stats + toolbar + grid rows), `verdiq/products/products-list`, and RenewLoop (the monitoring reference):
+  `renewloop/users` (KPI cards + toolbar with dropdown filter + search + compact sortable table with row selection + detail modal),
+  `renewloop/activity` (user-picker combobox, `?userId=` focused view with profile strip),
+  `renewloop/feedback` and `renewloop/errors` (status KPIs + filter dropdowns + triage modal with status + note).
 - Radius: 8px controls/nav items, 12px surfaces, 999px pills. Focus: 2px `--color-focus` outline. Hover only under
   `@media (hover:hover)`. Respect `motion-reduce`. Touch targets ≥44px (`min-h-11`). No heavy shadows/gradients
   (dropdowns use `shadow-md`).
@@ -95,6 +102,8 @@ Nav items may carry `group` (sidebar section label + command-palette entry); Ver
   ```
 
 ## Known issues / not done
+- RenewLoop `apiBaseUrl` is the local sbmint (`127.0.0.1:3300`). Its `npm run dev` doesn't reload code, so after pulling backend changes restart it, or new pages 404 and show "Could not load …".
+- RenewLoop `crashConsoleUrl` is the generic Play Console URL; replace it with the app's Android vitals link.
 - Real Verdiq/RenewLoop service passwords are committed in `src/environments/environment.ts` — should be rotated & moved out.
 - Broad legacy rules in styles.css (`form input/label … !important`) still apply app-wide; `.btn` submit buttons opt out.
 - `public/renewloop.png` is ~1 MB for a 40px icon.

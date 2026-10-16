@@ -278,3 +278,11 @@ The sidebar and the Overview hide modules an app doesn't support. A module goes 
 
 Each phase ends with the [definition of done](development-rules.md#definition-of-done)
 met for every app it touches.
+
+**Progress (2026-10-16):** RenewLoop is the first app through the standard and the reference
+implementation. Done there: Users (list, KPIs, detail panel with devices), Activity (log,
+per-user focus), Feedback (in-app form, inbox, triage), Errors (app + server issues, regression,
+90-day TTL, Play Console link). Still open there: `app_opened` + `lastActiveAt` (needed for
+DAU/MAU), `/admin/overview`, analytics-event retention, suspend/export, real admin identity.
+Tracked in `renewloop/docs/BACKLOG.md` › Monitoring. Next apps: Verdiq (needs `user_id` on
+`scan_events`), then EMI Planner (overview from `app_events`).
