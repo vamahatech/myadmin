@@ -1,6 +1,49 @@
 <div class="page">
   <app-page-header title="Activity" />
 
+  @if (userId()) {
+    <section class="card p-4 flex flex-wrap items-center gap-x-6 gap-y-3" aria-label="Selected user">
+      @if (focused(); as f) {
+        <div class="flex items-center gap-3 min-w-0 mr-auto">
+          <span class="avatar" style="width: 44px; height: 44px; font-size: 15px" aria-hidden="true" [style.--avatar-color]="avatarColor(f.id)">{{ initials(f.name) }}</span>
+          <div class="min-w-0">
+            <p class="font-semibold truncate">{{ f.name }}</p>
+            <p class="text-sm text-text2 truncate">{{ f.email }}</p>
+          </div>
+        </div>
+        <dl class="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+          <div>
+            <dt class="text-text2">Joined</dt>
+            <dd class="tabular-nums">{{ f.createdAt | date: 'dd MMM yyyy' }}</dd>
+          </div>
+          <div>
+            <dt class="text-text2">Last sign-in</dt>
+            <dd class="tabular-nums">{{ f.lastSeenAt ? (f.lastSeenAt | date: 'dd MMM yyyy, h:mm a') : '—' }}</dd>
+          </div>
+          <div>
+            <dt class="text-text2">Subscriptions</dt>
+            <dd>{{ f.activeSubscriptionCount }} active</dd>
+          </div>
+          <div>
+            <dt class="text-text2">Email</dt>
+            <dd>{{ f.emailVerified ? 'Verified' : 'Unverified' }}</dd>
+          </div>
+          <div [title]="deviceList(f)">
+            <dt class="text-text2">Devices</dt>
+            <dd>{{ f.devices.length }}</dd>
+          </div>
+        </dl>
+      } @else if (focusedError()) {
+        <p class="mr-auto text-sm text-danger" role="alert">This user could not be found. They may have deleted their account.</p>
+      } @else {
+        <div class="mr-auto w-64"><app-skeleton [count]="2" /></div>
+      }
+      <button type="button" class="btn btn-secondary btn-sm" (click)="clearUser()">
+        <app-icon name="x" [size]="14" /> Show all users
+      </button>
+    </section>
+  }
+
   @if (error()) {
     <div class="card state error" role="alert">{{ error() }}</div>
   }
@@ -8,17 +51,36 @@
   <section class="card overflow-hidden" aria-label="Activity log">
     <div class="card-toolbar">
       <div class="card-toolbar__group">
-        <h2 class="text-base font-semibold">Activity log</h2>
-        @if (userId()) {
-          <span class="badge badge-info">
-            {{ userName() ?? 'Loading…' }}
-            <button type="button" class="-mr-1 inline-flex" aria-label="Show everyone's activity" (click)="clearUser()">
-              <app-icon name="x" [size]="12" />
-            </button>
-          </span>
-        }
+        <h2 class="text-base font-semibold">{{ userId() ? 'Activity for ' + (focused()?.name ?? 'this user') : 'Activity log' }}</h2>
       </div>
       <div class="card-toolbar__group">
+        <div class="search-field relative">
+          <label for="activity-user-search" class="sr-only">Find a user by name or email</label>
+          <app-icon name="search" [size]="16" />
+          <input id="activity-user-search" type="search" class="input" autocomplete="off"
+            [placeholder]="userId() ? 'Switch user…' : 'Find a user…'"
+            role="combobox" aria-autocomplete="list" aria-controls="activity-user-results"
+            [attr.aria-expanded]="pickerOpen() && !!userTerm().trim()"
+            [attr.aria-activedescendant]="activeIndex() >= 0 ? 'activity-user-' + activeIndex() : null"
+            [value]="userTerm()" (input)="onUserInput($any($event.target).value)"
+            (keydown)="onUserKeydown($event)" (focus)="pickerOpen.set(true)" (blur)="onUserBlur()" />
+          @if (pickerOpen() && userTerm().trim()) {
+            <ul id="activity-user-results" role="listbox" class="user-results">
+              @for (u of userResults(); track u.id; let i = $index) {
+                <li [id]="'activity-user-' + i" role="option" [attr.aria-selected]="i === activeIndex()"
+                  [class.is-active]="i === activeIndex()" (mousedown)="$event.preventDefault()" (click)="pickUser(u)">
+                  <span class="avatar" aria-hidden="true" [style.--avatar-color]="avatarColor(u.id)">{{ initials(u.name) }}</span>
+                  <span class="min-w-0">
+                    <span class="block font-medium truncate">{{ u.name }}</span>
+                    <span class="block text-xs text-text2 truncate">{{ u.email }}</span>
+                  </span>
+                </li>
+              } @empty {
+                <li class="px-3 py-2 text-sm text-text2" role="presentation">{{ userSearching() ? 'Searching…' : 'No users match.' }}</li>
+              }
+            </ul>
+          }
+        </div>
         <label class="select-field">
           <span class="sr-only">Filter by action</span>
           <select class="input" [value]="event()" (change)="setEvent($any($event.target).value)">
@@ -53,7 +115,7 @@
           <table class="data-table is-compact">
             <thead>
               <tr>
-                <th>User</th>
+                @if (!userId()) { <th>User</th> }
                 <th>Action</th>
                 <th>Device</th>
                 <th>Time</th>
@@ -62,6 +124,7 @@
             <tbody>
               @for (a of p.activity; track a.id) {
                 <tr>
+                  @if (!userId()) {
                   <td>
                     @if (a.user; as u) {
                       <button type="button" class="flex items-center gap-2.5 min-w-0 text-left rounded hover:underline" [title]="u.email" (click)="showUser(u.id)">
@@ -77,6 +140,7 @@
                       </div>
                     }
                   </td>
+                  }
                   <td>
                     <span>{{ label(a) }}</span>
                     @if (detail(a); as d) {
