@@ -124,7 +124,7 @@ history). Each app's catalog maps them to the canonical concepts below.
 | sign-in | n/a | `user_logged_in` | — (gap) |
 | onboarding completed | `onboarding_complete` | — (gap) | — (gap) |
 | core action | `calc_run`, `loan_tracked` | `subscription_created` | scan (`scan_events`, **no user id**: gap) |
-| feedback submitted | `feedback_sent` | — (no feedback yet) | `app_feedback` row |
+| feedback submitted | `feedback_sent` | `feedback_submitted` | `app_feedback` row |
 
 **Catalog:** every app keeps `docs/events.md` in its backend repo, listing each event, its
 props, the concept it maps to, and whether it counts as qualifying. The server enforces an
@@ -145,7 +145,7 @@ One **issue** per fingerprint, not one row per occurrence:
 |---|---|
 | `fingerprint` | hash of `source + kind + route/screen + status/exception type + top frame` |
 | `source` | `server` or `client` |
-| `kind` | `crash`, `handled`, `api_failure` |
+| `kind` | `uncaught` (JS/process error nobody caught), `handled` (caught but worth knowing), `api_failure` (5xx / no response). Native `crash`/ANR is not stored here (see below). |
 | `message` | scrubbed, ≤ 500 chars; no tokens, emails or request bodies |
 | `route` / `screen`, `httpStatus` | where it happened |
 | `appVersions[]`, `platforms[]` | sets, capped at 20 each |
@@ -155,11 +155,17 @@ One **issue** per fingerprint, not one row per occurrence:
 Sources:
 - **Server:** the global error handler records every 5xx and unhandled rejection.
 - **Client handled errors / failed requests:** `POST /errors` (batched, rate-limited per unit).
-- **Native crashes:** Firebase Crashlytics. Every app already ships Firebase for push, so
-  there's no new vendor. Crash *counts* reach myadmin through the client after restart, or
-  through a daily pull. The full stack traces stay in the Crashlytics console, linked from the
-  Errors page. (If we later want one place for everything with an API, Sentry is the
-  alternative. Decide per app; don't run both.)
+- **Native crashes / ANRs:** for Play-distributed Android apps, **Play Console's Android
+  vitals** already collects these (from users who share diagnostics; about a day delayed).
+  Don't duplicate them: the Errors page links to it (`AppTile.crashConsoleUrl`). Add
+  Crashlytics only when an app needs real-time crash alerts, non-Play builds or iOS.
+- **WebView apps (Capacitor/Ionic) need client capture regardless:** their screens are
+  JavaScript, so most real failures are JS errors and failed requests. Play Console never
+  sees those. The app installs a global `ErrorHandler` plus an HTTP interceptor (5xx and
+  "no response while online"; 4xx are expected outcomes, not errors) that batch to
+  `POST /errors`. Reports are deduped per session and capped, and the reporter's own request
+  skips the interceptors, so a failing report can't loop. RenewLoop (`submint`) is the reference.
+- **Retention is enforced by the database:** a TTL index on `lastSeenAt` (90 days).
 
 ### 4.4 Feedback
 
@@ -253,10 +259,10 @@ The sidebar and the Overview hide modules an app doesn't support. A module goes 
 | Users | n/a | n/a | admin users only | ✅ list, detail, devices |
 | Activity | page views | ✅ events | scans with **no user id** | ✅ activity log |
 | Analytics | page views by geo/device | ✅ allowlisted events | scan analytics | feature-usage counts (API only) |
-| Errors | ❌ | ❌ | ❌ (stdout logs) | ❌ (stdout logs) |
-| Crash reporting | n/a | ❌ | ❌ | ❌ |
-| Feedback | ✅ (NEW/READ/ARCHIVED) | ✅ via vamaha-backend | ✅ `app_feedback` | ❌ |
-| Audit | ❌ | ❌ | ✅ `admin_audit_log` | admin sends only |
+| Errors | ❌ | ❌ | ❌ (stdout logs) | ✅ app + server issues, grouped |
+| Crash reporting | n/a | ❌ | ❌ | Play Console (linked) |
+| Feedback | ✅ (NEW/READ/ARCHIVED) | ✅ via vamaha-backend | ✅ `app_feedback` | ✅ in-app form + inbox |
+| Audit | ❌ | ❌ | ✅ `admin_audit_log` | admin sends + status changes (activity log) |
 | Suspend / export | n/a | n/a | ❌ | ❌ |
 | Admin identity | shell JWT + roles | shell JWT | service credential | service credential |
 

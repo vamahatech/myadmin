@@ -1,0 +1,174 @@
+<div class="page">
+  <app-page-header title="Feedback" />
+
+  @if (page(); as p) {
+    <div class="kpi-grid" aria-label="Feedback summary">
+      <div class="kpi" style="--kpi-color: var(--color-danger)">
+        <p class="kpi__label">Needs a look</p>
+        <div class="kpi__body">
+          <span class="kpi__icon"><app-icon name="inbox" [size]="20" /></span>
+          <p class="kpi__value">{{ p.counts.new | number }}</p>
+        </div>
+        <div class="kpi__foot"><span>New, not picked up yet</span></div>
+      </div>
+      <div class="kpi" style="--kpi-color: var(--color-warning)">
+        <p class="kpi__label">Investigating</p>
+        <div class="kpi__body">
+          <span class="kpi__icon"><app-icon name="search" [size]="20" /></span>
+          <p class="kpi__value">{{ p.counts.investigating | number }}</p>
+        </div>
+        <div class="kpi__foot"><span>Being looked into</span></div>
+      </div>
+      <div class="kpi" style="--kpi-color: var(--color-success)">
+        <p class="kpi__label">Resolved</p>
+        <div class="kpi__body">
+          <span class="kpi__icon"><app-icon name="check-circle" [size]="20" /></span>
+          <p class="kpi__value">{{ p.counts.resolved | number }}</p>
+        </div>
+        <div class="kpi__foot"><span>{{ p.counts.closed | number }} closed without a change</span></div>
+      </div>
+    </div>
+  }
+
+  @if (error()) {
+    <div class="card state error" role="alert">{{ error() }}</div>
+  }
+
+  <section class="card overflow-hidden" aria-label="Feedback inbox">
+    <div class="card-toolbar">
+      <div class="card-toolbar__group">
+        <h2 class="text-base font-semibold">Feedback inbox</h2>
+        @if (page(); as p) {
+          <span class="badge badge-neutral tabular-nums">{{ p.pagination.total | number }}</span>
+        }
+      </div>
+      <div class="card-toolbar__group">
+        <label class="select-field">
+          <span class="sr-only">Status</span>
+          <select class="input" [value]="status()" (change)="setStatus($any($event.target).value)">
+            @for (o of statusOptions; track o.value) {
+              <option [value]="o.value" [selected]="status() === o.value">{{ o.label }}</option>
+            }
+          </select>
+          <app-icon name="chevron-down" [size]="16" />
+        </label>
+        <label class="select-field">
+          <span class="sr-only">Type</span>
+          <select class="input" [value]="category()" (change)="setCategory($any($event.target).value)">
+            <option value="" [selected]="category() === ''">All types</option>
+            @for (o of categoryOptions; track o.value) {
+              <option [value]="o.value" [selected]="category() === o.value">{{ o.label }}</option>
+            }
+          </select>
+          <app-icon name="chevron-down" [size]="16" />
+        </label>
+      </div>
+    </div>
+
+    @if (loading() && !page()) {
+      <div class="p-4"><app-skeleton [count]="6" /></div>
+    } @else if (page(); as p) {
+      @if (p.feedback.length === 0) {
+        <app-empty-state icon="inbox" title="No feedback here" body="Feedback sent from the app's Settings › Send Feedback screen shows up here.">
+          <button type="button" class="btn btn-secondary btn-sm" (click)="clearFilters()">Show all feedback</button>
+        </app-empty-state>
+      } @else {
+        <div class="table-scroll" [class.opacity-60]="loading()">
+          <table class="data-table is-compact">
+            <thead>
+              <tr>
+                <th>From</th>
+                <th>Type</th>
+                <th>Message</th>
+                <th>App</th>
+                <th>Received</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (f of p.feedback; track f.id) {
+                <tr class="cursor-pointer" (click)="open(f)">
+                  <td>
+                    @if (f.user; as u) {
+                      <div class="flex items-center gap-2.5 min-w-0" [title]="u.email">
+                        <span class="avatar" aria-hidden="true" [style.--avatar-color]="avatarColor(u.id)">{{ initials(u.name) }}</span>
+                        <span class="font-medium truncate">{{ u.name }}</span>
+                      </div>
+                    } @else {
+                      <span class="text-text2 italic">Deleted account</span>
+                    }
+                  </td>
+                  <td><span class="badge badge-neutral">{{ categoryLabel(f.category) }}</span></td>
+                  <td class="min-w-[16rem] max-w-[28rem]">
+                    <button type="button" class="text-left line-clamp-2 hover:underline" (click)="$event.stopPropagation(); open(f)">{{ f.message }}</button>
+                  </td>
+                  <td class="text-text2 whitespace-nowrap">{{ f.appVersion ?? '—' }}@if (f.platform) { · {{ f.platform }} }</td>
+                  <td class="text-text2 tabular-nums whitespace-nowrap" [title]="f.createdAt | date: 'medium'">{{ f.createdAt | date: 'dd MMM yyyy' }}</td>
+                  <td><span [class]="'badge ' + tone(f.status)">{{ statusLabel(f.status) }}</span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <app-pagination [page]="p.pagination.page" [pageSize]="p.pagination.limit" [total]="p.pagination.total" (pageChange)="goToPage($event)" />
+      }
+    }
+  </section>
+
+  <app-modal [open]="!!selected()" [title]="selected() ? categoryLabel(selected()!.category) + ' feedback' : ''" (closed)="close()">
+    @if (selected(); as f) {
+      <div class="flex flex-col gap-4">
+        @if (f.user; as u) {
+          <div class="flex items-center gap-3">
+            <span class="avatar" style="width: 40px; height: 40px; font-size: 14px" aria-hidden="true" [style.--avatar-color]="avatarColor(u.id)">{{ initials(u.name) }}</span>
+            <div class="min-w-0">
+              <p class="font-semibold truncate">{{ u.name }}</p>
+              <p class="text-sm text-text2 truncate">{{ u.email }}</p>
+            </div>
+          </div>
+        } @else {
+          <p class="text-sm text-text2 italic">Sent by an account that has since been deleted.</p>
+        }
+
+        <blockquote class="rounded-lg border border-border bg-surface p-3 text-sm whitespace-pre-wrap break-words">{{ f.message }}</blockquote>
+
+        <dl class="grid grid-cols-2 gap-3 text-sm">
+          <div><dt class="text-text2">Received</dt><dd class="tabular-nums">{{ f.createdAt | date: 'dd MMM yyyy, h:mm a' }}</dd></div>
+          <div><dt class="text-text2">App version</dt><dd>{{ f.appVersion ?? '—' }}</dd></div>
+          <div><dt class="text-text2">Platform</dt><dd>{{ f.platform ?? '—' }}{{ f.osVersion ? ' · ' + f.osVersion : '' }}</dd></div>
+          <div><dt class="text-text2">Device</dt><dd>{{ f.device ?? '—' }}</dd></div>
+        </dl>
+
+        <div class="grid gap-3 sm:grid-cols-[12rem_1fr]">
+          <label class="block">
+            <span class="field-label">Status</span>
+            <span class="select-field w-full">
+              <select class="input w-full" [(ngModel)]="editStatus" name="status">
+                @for (s of editStatuses; track s[0]) {
+                  <option [value]="s[0]">{{ s[1] }}</option>
+                }
+              </select>
+              <app-icon name="chevron-down" [size]="16" />
+            </span>
+          </label>
+          <label class="block">
+            <span class="field-label">Note <span class="font-normal text-text2">(internal)</span></span>
+            <textarea class="input" rows="2" maxlength="1000" [(ngModel)]="editNote" name="note" placeholder="e.g. Fixed in 0.0.13"></textarea>
+          </label>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-end gap-2">
+          @if (f.user; as u) {
+            <button type="button" class="btn btn-tertiary btn-sm mr-auto" (click)="viewActivity(u.id)">
+              <app-icon name="activity" [size]="14" /> View activity
+            </button>
+            <a class="btn btn-secondary btn-sm" [href]="replyLink(f)">
+              <app-icon name="message" [size]="14" /> Reply by email
+            </a>
+          }
+          <button type="button" class="btn btn-sm" [disabled]="saving()" (click)="save()">{{ saving() ? 'Saving…' : 'Save' }}</button>
+        </div>
+      </div>
+    }
+  </app-modal>
+</div>

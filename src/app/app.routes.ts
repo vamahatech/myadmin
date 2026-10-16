@@ -235,6 +235,8 @@ export const routes: Routes = [
       navItems: [
         { label: 'Users', icon: 'users', path: 'users' },
         { label: 'Activity', icon: 'activity', path: 'activity' },
+        { label: 'Feedback', icon: 'message', path: 'feedback' },
+        { label: 'Errors', icon: 'alert-triangle', path: 'errors' },
         { label: 'Notifications', icon: 'bell', path: 'notifications' },
       ],
     },
@@ -249,6 +251,16 @@ export const routes: Routes = [
         path: 'activity',
         loadComponent: () =>
           import('./pages/apps/renewloop/activity/activity').then(m => m.RenewloopActivity),
+      },
+      {
+        path: 'feedback',
+        loadComponent: () =>
+          import('./pages/apps/renewloop/feedback/feedback').then(m => m.RenewloopFeedback),
+      },
+      {
+        path: 'errors',
+        loadComponent: () =>
+          import('./pages/apps/renewloop/errors/errors').then(m => m.RenewloopErrors),
       },
       {
         path: 'notifications',

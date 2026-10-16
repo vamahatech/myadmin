@@ -23,7 +23,7 @@ structure, backend rules, definition of done). Read both before building any of 
 | Vamaha | `/apps/vamaha` (Articles list), `/push`, `/articles/new`, `/articles/:id` (editor) | vamaha-backend `apiBaseUrl` (:9991 local), shell JWT |
 | EMI Planner | `/apps/emi-planner/{analytics,push,feedback}` | vamaha-backend |
 | Verdiq | `/apps/verdiq/{overview,products,coverage,verdicts,additives,double-standards,alternatives,analytics,submissions,reports,feedback,ingest,users}` | verdiq-backend, silent service login (`verdiqSessionGuard`) |
-| RenewLoop | `/apps/renewloop/{users,activity,notifications}` | sbmint backend, silent service login (`renewloopSessionGuard`) |
+| RenewLoop | `/apps/renewloop/{users,activity,feedback,errors,notifications}` | sbmint backend, silent service login (`renewloopSessionGuard`) |
 Also: `/` directory (home), `/settings`, `/login`. All guarded by `authGuard` (token in localStorage `vamaha_admin_token`).
 
 Each app route uses `AppShellComponent` with route `data`: `appId` (matches APP_REGISTRY id),

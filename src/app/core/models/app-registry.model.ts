@@ -12,6 +12,9 @@ export interface AppTile {
    *  directly; 'service-credential' silently logs in to that app's own
    *  backend via AppSessionService (see Verdiq below). */
   authMode: 'shell' | 'service-credential';
+  /** Where native crashes/ANRs live (Play Console Android vitals, Crashlytics…);
+   *  linked from the app's Errors page. See docs/standards/monitoring-standard.md. */
+  crashConsoleUrl?: string;
 }
 
 export const APP_REGISTRY: AppTile[] = [
@@ -50,6 +53,7 @@ export const APP_REGISTRY: AppTile[] = [
     route: '/apps/renewloop/users',
     tagline: 'Subscription renewals: user accounts and push notifications.',
     authMode: 'service-credential',
+    crashConsoleUrl: 'https://play.google.com/console/',
   },
 ];
 

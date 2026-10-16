@@ -1,0 +1,206 @@
+<div class="page">
+  <app-page-header title="Errors">
+    @if (crashConsoleUrl) {
+      <a class="btn btn-secondary btn-sm" [href]="crashConsoleUrl" target="_blank" rel="noopener">
+        <app-icon name="smartphone" [size]="14" /> Native crashes in Play Console
+      </a>
+    }
+  </app-page-header>
+
+  @if (page(); as p) {
+    <div class="kpi-grid" aria-label="Error summary">
+      <div class="kpi" style="--kpi-color: var(--color-danger)">
+        <p class="kpi__label">Open issues</p>
+        <div class="kpi__body">
+          <span class="kpi__icon"><app-icon name="alert-triangle" [size]="20" /></span>
+          <p class="kpi__value">{{ p.counts.new + p.counts.investigating | number }}</p>
+        </div>
+        <div class="kpi__foot"><span>{{ p.counts.new | number }} new · {{ p.counts.investigating | number }} investigating</span></div>
+      </div>
+      <div class="kpi" style="--kpi-color: var(--color-warning)">
+        <p class="kpi__label">New in last 24 hours</p>
+        <div class="kpi__body">
+          <span class="kpi__icon"><app-icon name="sparkles" [size]="20" /></span>
+          <p class="kpi__value">{{ p.counts.newLast24h | number }}</p>
+        </div>
+        <div class="kpi__foot"><span>Issues first seen today</span></div>
+      </div>
+      <div class="kpi" style="--kpi-color: var(--color-success)">
+        <p class="kpi__label">Resolved</p>
+        <div class="kpi__body">
+          <span class="kpi__icon"><app-icon name="check-circle" [size]="20" /></span>
+          <p class="kpi__value">{{ p.counts.resolved | number }}</p>
+        </div>
+        <div class="kpi__foot"><span>{{ p.counts.ignored | number }} ignored</span></div>
+      </div>
+      <div class="kpi" style="--kpi-color: var(--color-blue)">
+        <p class="kpi__label">Native crashes</p>
+        <div class="kpi__body">
+          <span class="kpi__icon"><app-icon name="smartphone" [size]="20" /></span>
+          <p class="text-sm leading-5 text-text2">App crashes and freezes (ANRs) are reported by Android to Play Console.</p>
+        </div>
+        <div class="kpi__foot">
+          @if (crashConsoleUrl) {
+            <a class="font-semibold text-primary hover:underline" [href]="crashConsoleUrl" target="_blank" rel="noopener">Open Android vitals ↗</a>
+          } @else {
+            <span>Add the Play Console link to the app registry</span>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (error()) {
+    <div class="card state error" role="alert">{{ error() }}</div>
+  }
+
+  <section class="card overflow-hidden" aria-label="Error issues">
+    <div class="card-toolbar">
+      <div class="card-toolbar__group">
+        <h2 class="text-base font-semibold">Issues</h2>
+        @if (page(); as p) {
+          <span class="badge badge-neutral tabular-nums">{{ p.pagination.total | number }}</span>
+        }
+      </div>
+      <div class="card-toolbar__group">
+        <label class="select-field">
+          <span class="sr-only">Status</span>
+          <select class="input" [value]="status()" (change)="setStatus($any($event.target).value)">
+            @for (o of statusOptions; track o.value) {
+              <option [value]="o.value" [selected]="status() === o.value">{{ o.label }}</option>
+            }
+          </select>
+          <app-icon name="chevron-down" [size]="16" />
+        </label>
+        <label class="select-field">
+          <span class="sr-only">Where</span>
+          <select class="input" [value]="source()" (change)="setSource($any($event.target).value)">
+            <option value="" [selected]="source() === ''">App + server</option>
+            <option value="client" [selected]="source() === 'client'">App only</option>
+            <option value="server" [selected]="source() === 'server'">Server only</option>
+          </select>
+          <app-icon name="chevron-down" [size]="16" />
+        </label>
+        <label class="select-field">
+          <span class="sr-only">Type</span>
+          <select class="input" [value]="kind()" (change)="setKind($any($event.target).value)">
+            <option value="" [selected]="kind() === ''">All types</option>
+            @for (o of kindOptions; track o.value) {
+              <option [value]="o.value" [selected]="kind() === o.value">{{ o.label }}</option>
+            }
+          </select>
+          <app-icon name="chevron-down" [size]="16" />
+        </label>
+      </div>
+    </div>
+
+    @if (loading() && !page()) {
+      <div class="p-4"><app-skeleton [count]="6" /></div>
+    } @else if (page(); as p) {
+      @if (p.errors.length === 0) {
+        <app-empty-state icon="check-circle" title="No issues here" body="Errors on app screens, failed requests and server errors are grouped into issues here as they happen.">
+          <button type="button" class="btn btn-secondary btn-sm" (click)="clearFilters()">Show all issues</button>
+        </app-empty-state>
+      } @else {
+        <div class="table-scroll" [class.opacity-60]="loading()">
+          <table class="data-table is-compact">
+            <thead>
+              <tr>
+                <th>Issue</th>
+                <th>Type</th>
+                <th class="text-right">Events</th>
+                <th class="text-right">Users</th>
+                <th>Versions</th>
+                <th>Last seen</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (e of p.errors; track e.id) {
+                <tr class="cursor-pointer" (click)="open(e)">
+                  <td class="min-w-[16rem] max-w-[30rem]">
+                    <button type="button" class="block w-full text-left" (click)="$event.stopPropagation(); open(e)">
+                      <span class="flex items-center gap-2">
+                        <span class="font-medium hover:underline">{{ title(e) }}</span>
+                        @if (e.regressed) { <span class="badge badge-danger">Regressed</span> }
+                      </span>
+                      <span class="block truncate text-text2">{{ e.message || '—' }}</span>
+                      @if (e.route) { <span class="block truncate text-xs text-text2 font-mono">{{ e.route }}</span> }
+                    </button>
+                  </td>
+                  <td class="whitespace-nowrap">
+                    <span class="badge badge-neutral">{{ kindLabel(e.kind) }}</span>
+                    <span class="ml-1 text-xs text-text2">{{ e.source === 'server' ? 'Server' : 'App' }}</span>
+                  </td>
+                  <td class="text-right tabular-nums">{{ e.count | number }}</td>
+                  <td class="text-right tabular-nums">{{ e.affectedUsers | number }}{{ e.affectedUsersCapped ? '+' : '' }}</td>
+                  <td class="text-text2 whitespace-nowrap">{{ versions(e) }}</td>
+                  <td class="text-text2 tabular-nums whitespace-nowrap" [title]="e.lastSeenAt | date: 'medium'">{{ e.lastSeenAt | date: 'dd MMM, h:mm a' }}</td>
+                  <td><span [class]="'badge ' + tone(e.status)">{{ statusLabel(e.status) }}</span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <app-pagination [page]="p.pagination.page" [pageSize]="p.pagination.limit" [total]="p.pagination.total" (pageChange)="goToPage($event)" />
+      }
+    }
+  </section>
+
+  <app-modal [open]="!!selected()" [title]="selected() ? title(selected()!) : ''" (closed)="close()">
+    @if (selected(); as e) {
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="badge badge-neutral">{{ kindLabel(e.kind) }}</span>
+          <span class="badge badge-neutral">{{ e.source === 'server' ? 'Server' : 'App' }}</span>
+          @if (e.httpStatus) { <span class="badge badge-neutral">HTTP {{ e.httpStatus }}</span> }
+          @if (e.regressed) { <span class="badge badge-danger">Regressed after being resolved</span> }
+        </div>
+
+        <p class="text-sm break-words">{{ e.message || 'No message.' }}</p>
+        @if (e.route) {
+          <p class="text-sm"><span class="text-text2">Where:</span> <code class="font-mono">{{ e.route }}</code></p>
+        }
+
+        <dl class="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+          <div><dt class="text-text2">Events</dt><dd class="tabular-nums">{{ e.count | number }}</dd></div>
+          <div><dt class="text-text2">Users</dt><dd class="tabular-nums">{{ e.affectedUsers | number }}{{ e.affectedUsersCapped ? '+' : '' }}</dd></div>
+          <div><dt class="text-text2">First seen</dt><dd class="tabular-nums">{{ e.firstSeenAt | date: 'dd MMM yyyy' }}</dd></div>
+          <div><dt class="text-text2">Last seen</dt><dd class="tabular-nums">{{ e.lastSeenAt | date: 'dd MMM, h:mm a' }}</dd></div>
+          <div class="col-span-2"><dt class="text-text2">Versions</dt><dd>{{ e.appVersions.length ? e.appVersions.join(', ') : '—' }}</dd></div>
+          <div class="col-span-2"><dt class="text-text2">Platforms</dt><dd>{{ e.platforms.length ? e.platforms.join(', ') : '—' }}</dd></div>
+        </dl>
+
+        @if (e.stack) {
+          <div>
+            <p class="field-label">Stack (latest)</p>
+            <pre class="max-h-56 overflow-auto rounded-lg border border-border bg-surface p-3 text-xs leading-5 font-mono whitespace-pre">{{ e.stack }}</pre>
+          </div>
+        }
+
+        <div class="grid gap-3 sm:grid-cols-[12rem_1fr]">
+          <label class="block">
+            <span class="field-label">Status</span>
+            <span class="select-field w-full">
+              <select class="input w-full" [(ngModel)]="editStatus" name="status">
+                @for (s of editStatuses; track s[0]) {
+                  <option [value]="s[0]">{{ s[1] }}</option>
+                }
+              </select>
+              <app-icon name="chevron-down" [size]="16" />
+            </span>
+          </label>
+          <label class="block">
+            <span class="field-label">Note <span class="font-normal text-text2">(internal)</span></span>
+            <textarea class="input" rows="2" maxlength="1000" [(ngModel)]="editNote" name="note" placeholder="e.g. Fixed in 0.0.13, null check on calendar"></textarea>
+          </label>
+        </div>
+        <p class="field-help -mt-2">If a resolved issue happens again it goes back to New and is marked Regressed.</p>
+
+        <div class="flex justify-end">
+          <button type="button" class="btn btn-sm" [disabled]="saving()" (click)="save()">{{ saving() ? 'Saving…' : 'Save' }}</button>
+        </div>
+      </div>
+    }
+  </app-modal>
+</div>

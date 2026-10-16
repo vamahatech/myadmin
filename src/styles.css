@@ -606,6 +606,11 @@ input:-webkit-autofill:focus {
     cursor: pointer;
   }
 
+  /* Full-width variant for forms (e.g. a status field in a modal). */
+  .select-field.w-full > select.input {
+    width: 100%;
+  }
+
   .select-field > app-icon {
     position: absolute;
     right: 10px;

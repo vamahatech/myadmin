@@ -5,6 +5,9 @@ import { Observable, map } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { SendNotificationResult, UserDetail, UsersPage, UsersQuery } from '../../models/renewloop/user.model';
 import { ActivityPage, ActivityQuery } from '../../models/renewloop/activity.model';
+import {
+  ErrorIssue, ErrorStatus, ErrorsPage, ErrorsQuery, FeedbackItem, FeedbackPage, FeedbackQuery, FeedbackStatus,
+} from '../../models/renewloop/support.model';
 
 // Typed client for sbmint's /admin/* routes (excluding /admin/auth/login,
 // which RenewloopAuthService owns directly). No component talks to
@@ -40,6 +43,37 @@ export class RenewloopAdminApi {
     }
     params = params.set('page', String(query.page ?? 1)).set('limit', String(query.limit ?? 20));
     return this.http.get<ActivityPage>(`${this.base}/admin/activity`, { params });
+  }
+
+  getFeedback(query: FeedbackQuery = {}): Observable<FeedbackPage> {
+    return this.http.get<FeedbackPage>(`${this.base}/admin/feedback`, { params: this.listParams(query) });
+  }
+
+  updateFeedback(id: string, body: { status: FeedbackStatus; resolutionNote?: string | null }): Observable<FeedbackItem> {
+    return this.http
+      .patch<{ feedback: FeedbackItem }>(`${this.base}/admin/feedback/${encodeURIComponent(id)}`, body)
+      .pipe(map((r) => r.feedback));
+  }
+
+  getErrors(query: ErrorsQuery = {}): Observable<ErrorsPage> {
+    return this.http.get<ErrorsPage>(`${this.base}/admin/errors`, { params: this.listParams(query) });
+  }
+
+  updateError(id: string, body: { status: ErrorStatus; note?: string | null }): Observable<ErrorIssue> {
+    return this.http
+      .patch<{ error: ErrorIssue }>(`${this.base}/admin/errors/${encodeURIComponent(id)}`, body)
+      .pipe(map((r) => r.error));
+  }
+
+  /** Set filters + page/limit; empty values are left out. */
+  private listParams(query: object): HttpParams {
+    let params = new HttpParams();
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== undefined && value !== null && value !== '') params = params.set(key, String(value));
+    }
+    if (!params.has('page')) params = params.set('page', '1');
+    if (!params.has('limit')) params = params.set('limit', '20');
+    return params;
   }
 
   broadcastPush(title: string, body: string): Observable<SendNotificationResult> {

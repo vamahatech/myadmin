@@ -15,7 +15,10 @@ export type ActivityEvent =
   | 'reminder_enabled'
   | 'notification_permission_granted'
   | 'notification_permission_denied'
-  | 'admin_notification_sent';
+  | 'admin_notification_sent'
+  | 'feedback_submitted'
+  | 'admin_feedback_updated'
+  | 'admin_error_updated';
 
 export interface ActivityEntry {
   id: string;
@@ -56,6 +59,9 @@ export const ACTIVITY_LABELS: Record<ActivityEvent, string> = {
   notification_permission_granted: 'Allowed notifications',
   notification_permission_denied: 'Blocked notifications',
   admin_notification_sent: 'Admin sent a notification',
+  feedback_submitted: 'Sent feedback',
+  admin_feedback_updated: 'Admin updated feedback',
+  admin_error_updated: 'Admin updated an error issue',
 };
 
 /** Short secondary text for an entry ("via reset", "“Title” · all users · push"). */
@@ -71,6 +77,14 @@ export function activityDetail(e: ActivityEntry): string {
       const channels = Array.isArray(d['channels']) ? (d['channels'] as string[]).join(' + ') : 'push';
       return `“${d['title'] ?? ''}” · ${who} · ${channels}`;
     }
+    case 'feedback_submitted':
+      return typeof d['category'] === 'string' ? d['category'] : '';
+    case 'admin_feedback_updated':
+      return typeof d['status'] === 'string' ? `marked ${d['status']}` : '';
+    case 'admin_error_updated':
+      return [d['name'], typeof d['status'] === 'string' ? `marked ${d['status']}` : '']
+        .filter(Boolean)
+        .join(' · ');
     default:
       return '';
   }
