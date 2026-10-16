@@ -1,89 +1,85 @@
 <div class="page">
+  <app-page-header title="Feedback" description="What EMI Planner users are telling us, straight from the app." />
 
-  <div class="page-head">
-    <div class="min-w-0">
-      <h1>Feedback</h1>
-      <p class="muted">What EMI Planner users are telling us, straight from the app.</p>
-    </div>
-    <div class="inline-flex rounded-xl border border-border overflow-hidden text-sm">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div class="segmented" role="group" aria-label="Filter by status">
       @for (opt of [['', 'All'], ['NEW', 'New'], ['READ', 'Read'], ['ARCHIVED', 'Archived']]; track opt[0]) {
-        <button
-          type="button" (click)="setStatusFilter($any(opt[0]))"
-          [class.bg-primary]="statusFilter() === opt[0]" [class.text-white]="statusFilter() === opt[0]"
-          [class.text-text2]="statusFilter() !== opt[0]"
-          class="px-4 py-2 font-medium transition-colors border-l border-border first:border-l-0"
-        >{{ opt[1] }}</button>
+        <button type="button" (click)="setStatusFilter($any(opt[0]))" [attr.aria-pressed]="statusFilter() === opt[0]">{{ opt[1] }}</button>
       }
     </div>
-  </div>
-
-  <div class="flex items-center justify-between text-xs text-text2">
-    <p>{{ total() }} {{ statusFilter() ? (statusFilter() | lowercase) : '' }} item{{ total() === 1 ? '' : 's' }}</p>
+    @if (!loading() && !loadError()) {
+      <p class="text-xs text-text2 tabular-nums">
+        {{ total() }} {{ statusFilter() ? (statusFilter() | lowercase) : '' }} item{{ total() === 1 ? '' : 's' }}
+      </p>
+    }
   </div>
 
   @if (loading()) {
-    <div class="card state">Loading…</div>
+    <app-skeleton variant="cards" [count]="4" />
   } @else if (loadError()) {
     <div class="card state error" role="alert">{{ loadError() }}</div>
   } @else if (items().length === 0) {
-    <div class="text-center py-16 bg-card border border-border rounded-xl">
-      <p class="text-3xl mb-2">💬</p>
-      <p class="text-text2 text-sm">No feedback here yet.</p>
+    <div class="card">
+      <app-empty-state icon="message" title="No feedback here yet" body="Messages sent from the EMI Planner app appear here." />
     </div>
   } @else {
     <div class="grid grid-cols-1 2xl:grid-cols-2 gap-3 items-start">
       @for (f of items(); track f.id) {
-        <div
-          class="bg-card border border-border rounded-2xl pl-5 pr-5 py-4 flex gap-4 border-l-4"
-          [class.border-l-gold]="f.status === 'NEW'"
-          [class.border-l-primary]="f.status === 'READ'"
-          [class.border-l-border]="f.status === 'ARCHIVED'"
+        <article
+          class="card px-5 py-4 flex gap-4"
+          [class.opacity-70]="f.status === 'ARCHIVED'"
+          [class.fb-new]="f.status === 'NEW'"
         >
-          <div class="w-9 h-9 rounded-full bg-primary/15 text-primary font-semibold text-sm flex items-center justify-center shrink-0">
+          <div class="w-9 h-9 rounded-full bg-primary/10 text-primary font-semibold text-sm flex items-center justify-center shrink-0" aria-hidden="true">
             {{ initial(f) }}
           </div>
 
           <div class="min-w-0 flex-1">
             <div class="flex items-start justify-between gap-4 mb-1.5">
-              <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-text2">
-                <span class="font-medium text-text">{{ f.name || 'Anonymous' }}</span>
-                @if (f.email) { <span>{{ f.email }}</span> }
-                <span>·</span>
-                <span>{{ f.createdAt | date: 'MMM d, y, h:mm a' }}</span>
-                @if (f.platform) { <span>· {{ f.platform }}</span> }
-                @if (f.appVersion) { <span>· v{{ f.appVersion }}</span> }
+              <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-text2 min-w-0">
+                <span class="font-semibold text-sm text-text">{{ f.name || 'Anonymous' }}</span>
+                @if (f.email) { <span class="truncate">{{ f.email }}</span> }
               </div>
               <div class="flex items-center gap-2 shrink-0">
                 @if (f.rating) {
-                  <span class="text-gold text-xs" [title]="f.rating + '/5'">
+                  <span class="text-gold inline-flex gap-0.5" [title]="f.rating + '/5'" role="img" [attr.aria-label]="f.rating + ' out of 5 stars'">
                     @for (s of stars(f.rating); track s) {
-                      <span [class.opacity-30]="s >= f.rating!">★</span>
+                      <app-icon name="star" [size]="12" [filled]="s < f.rating!" [class.opacity-40]="s >= f.rating!" />
                     }
                   </span>
                 }
-                <span
-                  class="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full"
-                  [class.bg-gold/15]="f.status === 'NEW'" [class.text-gold]="f.status === 'NEW'"
-                  [class.bg-primary/10]="f.status === 'READ'" [class.text-primary]="f.status === 'READ'"
-                  [class.bg-surface]="f.status === 'ARCHIVED'" [class.text-text2]="f.status === 'ARCHIVED'"
-                >{{ f.status }}</span>
+                <span class="badge"
+                  [class.badge-info]="f.status === 'NEW'"
+                  [class.badge-neutral]="f.status !== 'NEW'">
+                  {{ f.status === 'NEW' ? 'New' : f.status === 'READ' ? 'Read' : 'Archived' }}
+                </span>
               </div>
             </div>
 
-            <p class="text-sm leading-relaxed">{{ f.message }}</p>
+            <p class="text-sm leading-relaxed text-text">{{ f.message }}</p>
 
-            <div class="flex gap-3 mt-2">
-              @if (f.status !== 'READ') {
-                <button type="button" (click)="mark(f.id, 'READ')" class="text-xs font-medium text-primary hover:text-accent transition-colors">Mark read</button>
-              }
-              @if (f.status !== 'ARCHIVED') {
-                <button type="button" (click)="mark(f.id, 'ARCHIVED')" class="text-xs font-medium text-text2 hover:text-text transition-colors">Archive</button>
-              }
+            <div class="flex flex-wrap items-center justify-between gap-2 mt-3">
+              <p class="text-xs text-text2">
+                {{ f.createdAt | date: 'MMM d, y, h:mm a' }}
+                @if (f.platform) { · {{ f.platform }} }
+                @if (f.appVersion) { · v{{ f.appVersion }} }
+              </p>
+              <div class="flex gap-1 -mr-2">
+                @if (f.status !== 'READ') {
+                  <button type="button" (click)="mark(f.id, 'READ')" class="btn btn-tertiary btn-sm">
+                    <app-icon name="check" [size]="14" /> Mark read
+                  </button>
+                }
+                @if (f.status !== 'ARCHIVED') {
+                  <button type="button" (click)="mark(f.id, 'ARCHIVED')" class="btn btn-tertiary btn-sm">
+                    <app-icon name="inbox" [size]="14" /> Archive
+                  </button>
+                }
+              </div>
             </div>
           </div>
-        </div>
+        </article>
       }
     </div>
   }
-
 </div>

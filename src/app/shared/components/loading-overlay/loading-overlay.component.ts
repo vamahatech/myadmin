@@ -14,6 +14,8 @@ export class LoadingOverlayComponent {
   private readonly loading = inject(LoadingService);
   readonly visible = signal(false);
   readonly extended = signal(false);
+  /** Set once the first loading cycle finishes; later loads use the top bar. */
+  readonly booted = signal(false);
 
   private showTimer: ReturnType<typeof setTimeout> | null = null;
   private hideTimer: ReturnType<typeof setTimeout> | null = null;
@@ -46,6 +48,7 @@ export class LoadingOverlayComponent {
             this.visible.set(false);
             this.cancelExtended();
             this.extended.set(false);
+            this.booted.set(true);
           }, remaining);
         }
       }

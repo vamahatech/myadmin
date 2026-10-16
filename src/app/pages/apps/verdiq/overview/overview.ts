@@ -3,13 +3,16 @@ import { DecimalPipe } from '@angular/common';
 
 import { AdminApi } from '../../../../core/services/verdiq/admin-api';
 import { DashboardMetrics } from '../../../../core/models/verdiq/dashboard.model';
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
+import { SkeletonComponent } from '../../../../shared/components/skeleton/skeleton.component';
 
 // The landing page: a live data-health snapshot. Answers "what test data do we
 // actually have?" — headline counts, catalog completeness (the null-nutrition
 // alarm), verdict mix, and the category breakdown.
 @Component({
   selector: 'app-overview',
-  imports: [DecimalPipe],
+  imports: [SkeletonComponent, PageHeaderComponent, IconComponent, DecimalPipe],
   templateUrl: './overview.html',
   styleUrl: './overview.sass',
 })

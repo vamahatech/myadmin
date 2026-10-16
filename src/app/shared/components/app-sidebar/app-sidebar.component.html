@@ -2,41 +2,75 @@
   <div class="fixed inset-0 z-40 bg-black/30 md:hidden" (click)="closed.emit()" aria-hidden="true"></div>
 }
 
+@let rail = collapsed();
 <aside
   id="app-sidebar"
-  class="bg-bg border-r border-border flex flex-col
-         fixed inset-y-0 left-0 z-50 w-[280px] max-w-[85vw] transition-transform duration-200 motion-reduce:transition-none
-         md:static md:z-auto md:w-60 md:max-w-none md:translate-x-0 md:h-full md:shrink-0"
+  class="sidebar bg-surface flex flex-col
+         fixed inset-y-0 left-0 z-50 max-md:w-[280px] max-w-[85vw] transition-[transform,width] duration-200 motion-reduce:transition-none
+         md:static md:z-auto md:max-w-none md:translate-x-0 md:h-full md:shrink-0"
+  [class.is-rail]="rail"
   [class]="open() ? 'translate-x-0' : '-translate-x-full invisible md:visible'"
   [attr.aria-label]="appName() + ' navigation'">
-  <div class="md:hidden h-16 px-4 flex items-center justify-between border-b border-border shrink-0">
-    <span class="text-sm font-semibold text-text">{{ appName() }}</span>
-    <button type="button" class="icon-btn w-11 h-11" (click)="closed.emit()" aria-label="Close navigation">
+  <!-- App identity: the menu below visibly belongs to this app. -->
+  <div class="sidebar__head px-4 pt-4 md:pt-2 pb-4 flex items-start gap-3 border-b border-border shrink-0">
+    @if (app(); as a) {
+      <img [src]="'/' + a.icon" alt="" class="w-10 h-10 shrink-0 rounded-[10px] object-cover ring-1 ring-border bg-card" [attr.title]="rail ? a.name : null" />
+    }
+    <div class="sidebar__label min-w-0 flex-1">
+      <p class="text-[15px] leading-5 font-semibold text-text truncate">{{ appName() }}</p>
+      @if (app()?.tagline; as tagline) {
+        <p class="mt-0.5 text-xs leading-[17px] text-text2 line-clamp-2">{{ tagline }}</p>
+      }
+    </div>
+    <button type="button" class="icon-btn md:hidden w-11 h-11 -mr-2 -mt-1" (click)="closed.emit()" aria-label="Close navigation">
       <app-icon name="x" />
     </button>
   </div>
 
-  <nav class="flex-1 overflow-y-auto px-3 py-4">
-    <ul class="flex flex-col gap-1">
-      @for (item of items(); track item.path) {
-        @let active = isActive(item);
-        <li>
-          <a
-            [routerLink]="link(item)"
-            (click)="closed.emit()"
-            [attr.aria-current]="active ? 'page' : null"
-            class="relative flex items-center gap-3 h-10 px-3 rounded-lg text-sm transition-colors duration-150 motion-reduce:transition-none focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus"
-            [class]="active
-              ? 'bg-hover text-text font-semibold'
-              : 'text-text2 font-medium hover:bg-hover hover:text-text active:bg-pressed'">
-            @if (active) {
-              <span class="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-primary" aria-hidden="true"></span>
-            }
-            <app-icon [name]="item.icon" [size]="18" [class]="active ? 'text-primary' : 'text-text2'" />
-            <span class="truncate">{{ item.label }}</span>
-          </a>
-        </li>
+  <nav class="flex-1 overflow-y-auto overflow-x-hidden px-3 py-3">
+    @for (g of groups(); track g.label; let first = $first) {
+      <p class="sidebar__label px-3 pb-1.5 text-[11px] font-medium uppercase tracking-wide text-text2" [class.pt-4]="!first">{{ g.label }}</p>
+      @if (rail && !first) {
+        <div class="hidden md:block mx-3 my-2 border-t border-border" aria-hidden="true"></div>
       }
-    </ul>
+      <ul class="flex flex-col gap-0.5">
+        @for (item of g.items; track item.path) {
+          @let active = isActive(item);
+          <li>
+            <a
+              [routerLink]="link(item)"
+              (click)="closed.emit()"
+              [attr.aria-current]="active ? 'page' : null"
+              [attr.title]="rail ? item.label : null"
+              class="sidebar__item relative flex items-center gap-3 h-10 px-3 rounded-lg text-sm transition-colors duration-150 motion-reduce:transition-none focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus"
+              [class]="active
+                ? 'bg-card text-text font-semibold shadow-sm ring-1 ring-border'
+                : 'text-text2 font-medium hover:bg-card/60 hover:text-text active:bg-pressed'">
+              @if (active) {
+                <span class="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-[var(--app-accent)]" aria-hidden="true"></span>
+              }
+              <app-icon [name]="item.icon" [size]="18" [class]="active ? 'text-[var(--app-accent)]' : 'text-text2'" />
+              <span class="sidebar__label truncate">{{ item.label }}</span>
+            </a>
+          </li>
+        }
+      </ul>
+    }
   </nav>
+
+  <div class="border-t border-border p-3 flex flex-col gap-0.5 shrink-0">
+    <a routerLink="/" (click)="closed.emit()" [attr.title]="rail ? 'All applications' : null"
+      class="sidebar__item flex items-center gap-3 h-10 px-3 rounded-lg text-sm font-medium text-text2 hover:bg-card/60 hover:text-text focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus">
+      <app-icon name="apps" [size]="18" />
+      <span class="sidebar__label">All applications</span>
+    </a>
+    <button type="button" (click)="toggleCollapsed()"
+      class="sidebar__item hidden md:flex items-center gap-3 h-10 px-3 rounded-lg text-sm font-medium text-text2 hover:bg-card/60 hover:text-text focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus"
+      [attr.aria-label]="rail ? 'Expand sidebar' : 'Collapse sidebar'"
+      [attr.aria-expanded]="!rail"
+      [attr.title]="rail ? 'Expand sidebar' : null">
+      <app-icon name="panel-left" [size]="18" />
+      <span class="sidebar__label">Collapse</span>
+    </button>
+  </div>
 </aside>

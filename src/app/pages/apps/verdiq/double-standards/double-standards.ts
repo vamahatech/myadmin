@@ -3,6 +3,11 @@ import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 import { AdminApi } from '../../../../core/services/verdiq/admin-api';
+import { ConfirmService } from '../../../../core/services/confirm.service';
+import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { ToastService } from '../../../../core/services/toast.service';
+import { SkeletonComponent } from '../../../../shared/components/skeleton/skeleton.component';
 import {
   DoubleStandardInput,
   DoubleStandardRow,
@@ -12,17 +17,18 @@ import {
 // verified. Admins draft/edit here, then verify. All writes audit-logged.
 @Component({
   selector: 'app-double-standards',
-  imports: [DatePipe, FormsModule],
+  imports: [SkeletonComponent, IconComponent, PageHeaderComponent, DatePipe, FormsModule],
   templateUrl: './double-standards.html',
   styleUrl: './double-standards.sass',
 })
 export class DoubleStandards {
   private api = inject(AdminApi);
+  private readonly toast = inject(ToastService);
+  private readonly confirm = inject(ConfirmService);
 
   readonly rows = signal<DoubleStandardRow[]>([]);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
-  readonly notice = signal<string | null>(null);
   readonly busy = signal<string | null>(null);
 
   readonly editing = signal<string | null>(null);
@@ -103,7 +109,7 @@ export class DoubleStandards {
     this.api.upsertDoubleStandard({ ...this.form, barcode: this.form.barcode.trim() }).subscribe({
       next: () => {
         this.busy.set(null);
-        this.notice.set(`Saved pair for ${this.form.barcode}.`);
+        this.toast.success(`Saved pair for ${this.form.barcode}.`);
         this.cancel();
         this.load();
       },
@@ -114,16 +120,16 @@ export class DoubleStandards {
     });
   }
 
-  toggleVerify(r: DoubleStandardRow): void {
+  async toggleVerify(r: DoubleStandardRow): Promise<void> {
     const next = !r.verified;
-    if (next && !confirm(`Verify and PUBLISH this pair for ${r.product_name || r.barcode}? It will be shown to users.`)) {
+    if (next && !(await this.confirm.ask({ title: 'Verify and publish?', message: `The pair for ${r.product_name || r.barcode} will be shown to users.`, confirmLabel: 'Verify & publish' }))) {
       return;
     }
     this.busy.set(r.barcode);
     this.api.verifyDoubleStandard(r.barcode, next).subscribe({
       next: () => {
         this.busy.set(null);
-        this.notice.set(next ? `Verified & published ${r.barcode}.` : `Unpublished ${r.barcode}.`);
+        this.toast.success(next ? `Verified & published ${r.barcode}.` : `Unpublished ${r.barcode}.`);
         this.load();
       },
       error: () => {
@@ -133,13 +139,13 @@ export class DoubleStandards {
     });
   }
 
-  remove(r: DoubleStandardRow): void {
-    if (!confirm(`Delete the double-standard pair for ${r.product_name || r.barcode}?`)) return;
+  async remove(r: DoubleStandardRow): Promise<void> {
+    if (!(await this.confirm.ask({ title: 'Delete pair?', message: `The double-standard pair for ${r.product_name || r.barcode} will be removed.`, confirmLabel: 'Delete', tone: 'danger' }))) return;
     this.busy.set(r.barcode);
     this.api.deleteDoubleStandard(r.barcode).subscribe({
       next: () => {
         this.busy.set(null);
-        this.notice.set(`Deleted ${r.barcode}.`);
+        this.toast.success(`Deleted ${r.barcode}.`);
         this.load();
       },
       error: () => {

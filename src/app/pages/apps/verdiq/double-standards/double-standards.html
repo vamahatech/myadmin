@@ -1,13 +1,9 @@
 <div class="page">
-  <div class="page-head">
-    <div>
-      <h1>Double standards</h1>
-      <p class="muted">India-vs-foreign pairs. A pair only reaches the app once <strong>verified</strong>.</p>
-    </div>
-    <button class="btn btn-ghost" (click)="startNew()" [disabled]="busy() === 'form'">+ New pair</button>
-  </div>
+  <app-page-header title="Double standards">
+    <span pageDescription>India-vs-foreign pairs. A pair only reaches the app once <strong>verified</strong>.</span>
+    <button type="button" class="btn btn-ghost" (click)="startNew()" [disabled]="busy() === 'form'"><app-icon name="plus" [size]="16" /> New pair</button>
+  </app-page-header>
 
-  @if (notice()) { <div class="card notice">{{ notice() }}</div> }
   @if (error()) { <div class="card state error">{{ error() }}</div> }
 
   <!-- Draft / edit form -->
@@ -52,7 +48,7 @@
 
   <!-- Table -->
   @if (loading()) {
-    <div class="card state">Loading…</div>
+    <app-skeleton [count]="5" />
   } @else {
     <div class="card">
       <div class="table-head">

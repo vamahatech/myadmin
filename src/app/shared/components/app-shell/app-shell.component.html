@@ -1,4 +1,6 @@
-<div class="min-h-screen md:h-screen flex flex-col bg-bg text-text">
+<!-- Header + sidebar form one surface-coloured L-shaped frame; the page sits
+     inset in it as the canvas. --app-accent carries the app's colour. -->
+<div class="min-h-screen md:h-screen flex flex-col bg-surface text-text" [style.--app-accent]="accent">
   <app-global-header [app]="app" [navOpen]="navOpen()" (navToggle)="navOpen.set(!navOpen())" />
 
   <div class="flex-1 min-h-0 flex">
@@ -6,10 +8,13 @@
       [items]="navItems"
       [basePath]="basePath"
       [appName]="app?.name ?? appName"
+      [app]="app"
       [open]="navOpen()"
       (closed)="navOpen.set(false)" />
 
-    <main class="flex-1 min-w-0 md:h-full md:overflow-y-auto shell-content" [class]="contentClass ?? ''">
+    <main
+      class="flex-1 min-w-0 bg-bg border-t border-border md:border-l md:rounded-tl-2xl md:h-full md:overflow-y-auto shell-content"
+      [class]="contentClass ?? ''">
       <router-outlet />
     </main>
   </div>

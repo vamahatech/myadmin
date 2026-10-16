@@ -1,18 +1,9 @@
 <div class="page">
-  <div class="page-head">
-    <div>
-      <h1>Additives (INS)</h1>
-      <p class="muted">The decode table that powers additive warnings in the app. Empty until seeded.</p>
-    </div>
-    <div class="head-actions">
-      <button class="btn btn-ghost" (click)="startNew()" [disabled]="busy()">+ New entry</button>
-      <button class="btn" (click)="seed()" [disabled]="busy()">Seed from code</button>
-    </div>
-  </div>
+  <app-page-header title="Additives (INS)" description="The decode table that powers additive warnings in the app. Empty until seeded.">
+    <button type="button" class="btn btn-ghost" (click)="startNew()" [disabled]="busy()"><app-icon name="plus" [size]="16" /> New entry</button>
+    <button type="button" class="btn" (click)="seed()" [disabled]="busy()">Seed from code</button>
+  </app-page-header>
 
-  @if (notice()) {
-    <div class="card notice">{{ notice() }}</div>
-  }
   @if (error()) {
     <div class="card state error">{{ error() }}</div>
   }
@@ -48,7 +39,7 @@
 
   <!-- Table -->
   @if (loading()) {
-    <div class="card state">Loading…</div>
+    <app-skeleton [count]="5" />
   } @else {
     <div class="card">
       <div class="table-head">

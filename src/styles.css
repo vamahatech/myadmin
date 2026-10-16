@@ -189,10 +189,42 @@ h1, h2, h3 {
     loading-stamp-color-cycle 3.6s linear infinite reverse;
 }
 
+/* Non-blocking request indicator used after the first load: a 2px
+   indeterminate bar pinned to the top of the viewport. */
+.top-progress {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 2px;
+  z-index: 9999;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.top-progress::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: var(--color-primary);
+  border-radius: 999px;
+  animation: top-progress 1.1s ease-in-out infinite;
+}
+
+@keyframes top-progress {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(250%); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ink-seal--pressed,
   .ledger-row {
     animation: none;
+  }
+
+  .top-progress::before {
+    width: 100%;
+    animation: none;
+    opacity: .6;
   }
 
   .loading-stamp__mark,
@@ -291,6 +323,18 @@ input:-webkit-autofill:focus {
 
   .page-head .muted {
     margin-top: 4px;
+    max-width: 72ch;
+  }
+
+  /* Title block takes the free space, so actions stay top-right beside a
+     long description instead of wrapping below it. */
+  .page-head > :first-child {
+    flex: 1 1 20rem;
+  }
+
+  /* Projected [pageDescription] slot: hidden when nothing was projected. */
+  .page-head__desc:empty {
+    display: none;
   }
 
   .section-title {
@@ -342,6 +386,362 @@ input:-webkit-autofill:focus {
 
   a.list-row:active {
     background: var(--color-pressed);
+  }
+
+  /* Studio wordmark in the global header: navy text for light, light text
+     for html.dark (Tailwind dark: isn't class-based here). */
+  .wordmark-dark { display: none; }
+  html.dark .wordmark-light { display: none; }
+  html.dark .wordmark-dark { display: block; }
+
+  /* Compact metric tile for a page's stat strip. */
+  .stat {
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+
+  .stat__label {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 600;
+    color: var(--color-text2);
+  }
+
+  .stat__value {
+    margin-top: 6px;
+    font-size: 24px;
+    line-height: 30px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text);
+  }
+
+  .stat__hint {
+    margin-top: 2px;
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--color-text2);
+  }
+
+  /* Value + delta on one baseline: <div class="stat__row"><p class="stat__value">…</p><span class="stat__delta up">…</span></div> */
+  .stat__row {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+  }
+
+  .stat__delta {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0 6px;
+    min-height: 20px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    background: var(--color-surface);
+    color: var(--color-text2);
+  }
+
+  .stat__delta.up {
+    background: color-mix(in srgb, var(--color-success) 12%, var(--color-card));
+    color: var(--color-success);
+  }
+
+  .stat__delta.down {
+    background: color-mix(in srgb, var(--color-danger) 10%, var(--color-card));
+    color: var(--color-danger);
+  }
+
+  .stat__delta.new {
+    background: color-mix(in srgb, var(--color-blue) 12%, var(--color-card));
+    color: var(--color-blue);
+  }
+
+  /* Tile that needs attention (e.g. empty table, unfound scans). */
+  .stat.is-alert {
+    border-color: color-mix(in srgb, var(--color-danger) 35%, var(--color-border));
+    background: color-mix(in srgb, var(--color-danger) 5%, var(--color-card));
+  }
+
+  /* KPI card: label, tinted icon + big value, divider, footer (delta chip + note).
+     Tint with style="--kpi-color: var(--color-blue)".
+     <div class="kpi">
+       <p class="kpi__label">Total users</p>
+       <div class="kpi__body"><span class="kpi__icon"><app-icon …/></span><p class="kpi__value">1,240</p></div>
+       <div class="kpi__foot"><span class="stat__delta up">+6%</span><span>vs prev 30 days: 1,168</span></div>
+     </div> */
+  .kpi {
+    display: flex;
+    flex-direction: column;
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 16px 16px 12px;
+  }
+
+  .kpi__label {
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .kpi__body {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 14px 0;
+  }
+
+  .kpi__icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--kpi-color, var(--color-primary)) 12%, var(--color-card));
+    color: var(--kpi-color, var(--color-primary));
+  }
+
+  .kpi__value {
+    font-size: 28px;
+    line-height: 34px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text);
+  }
+
+  .kpi__foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px 8px;
+    margin-top: auto;
+    padding-top: 10px;
+    border-top: 1px solid var(--color-border);
+    font-size: 13px;
+    line-height: 18px;
+    color: var(--color-text2);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+  }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+  }
+
+  /* Filters + search bar that sits on top of a list/table card. */
+  .card-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .card-toolbar__group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Search input with a leading icon; wrap the <input class="input"> in it. */
+  .search-field {
+    position: relative;
+    display: block;
+    width: 100%;
+  }
+
+  @media (min-width: 640px) {
+    .search-field { width: 256px; }
+  }
+
+  .search-field > app-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-text2);
+    pointer-events: none;
+  }
+
+  .search-field > .input {
+    padding-left: 36px;
+    /* The legacy `form label { font-weight: 700 !important }` rule would
+       otherwise bleed into the input when the field sits inside a form. */
+    font-weight: 400;
+  }
+
+  /* Native <select class="input"> with a trailing chevron; sits beside
+     .search-field in a toolbar at the same height. */
+  .select-field {
+    position: relative;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+
+  .select-field > select.input {
+    appearance: none;
+    width: auto;
+    padding-right: 34px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .select-field > app-icon {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-text2);
+    pointer-events: none;
+  }
+
+  /* Keyboard hint chip (command palette, shortcuts). */
+  .kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    border: 1px solid var(--color-border);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    background: var(--color-card);
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text2);
+  }
+
+  .cmd-fade { animation: cmd-fade 120ms ease-out; }
+  .cmd-rise { animation: cmd-rise 160ms ease-out; }
+  @keyframes cmd-fade { from { opacity: 0; } }
+  @keyframes cmd-rise { from { opacity: 0; transform: translateY(-6px) scale(.98); } }
+  @media (prefers-reduced-motion: reduce) {
+    .cmd-fade, .cmd-rise { animation: none; }
+  }
+
+  /* App sidebar widths. .is-rail (md+ only) collapses to a 64px icon rail:
+     labels and the tagline hide; icons stay, with title tooltips. */
+  @media (min-width: 768px) {
+    .sidebar { width: 240px; }
+    .sidebar.is-rail { width: 64px; }
+    .sidebar.is-rail .sidebar__label { display: none; }
+    .sidebar.is-rail .sidebar__head { padding-left: 12px; padding-right: 12px; justify-content: center; }
+    .sidebar.is-rail .sidebar__item { justify-content: center; padding-left: 0; padding-right: 0; }
+  }
+
+  /* Unread item in a feed (feedback, reports): a thin accent rail on the left. */
+  .fb-new {
+    box-shadow: inset 3px 0 0 var(--color-blue);
+  }
+
+  /* Sortable column header button inside a .data-table <th aria-sort>. */
+  .th-sort {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    color: inherit;
+    border-radius: 4px;
+  }
+
+  .th-sort:hover { color: var(--color-text); }
+
+  .th-sort:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  /* Table directly inside a card (no own border/radius). */
+  .card > .table-scroll {
+    border-radius: 0;
+  }
+
+  /* Loading placeholders. Size them with utilities: <div class="skeleton h-4 w-40"></div> */
+  .skeleton {
+    border-radius: 6px;
+    background: linear-gradient(90deg,
+      var(--color-surface) 0%,
+      color-mix(in srgb, var(--color-surface) 40%, var(--color-card)) 50%,
+      var(--color-surface) 100%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  }
+
+  @keyframes skeleton-shimmer {
+    from { background-position: 100% 0; }
+    to   { background-position: -100% 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton { animation: none; }
+  }
+
+  /* Segmented filter (status tabs on a list toolbar). Buttons use aria-pressed. */
+  .segmented {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 10px;
+    background: var(--color-surface);
+  }
+
+  .segmented > button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 32px;
+    padding: 0 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text2);
+    transition: background-color 150ms, color 150ms;
+  }
+
+  @media (hover: hover) {
+    .segmented > button:hover { color: var(--color-text); }
+  }
+
+  .segmented > button[aria-pressed="true"] {
+    background: var(--color-card);
+    color: var(--color-text);
+    box-shadow: 0 0 0 1px var(--color-border);
+  }
+
+  .segmented > button:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 1px;
+  }
+
+  .segmented__count {
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text2);
   }
 
   .state {
@@ -596,5 +996,66 @@ input:-webkit-autofill:focus {
 
   .table-scroll {
     overflow-x: auto;
+  }
+
+  /* Dense variant for long lists: tinted sentence-case header, tighter rows,
+     cells centred vertically (avatars, badges, icon buttons line up). */
+  .data-table.is-compact th {
+    padding: 8px 12px;
+    background: var(--color-surface);
+    border-bottom: none;
+    color: var(--color-text);
+    font-size: 13px;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .data-table.is-compact td {
+    padding: 6px 12px;
+    vertical-align: middle;
+  }
+
+  .data-table.is-compact tbody tr.is-selected {
+    background: color-mix(in srgb, var(--color-primary) 6%, var(--color-card));
+  }
+
+  /* Narrow first column holding a row-select checkbox. */
+  .data-table .col-check {
+    width: 1%;
+    padding-right: 0;
+  }
+
+  .data-table .col-check input {
+    display: block;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+  }
+
+  .data-table .th-sort > .sort-idle {
+    opacity: 0.45;
+  }
+
+  /* Initials avatar. Tint it per person with a palette token:
+     style="--avatar-color: var(--color-blue)". */
+  .avatar {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--avatar-color, var(--color-primary)) 16%, var(--color-card));
+    color: var(--avatar-color, var(--color-primary));
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  .icon-btn.is-sm {
+    width: 30px;
+    height: 30px;
   }
 }

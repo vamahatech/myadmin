@@ -2,52 +2,36 @@
   <app-page-header title="Usage analytics" description="How people use the EMI Planner loan calculator." />
 
   <div class="flex flex-wrap items-center justify-between gap-4">
-    <div class="inline-flex rounded-xl border border-border overflow-hidden text-sm">
+    <div class="segmented" role="group" aria-label="View">
       @for (t of [['overview', 'Overview'], ['features', 'Feature usage'], ['funnels', 'Funnels']]; track t[0]) {
-        <button
-          type="button" (click)="setTab($any(t[0]))"
-          [class.bg-primary]="tab() === t[0]" [class.text-white]="tab() === t[0]"
-          [class.text-text2]="tab() !== t[0]"
-          class="px-4 py-2 font-medium transition-colors border-l border-border first:border-l-0"
-        >{{ t[1] }}</button>
+        <button type="button" (click)="setTab($any(t[0]))" [attr.aria-pressed]="tab() === t[0]">{{ t[1] }}</button>
       }
     </div>
 
     <div class="relative flex items-center gap-2">
-      <div class="inline-flex rounded-xl border border-border overflow-hidden text-sm">
+      <div class="segmented" role="group" aria-label="Date range">
         @for (d of [1, 7, 30, 90]; track d) {
-          <button
-            type="button" (click)="setDays($any(d))"
-            [class.bg-primary]="days() === d && !customRange()" [class.text-white]="days() === d && !customRange()"
-            [class.text-text2]="days() !== d || customRange()"
-            class="px-3 py-1.5 font-medium transition-colors border-l border-border first:border-l-0"
-          >{{ d }}d</button>
+          <button type="button" (click)="setDays($any(d))" [attr.aria-pressed]="days() === d && !customRange()">{{ d }}d</button>
         }
-        <button
-          type="button" (click)="toggleCustomPicker()"
-          [class.bg-primary]="!!customRange()" [class.text-white]="!!customRange()"
-          [class.text-text2]="!customRange()"
-          class="px-3 py-1.5 font-medium transition-colors border-l border-border"
-        >{{ customRange() ? (customRange()!.from + ' → ' + customRange()!.to) : 'Custom' }}</button>
+        <button type="button" (click)="toggleCustomPicker()" [attr.aria-pressed]="!!customRange()" [attr.aria-expanded]="showCustomPicker()">
+          {{ customRange() ? (customRange()!.from + ' – ' + customRange()!.to) : 'Custom' }}
+        </button>
       </div>
 
       @if (showCustomPicker()) {
-        <div class="absolute top-full right-0 mt-2 z-10 bg-card border border-border rounded-xl p-4 shadow-md w-72 space-y-3">
+        <div class="absolute top-full right-0 mt-2 z-10 card shadow-md p-4 w-72 space-y-3">
           <div class="flex items-center gap-2">
-            <label class="text-xs text-text2 w-10 shrink-0">From</label>
-            <input type="date" [(ngModel)]="customFrom" class="input flex-1" />
+            <label for="range-from" class="text-xs text-text2 w-10 shrink-0">From</label>
+            <input id="range-from" type="date" [(ngModel)]="customFrom" class="input flex-1" />
           </div>
           <div class="flex items-center gap-2">
-            <label class="text-xs text-text2 w-10 shrink-0">To</label>
-            <input type="date" [(ngModel)]="customTo" class="input flex-1" />
+            <label for="range-to" class="text-xs text-text2 w-10 shrink-0">To</label>
+            <input id="range-to" type="date" [(ngModel)]="customTo" class="input flex-1" />
           </div>
           @if (customRangeError()) {
-            <p class="text-danger text-xs">{{ customRangeError() }}</p>
+            <p class="field-error mt-0">{{ customRangeError() }}</p>
           }
-          <button
-            type="button" (click)="applyCustomRange()"
-            class="btn w-full"
-          >Apply</button>
+          <button type="button" (click)="applyCustomRange()" class="btn w-full">Apply</button>
         </div>
       }
     </div>
@@ -56,25 +40,29 @@
   <!-- ── Overview / Feature usage / Funnels — driven by app-events summary ── -->
   @if (tab() === 'overview' || tab() === 'features' || tab() === 'funnels') {
     @if (loading()) {
-      <div class="card state">Loading…</div>
+      <app-skeleton variant="stats" [count]="3" />
     } @else if (loadError()) {
       <div class="card state error" role="alert">{{ loadError() }}</div>
     } @else if (summary(); as s) {
 
       @if (s.totalEvents === 0) {
-        <p class="text-text2 text-sm bg-card border border-border rounded-2xl p-5">
-          No events recorded for EMI Planner {{ rangeDescription() }} yet.
-        </p>
+        <div class="card">
+          <app-empty-state icon="bar-chart" title="No events yet" [body]="'Nothing recorded for EMI Planner ' + rangeDescription() + '.'" />
+        </div>
       } @else if (noPreviousData()) {
-        <p class="text-text2 text-sm bg-card border border-border rounded-2xl p-5">
-          No usage recorded {{ previousPeriodLabel() | lowercase }} — nothing to compare
-          {{ currentPeriodLabel() | lowercase }} against yet, so deltas are hidden until there's a baseline.
+        <p class="card state flex items-start gap-2">
+          <app-icon name="info" [size]="16" class="mt-0.5 text-blue" />
+          <span>
+            No usage recorded {{ previousPeriodLabel() | lowercase }} — nothing to compare
+            {{ currentPeriodLabel() | lowercase }} against yet, so changes are hidden until there's a baseline.
+          </span>
         </p>
       }
 
       @if (tab() === 'overview' && anomalies().length > 0) {
-        <div class="flex flex-wrap items-center gap-2 text-sm bg-gold/10 border border-gold/30 text-gold rounded-xl px-4 py-3">
-          <span class="font-semibold">Heads up —</span>
+        <div class="flex flex-wrap items-center gap-2 text-sm rounded-xl px-4 py-3 border border-warning/30 bg-warning/10 text-warning" role="status">
+          <app-icon name="alert-triangle" [size]="16" />
+          <span class="font-semibold">Heads up</span>
           @for (a of anomalies(); track a.key) {
             <span>
               {{ a.label }} {{ a.delta! >= 0 ? 'jumped' : 'dropped' }}
@@ -88,65 +76,51 @@
       @switch (tab()) {
 
         @case ('overview') {
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             @for (stat of overviewStats(); track stat.key) {
-              <div class="bg-card border border-border rounded-xl overflow-hidden">
-                <p class="text-text2 text-xs uppercase tracking-wide px-6 pt-6 pb-2">{{ stat.label }}</p>
-
+              <div class="stat flex flex-col">
+                <p class="stat__label">{{ stat.label }}</p>
+                <div class="stat__row mt-1.5">
+                  <p class="stat__value mt-0">{{ stat.current | number: stat.format }}</p>
+                  @if (stat.delta !== null) {
+                    <span class="stat__delta" [class.up]="stat.delta >= 0" [class.down]="stat.delta < 0">
+                      <app-icon [name]="stat.delta >= 0 ? 'arrow-up' : 'arrow-down'" [size]="11" />
+                      {{ (stat.delta >= 0 ? stat.delta : -stat.delta) | number: '1.0-1' }}%
+                    </span>
+                  } @else if (stat.current > 0 && !noPreviousData()) {
+                    <span class="stat__delta new">New</span>
+                  }
+                </div>
+                <p class="stat__hint">
+                  {{ currentPeriodLabel() }} · vs. {{ stat.previous | number: stat.format }} {{ previousPeriodLabel() | lowercase }}
+                </p>
                 @if (stat.spark) {
-                  <svg viewBox="0 0 100 28" preserveAspectRatio="none" class="w-full h-7 px-0">
+                  <svg viewBox="0 0 100 28" preserveAspectRatio="none" class="w-full h-8 mt-3" aria-hidden="true">
                     <polyline
                       [attr.points]="stat.spark"
                       fill="none"
-                      class="stroke-primary"
-                      stroke-width="2.5"
+                      class="stroke-chart-1"
+                      stroke-width="2"
                       vector-effect="non-scaling-stroke"
                       stroke-linecap="round"
                       stroke-linejoin="round"
                     />
                   </svg>
                 }
-
-                <div class="grid grid-cols-3 divide-x divide-border mt-2">
-                  <div class="px-5 pb-6">
-                    <p class="text-text2 text-[11px] mb-1 truncate">{{ currentPeriodLabel() }}</p>
-                    <p class="text-2xl font-bold tabular-nums">{{ stat.current | number: stat.format }}</p>
-                  </div>
-                  <div class="px-5 pb-6">
-                    <p class="text-text2 text-[11px] mb-1 truncate">{{ previousPeriodLabel() }}</p>
-                    <p
-                      class="text-2xl font-bold tabular-nums"
-                      [class.text-gold]="stat.previous === 0" [class.text-text]="stat.previous !== 0"
-                    >{{ stat.previous === 0 ? 0 : (stat.previous | number: stat.format) }}</p>
-                  </div>
-                  <div class="px-5 pb-6">
-                    <p class="text-text2 text-[11px] mb-1 truncate">Change</p>
-                    @if (stat.delta !== null) {
-                      <p
-                        class="text-2xl font-bold tabular-nums"
-                        [class.text-success]="stat.delta >= 0" [class.text-danger]="stat.delta < 0"
-                      >{{ stat.delta >= 0 ? '+' : '−' }}{{ (stat.delta >= 0 ? stat.delta : -stat.delta) | number: '1.0-1' }}%</p>
-                    } @else if (stat.current > 0 && !noPreviousData()) {
-                      <p class="text-2xl font-bold text-gold">New</p>
-                    } @else {
-                      <p class="text-2xl font-bold text-text2">—</p>
-                    }
-                  </div>
-                </div>
               </div>
             }
           </div>
-          <p class="text-text2 text-xs">
+          <p class="text-text2 text-xs leading-[18px] max-w-[72ch]">
             Counts come from EMI Planner's structure-only event stream (no IP, no geo, no free text —
             only the events and prop keys allowlisted for this app). {{ currentPeriodLabel() }} is compared against
             {{ previousPeriodLabel() | lowercase }}{{ days() === 1 ? '' : ', the equal-length period right before it' }}.
           </p>
 
           @if (s.byAppVersion.length || s.byOsMajor.length) {
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               @if (s.byAppVersion.length) {
-                <div class="bg-card border border-border rounded-xl p-6">
-                  <p class="text-text2 text-xs uppercase tracking-wide mb-3">App version</p>
+                <section class="card p-5">
+                  <h2 class="section-title text-[15px] leading-6 mb-3">App version</h2>
                   <div class="space-y-3">
                     @for (v of s.byAppVersion; track v.appVersion) {
                       <div>
@@ -156,18 +130,18 @@
                         </div>
                         <div class="h-1.5 rounded-full bg-surface overflow-hidden">
                           <div
-                            class="h-full bg-primary rounded-full"
+                            class="h-full bg-chart-1 rounded-full"
                             [style.width.%]="s.byAppVersion[0].count > 0 ? (v.count / s.byAppVersion[0].count) * 100 : 0"
                           ></div>
                         </div>
                       </div>
                     }
                   </div>
-                </div>
+                </section>
               }
               @if (s.byOsMajor.length) {
-                <div class="bg-card border border-border rounded-xl p-6">
-                  <p class="text-text2 text-xs uppercase tracking-wide mb-3">OS</p>
+                <section class="card p-5">
+                  <h2 class="section-title text-[15px] leading-6 mb-3">OS</h2>
                   <div class="space-y-3">
                     @for (o of s.byOsMajor; track o.osMajor) {
                       <div>
@@ -177,60 +151,57 @@
                         </div>
                         <div class="h-1.5 rounded-full bg-surface overflow-hidden">
                           <div
-                            class="h-full bg-accent rounded-full"
+                            class="h-full bg-chart-1 rounded-full"
                             [style.width.%]="s.byOsMajor[0].count > 0 ? (o.count / s.byOsMajor[0].count) * 100 : 0"
                           ></div>
                         </div>
                       </div>
                     }
                   </div>
-                </div>
+                </section>
               }
             </div>
           }
         }
 
         @case ('features') {
-          <div class="bg-card border border-border rounded-xl p-6 space-y-1">
+          <section class="card overflow-hidden" aria-label="Feature usage">
             @if (featureBars().length === 0) {
-              <p class="text-text2 text-sm">No events in this range.</p>
+              <app-empty-state icon="bar-chart" title="No events in this range" />
             }
             @for (e of featureBars(); track e.event) {
               <div class="border-b border-border last:border-b-0">
                 <button
                   type="button" (click)="toggleEventBreakdown(e.event)"
-                  class="w-full text-left py-3 group"
+                  [attr.aria-expanded]="expandedEvent() === e.event"
+                  class="w-full text-left px-5 py-3 hover:bg-hover focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus"
                 >
-                  <div class="flex items-center justify-between mb-1 text-sm">
-                    <span class="text-text2 flex items-center gap-1.5">
-                      <span
-                        class="text-xs transition-transform inline-block"
-                        [style.transform]="expandedEvent() === e.event ? 'rotate(90deg)' : 'rotate(0deg)'"
-                      >▸</span>
-                      {{ e.event }}
+                  <div class="flex items-center justify-between mb-1.5 text-sm">
+                    <span class="text-text flex items-center gap-1.5 min-w-0">
+                      <app-icon name="chevron-right" [size]="14" class="text-text2 transition-transform motion-reduce:transition-none" [class.rotate-90]="expandedEvent() === e.event" />
+                      <span class="truncate">{{ e.event }}</span>
                     </span>
-                    <span class="flex items-center gap-2">
+                    <span class="flex items-center gap-2 shrink-0">
                       @if (e.delta !== null) {
-                        <span
-                          class="text-[11px] font-semibold px-1.5 py-0.5 rounded-full"
-                          [class.text-success]="e.delta >= 0" [class.bg-success/10]="e.delta >= 0"
-                          [class.text-danger]="e.delta < 0" [class.bg-danger/10]="e.delta < 0"
-                        >{{ e.delta >= 0 ? '▲' : '▼' }} {{ (e.delta >= 0 ? e.delta : -e.delta) | number: '1.0-1' }}%</span>
+                        <span class="stat__delta" [class.up]="e.delta >= 0" [class.down]="e.delta < 0">
+                          <app-icon [name]="e.delta >= 0 ? 'arrow-up' : 'arrow-down'" [size]="11" />
+                          {{ (e.delta >= 0 ? e.delta : -e.delta) | number: '1.0-1' }}%
+                        </span>
                       } @else if (e.count > 0 && !noPreviousData()) {
-                        <span class="text-[11px] font-semibold px-1.5 py-0.5 rounded-full bg-gold/15 text-gold">New</span>
+                        <span class="stat__delta new">New</span>
                       }
                       <span class="font-semibold tabular-nums">{{ e.count }}</span>
                     </span>
                   </div>
                   <div class="h-2 rounded-full bg-surface overflow-hidden">
-                    <div class="h-full bg-primary rounded-full" [style.width.%]="e.widthPct"></div>
+                    <div class="h-full bg-chart-1 rounded-full" [style.width.%]="e.widthPct"></div>
                   </div>
                 </button>
 
                 @if (expandedEvent() === e.event) {
-                  <div class="pb-4 pl-5 -mt-1">
+                  <div class="px-5 pb-4 pl-10">
                     @if (breakdownLoading()) {
-                      <p class="text-text2 text-xs">Loading…</p>
+                      <div class="skeleton h-3 w-40"></div>
                     } @else if (breakdownError()) {
                       <p class="text-danger text-xs">{{ breakdownError() }}</p>
                     } @else if (breakdown(); as b) {
@@ -240,7 +211,7 @@
                         <div class="space-y-3">
                           @for (key of objectKeys(b.byProp); track key) {
                             <div>
-                              <p class="text-text2 text-xs uppercase tracking-wide mb-1.5">{{ key }}</p>
+                              <p class="text-text2 text-xs font-semibold mb-1.5">{{ key }}</p>
                               @if (b.byProp[key].length === 0) {
                                 <p class="text-text2 text-xs">No values recorded.</p>
                               } @else {
@@ -250,7 +221,7 @@
                                       <span class="text-text2 w-28 shrink-0 truncate" [title]="pv.value">{{ pv.value }}</span>
                                       <div class="flex-1 h-1.5 rounded-full bg-surface overflow-hidden">
                                         <div
-                                          class="h-full bg-accent rounded-full"
+                                          class="h-full bg-chart-1 rounded-full"
                                           [style.width.%]="b.byProp[key][0].count > 0 ? (pv.count / b.byProp[key][0].count) * 100 : 0"
                                         ></div>
                                       </div>
@@ -268,34 +239,35 @@
                 }
               </div>
             }
-          </div>
+          </section>
         }
 
         @case ('funnels') {
-          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
             @for (f of funnels(); track f.label) {
-              <div class="bg-card border border-border rounded-xl p-6">
-                <p class="font-semibold mb-1">{{ f.label }}</p>
-                <p class="text-text2 text-xs mb-4">{{ f.fromEvent }} → {{ f.toEvent }}</p>
+              <div class="stat">
+                <p class="stat__label text-text">{{ f.label }}</p>
+                <p class="stat__hint flex items-center gap-1">
+                  {{ f.fromEvent }} <app-icon name="arrow-right" [size]="11" /> {{ f.toEvent }}
+                </p>
                 @if (f.rate === null) {
-                  <p class="text-text2 text-sm">No {{ f.fromEvent }} events yet in this range.</p>
+                  <p class="text-text2 text-sm mt-3">No {{ f.fromEvent }} events yet in this range.</p>
                 } @else {
-                  <div class="flex items-baseline gap-2 flex-wrap mb-1">
-                    <p class="text-3xl font-bold text-primary">{{ f.rate * 100 | number: '1.0-1' }}%</p>
+                  <div class="stat__row mt-3">
+                    <p class="stat__value mt-0">{{ f.rate * 100 | number: '1.0-1' }}%</p>
                     @if (f.ratePointsDelta !== null) {
-                      <span
-                        class="text-[11px] font-semibold px-1.5 py-0.5 rounded-full"
-                        [class.text-success]="f.ratePointsDelta >= 0" [class.bg-success/10]="f.ratePointsDelta >= 0"
-                        [class.text-danger]="f.ratePointsDelta < 0" [class.bg-danger/10]="f.ratePointsDelta < 0"
-                      >{{ f.ratePointsDelta >= 0 ? '▲' : '▼' }} {{ (f.ratePointsDelta >= 0 ? f.ratePointsDelta : -f.ratePointsDelta) | number: '1.0-1' }}pp</span>
+                      <span class="stat__delta" [class.up]="f.ratePointsDelta >= 0" [class.down]="f.ratePointsDelta < 0">
+                        <app-icon [name]="f.ratePointsDelta >= 0 ? 'arrow-up' : 'arrow-down'" [size]="11" />
+                        {{ (f.ratePointsDelta >= 0 ? f.ratePointsDelta : -f.ratePointsDelta) | number: '1.0-1' }}pp
+                      </span>
                     } @else if (f.previousRate === null && !noPreviousData()) {
-                      <span class="text-[11px] font-semibold px-1.5 py-0.5 rounded-full bg-gold/15 text-gold">New</span>
+                      <span class="stat__delta new">New</span>
                     }
                   </div>
-                  <p class="text-text2 text-xs tabular-nums">{{ f.toCount }} of {{ f.fromCount }}</p>
-                  @if (f.previousRate !== null) {
-                    <p class="text-text2 text-[11px] mt-1">vs. {{ (f.previousRate * 100 | number: '1.0-1') }}% previously</p>
-                  }
+                  <p class="stat__hint tabular-nums">
+                    {{ f.toCount }} of {{ f.fromCount }}
+                    @if (f.previousRate !== null) { · was {{ (f.previousRate * 100 | number: '1.0-1') }}% }
+                  </p>
                 }
               </div>
             }
@@ -304,6 +276,4 @@
       }
     }
   }
-
-
 </div>

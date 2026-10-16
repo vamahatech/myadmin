@@ -1,32 +1,27 @@
 <div class="page">
-  <div class="page-head">
-    <div>
-      <h1>Reports</h1>
-      <p class="muted">Parent-reported data problems. Approve marks the report valid (acknowledgment only — fix the product separately); reject records a reason.</p>
-    </div>
-    <button class="btn btn-ghost" (click)="load()" [disabled]="loading()">Refresh</button>
-  </div>
+  <app-page-header title="Reports" description="Parent-reported data problems. Approve marks the report valid (acknowledgment only — fix the product separately); reject records a reason.">
+    <button type="button" class="btn btn-ghost" (click)="load()" [disabled]="loading()"><app-icon name="refresh" [size]="16" /> Refresh</button>
+  </app-page-header>
 
-  @if (notice()) { <div class="card notice">{{ notice() }}</div> }
   @if (error()) { <div class="card state error">{{ error() }}</div> }
 
   @if (data(); as d) {
-    <div class="tabs">
-      <button class="tab" [class.on]="tab === 'pending'" (click)="setTab('pending')">
-        Pending <span class="count">{{ d.counts.pending }}</span>
+    <div class="segmented" role="group" aria-label="Filter by status">
+      <button type="button" [attr.aria-pressed]="tab === 'pending'" (click)="setTab('pending')">
+        Pending <span class="segmented__count">{{ d.counts.pending }}</span>
       </button>
-      <button class="tab" [class.on]="tab === 'approved'" (click)="setTab('approved')">
-        Approved <span class="count">{{ d.counts.approved }}</span>
+      <button type="button" [attr.aria-pressed]="tab === 'approved'" (click)="setTab('approved')">
+        Approved <span class="segmented__count">{{ d.counts.approved }}</span>
       </button>
-      <button class="tab" [class.on]="tab === 'rejected'" (click)="setTab('rejected')">
-        Rejected <span class="count">{{ d.counts.rejected }}</span>
+      <button type="button" [attr.aria-pressed]="tab === 'rejected'" (click)="setTab('rejected')">
+        Rejected <span class="segmented__count">{{ d.counts.rejected }}</span>
       </button>
     </div>
 
     @if (loading()) {
-      <div class="card state">Loading…</div>
+      <app-skeleton variant="cards" [count]="3" />
     } @else if (d.rows.length === 0) {
-      <div class="card state">No {{ tab }} reports.</div>
+      <div class="card"><app-empty-state icon="flag" title="No {{ tab }} reports" /></div>
     } @else {
       <div class="rep-list">
         @for (r of d.rows; track r.id) {
@@ -43,7 +38,7 @@
             </div>
 
             <div class="rep-reason">{{ reasonLabel(r.reason) }}</div>
-            @if (r.note) { <p class="rep-note">📝 {{ r.note }}</p> }
+            @if (r.note) { <p class="rep-note"><app-icon name="note" [size]="14" class="align-[-2px] mr-1" />{{ r.note }}</p> }
             @if (r.review_note) { <p class="rep-review">Review: {{ r.review_note }}</p> }
 
             @if (r.status === 'pending') {

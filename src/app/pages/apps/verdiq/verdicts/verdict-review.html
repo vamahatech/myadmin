@@ -1,24 +1,16 @@
 <div class="page">
-  <div class="page-head">
-    <div>
-      <h1>Verdict review</h1>
-      <p class="muted">Every cached verdict with its reason, citation, flags, and additives.</p>
-    </div>
-    <button class="btn btn-ghost" (click)="load()" [disabled]="loading()">Refresh</button>
-  </div>
-
-  @if (notice()) {
-    <div class="card notice">{{ notice() }}</div>
-  }
+  <app-page-header title="Verdict review" description="Every cached verdict with its reason, citation, flags, and additives.">
+    <button type="button" class="btn btn-ghost" (click)="load()" [disabled]="loading()"><app-icon name="refresh" [size]="16" /> Refresh</button>
+  </app-page-header>
 
   @if (loading()) {
-    <div class="card state">Loading verdicts…</div>
+    <app-skeleton variant="cards" [count]="4" />
   } @else if (error()) {
     <div class="card state error">{{ error() }}</div>
   } @else if (data(); as d) {
 
     @if (d.total === 0) {
-      <div class="card state">No verdicts cached yet.</div>
+      <div class="card"><app-empty-state icon="scale" title="No verdicts cached yet" /></div>
     } @else {
       <div class="verdict-list">
         @for (v of d.rows; track v.barcode + v.age_band) {
@@ -41,7 +33,7 @@
             </div>
 
             <p class="vc-reason">{{ v.reason }}</p>
-            <p class="vc-citation">📚 {{ v.citation }}</p>
+            <p class="vc-citation"><app-icon name="book" [size]="14" class="align-[-2px] mr-1" />{{ v.citation }}</p>
 
             @if (v.flags?.length) {
               <div class="chips">
@@ -71,7 +63,7 @@
               </button>
               @if (editingKey() !== key(v)) {
                 <button class="btn btn-ghost" (click)="startOverride(v)"
-                        [disabled]="busyKey() === key(v)">✎ Override</button>
+                        [disabled]="busyKey() === key(v)"><app-icon name="pen" [size]="14" /> Override</button>
               }
             </div>
 

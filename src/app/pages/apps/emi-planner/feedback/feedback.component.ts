@@ -3,13 +3,17 @@ import { DatePipe, LowerCasePipe } from '@angular/common';
 import { Meta } from '@angular/platform-browser';
 import { FeedbackService } from '../../../../core/services/feedback.service';
 import { FeedbackRow, FeedbackStatus } from '../../../../models/feedback.model';
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
+import { SkeletonComponent } from '../../../../shared/components/skeleton/skeleton.component';
+import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 
 const APP_SLUG = 'emi-planner';
 
 @Component({
   selector: 'app-emi-feedback',
   standalone: true,
-  imports: [DatePipe, LowerCasePipe],
+  imports: [EmptyStateComponent, SkeletonComponent, PageHeaderComponent, IconComponent, DatePipe, LowerCasePipe],
   templateUrl: './feedback.component.html',
 })
 export class FeedbackComponent implements OnInit {

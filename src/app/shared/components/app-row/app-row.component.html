@@ -9,7 +9,14 @@
   </span>
 
   <span class="flex-1 min-w-0">
-    <span class="block text-base sm:text-lg leading-6 font-semibold text-text">{{ app().name }}</span>
+    <span class="flex items-center gap-2 text-base sm:text-lg leading-6 font-semibold text-text">
+      {{ app().name }}
+      @if (status() === 'ok' || status() === 'down') {
+        <!-- Phones: the metric column is hidden, so show health inline. -->
+        <span class="sm:hidden w-2 h-2 rounded-full" [class.bg-success]="status() === 'ok'" [class.bg-danger]="status() === 'down'"
+          role="img" [attr.aria-label]="status() === 'ok' ? 'Connected' : 'Unreachable'"></span>
+      }
+    </span>
     @if (showDescription()) {
       <span class="block text-sm leading-[21px] text-text2 mt-0.5">{{ app().tagline }}</span>
     }
@@ -19,6 +26,27 @@
       </span>
     }
   </span>
+
+  @if (metric() || status()) {
+    <span class="hidden sm:flex flex-col items-end gap-1 shrink-0 text-right">
+      @if (metric()) {
+        <span class="text-sm font-semibold text-text tabular-nums">{{ metric() }}</span>
+      } @else if (status() === 'checking') {
+        <span class="skeleton h-4 w-16" aria-hidden="true"></span>
+      }
+      @switch (status()) {
+        @case ('ok') {
+          <span class="inline-flex items-center gap-1.5 text-xs text-text2"><span class="w-1.5 h-1.5 rounded-full bg-success" aria-hidden="true"></span>Connected</span>
+        }
+        @case ('down') {
+          <span class="inline-flex items-center gap-1.5 text-xs text-danger"><span class="w-1.5 h-1.5 rounded-full bg-danger" aria-hidden="true"></span>Unreachable</span>
+        }
+        @case ('checking') {
+          <span class="inline-flex items-center gap-1.5 text-xs text-text2"><span class="w-1.5 h-1.5 rounded-full bg-border" aria-hidden="true"></span>Checking…</span>
+        }
+      }
+    </span>
+  }
 
   @if (!disabled()) {
     <span

@@ -1,36 +1,28 @@
 <div class="page">
-  <div class="page-head">
-    <div>
-      <h1>Ingest review</h1>
-      <p class="muted">
-        Scraped e-commerce leads (from the <code>ingredient-ingest</code> tool). Verify each
-        against its source, attach the barcode, then approve into the catalog. Nothing is
-        trusted until you approve it.
-      </p>
-    </div>
-    <button class="btn btn-ghost" (click)="load()" [disabled]="loading()">Refresh</button>
-  </div>
+  <app-page-header title="Ingest review">
+    <span pageDescription>Scraped e-commerce leads (from the <code>ingredient-ingest</code> tool). Verify each against its source, attach the barcode, then approve into the catalog. Nothing is trusted until you approve it.</span>
+    <button type="button" class="btn btn-ghost" (click)="load()" [disabled]="loading()"><app-icon name="refresh" [size]="16" /> Refresh</button>
+  </app-page-header>
 
-  @if (notice()) { <div class="card notice">{{ notice() }}</div> }
   @if (error()) { <div class="card state error">{{ error() }}</div> }
 
   @if (data(); as d) {
-    <div class="tabs">
-      <button class="tab" [class.on]="tab === 'pending_review'" (click)="setTab('pending_review')">
-        Pending <span class="count">{{ d.counts.pending_review }}</span>
+    <div class="segmented" role="group" aria-label="Filter by status">
+      <button type="button" [attr.aria-pressed]="tab === 'pending_review'" (click)="setTab('pending_review')">
+        Pending <span class="segmented__count">{{ d.counts.pending_review }}</span>
       </button>
-      <button class="tab" [class.on]="tab === 'approved'" (click)="setTab('approved')">
-        Approved <span class="count">{{ d.counts.approved }}</span>
+      <button type="button" [attr.aria-pressed]="tab === 'approved'" (click)="setTab('approved')">
+        Approved <span class="segmented__count">{{ d.counts.approved }}</span>
       </button>
-      <button class="tab" [class.on]="tab === 'rejected'" (click)="setTab('rejected')">
-        Rejected <span class="count">{{ d.counts.rejected }}</span>
+      <button type="button" [attr.aria-pressed]="tab === 'rejected'" (click)="setTab('rejected')">
+        Rejected <span class="segmented__count">{{ d.counts.rejected }}</span>
       </button>
     </div>
 
     @if (loading()) {
-      <div class="card state">Loading…</div>
+      <app-skeleton variant="cards" [count]="3" />
     } @else if (d.rows.length === 0) {
-      <div class="card state">Nothing in the “{{ tab }}” queue.</div>
+      <div class="card"><app-empty-state icon="inbox" title="Nothing in the {{ tab }} queue" /></div>
     } @else {
       <div class="ing-list">
         @for (r of d.rows; track r.id) {
@@ -57,7 +49,7 @@
             </div>
 
             @if (r.barcode_in_catalog) {
-              <p class="warn">⚠ This barcode already exists in the catalog — approving will
+              <p class="warn"><app-icon name="alert-triangle" [size]="14" class="align-[-2px] mr-1" />This barcode already exists in the catalog — approving will
                 update the existing product.</p>
             }
 
@@ -66,7 +58,7 @@
                 @for (item of r.ingredients; track item) { <span class="chip">{{ item }}</span> }
               </p>
             } @else {
-              <p class="warn">⚠ No ingredients parsed — verify at the source before approving.</p>
+              <p class="warn"><app-icon name="alert-triangle" [size]="14" class="align-[-2px] mr-1" />No ingredients parsed — verify at the source before approving.</p>
             }
             @if (r.ingredients_raw) {
               <details class="ing-raw">

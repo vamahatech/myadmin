@@ -1,16 +1,8 @@
 <div class="page">
-  <div class="page-head">
-    <div>
-      <h1>Users &amp; testers</h1>
-      <p class="muted">Accounts, child age bands, and the closed-test inactivity watchlist.</p>
-    </div>
-    <div class="head-actions">
-      <button class="btn btn-ghost" (click)="openCreate()">+ New user</button>
-      <button class="btn btn-ghost" (click)="load()" [disabled]="loading()">Refresh</button>
-    </div>
-  </div>
-
-  @if (notice()) { <div class="card notice">{{ notice() }}</div> }
+  <app-page-header title="Users &amp; testers" description="Accounts, child age bands, and the closed-test inactivity watchlist.">
+    <button type="button" class="btn btn-ghost" (click)="openCreate()"><app-icon name="plus" [size]="16" /> New user</button>
+    <button type="button" class="btn btn-ghost" (click)="load()" [disabled]="loading()"><app-icon name="refresh" [size]="16" /> Refresh</button>
+  </app-page-header>
 
   <app-modal [open]="createOpen()" title="Create account" (closed)="closeCreate()">
     <div class="create-row">
@@ -39,7 +31,7 @@
   ></app-confirm-delete-modal>
 
   @if (loading()) {
-    <div class="card state">Loading…</div>
+    <app-skeleton [count]="5" />
   } @else if (error()) {
     <div class="card state error">{{ error() }}</div>
   } @else if (data(); as d) {

@@ -1,14 +1,23 @@
-import { Component, HostListener, inject, input, output } from '@angular/core';
+import { Component, HostListener, computed, inject, input, output, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { filter, map } from 'rxjs/operators';
-import { AppNavItem } from '../../../core/models/app-registry.model';
+import { AppNavItem, AppTile, isNavActive, navLink } from '../../../core/models/app-registry.model';
 import { IconComponent } from '../icon/icon.component';
 
+const COLLAPSED_KEY = 'vamaha_admin_sidebar_collapsed';
+
+interface NavGroup {
+  label: string;
+  items: AppNavItem[];
+}
+
 /**
- * Shared app navigation. Renders whatever items the current app supplies.
- * md+: fixed 240px rail. Below md: an off-canvas drawer the header's menu
- * button opens; closes on Escape, backdrop tap, or choosing an item.
+ * Shared app navigation. Renders whatever items the current app supplies,
+ * grouped under section labels when items carry `group`.
+ * md+: 240px rail, collapsible to a 64px icon rail (remembered per browser).
+ * Below md: an off-canvas drawer the header's menu button opens; closes on
+ * Escape, backdrop tap, or choosing an item.
  */
 @Component({
   selector: 'app-sidebar',
@@ -21,9 +30,25 @@ export class AppSidebarComponent {
   /** Absolute base route of the app, e.g. '/apps/vamaha'. */
   readonly basePath = input.required<string>();
   readonly appName = input.required<string>();
+  /** Registry entry for the header block (icon + tagline). */
+  readonly app = input<AppTile | undefined>(undefined);
   /** Mobile drawer state (ignored at md+ where the rail is always shown). */
   readonly open = input(false);
   readonly closed = output<void>();
+
+  /** md+ only — the mobile drawer always shows full labels. */
+  readonly collapsed = signal(readCollapsed());
+
+  readonly groups = computed<NavGroup[]>(() => {
+    const out: NavGroup[] = [];
+    for (const item of this.items()) {
+      const label = item.group ?? 'Modules';
+      const last = out[out.length - 1];
+      if (last && last.label === label) last.items.push(item);
+      else out.push({ label, items: [item] });
+    }
+    return out;
+  });
 
   private readonly router = inject(Router);
   private readonly url = toSignal(
@@ -35,24 +60,33 @@ export class AppSidebarComponent {
   );
 
   link(item: AppNavItem): string {
-    return item.path ? `${this.basePath()}/${item.path}` : this.basePath();
+    return navLink(this.basePath(), item);
   }
 
   isActive(item: AppNavItem): boolean {
-    const path = this.url().split(/[?#]/)[0];
-    const target = this.link(item);
-    if (path === target) return true;
-    // The landing item ('') only matches exactly, or it would light up for
-    // every other page in the app.
-    if (item.path && path.startsWith(target + '/')) return true;
-    return (item.activePrefixes ?? []).some(p => {
-      const prefix = `${this.basePath()}/${p}`;
-      return path === prefix || path.startsWith(prefix + '/');
-    });
+    return isNavActive(this.url(), this.basePath(), item);
+  }
+
+  toggleCollapsed(): void {
+    const next = !this.collapsed();
+    this.collapsed.set(next);
+    try {
+      localStorage.setItem(COLLAPSED_KEY, next ? '1' : '0');
+    } catch {
+      /* storage blocked — state just won't persist */
+    }
   }
 
   @HostListener('document:keydown.escape')
   onEscape(): void {
     if (this.open()) this.closed.emit();
+  }
+}
+
+function readCollapsed(): boolean {
+  try {
+    return localStorage.getItem(COLLAPSED_KEY) === '1';
+  } catch {
+    return false;
   }
 }

@@ -1,0 +1,66 @@
+@if (palette.open()) {
+  <div class="fixed inset-0 z-[150] flex items-start justify-center px-4 pt-[12vh] bg-text/40 cmd-fade" (click)="palette.hide()">
+    <div
+      class="w-full max-w-xl card shadow-md overflow-hidden cmd-rise"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Command palette"
+      (click)="$event.stopPropagation()">
+      <div class="flex items-center gap-3 px-4 border-b border-border">
+        <app-icon name="search" [size]="18" class="text-text2" />
+        <input
+          #search
+          type="text"
+          class="flex-1 h-14 bg-transparent text-[15px] text-text placeholder:text-text2 outline-none"
+          placeholder="Search apps, pages and actions…"
+          role="combobox"
+          aria-expanded="true"
+          aria-controls="cmd-list"
+          aria-autocomplete="list"
+          [attr.aria-activedescendant]="results().length ? 'cmd-' + activeIndex() : null"
+          [value]="query()"
+          (input)="onQuery($any($event.target).value)"
+          (keydown)="onKeydown($event)" />
+        <kbd class="kbd">Esc</kbd>
+      </div>
+
+      <ul id="cmd-list" role="listbox" aria-label="Results" class="max-h-[min(420px,60vh)] overflow-y-auto p-2">
+        @for (g of grouped(); track g.label) {
+          <li role="presentation" class="px-2 pt-2 pb-1 text-[11px] font-medium uppercase tracking-wide text-text2">{{ g.label }}</li>
+          @for (r of g.items; track r.cmd.id) {
+            <li
+              [id]="'cmd-' + r.index"
+              role="option"
+              [attr.aria-selected]="r.index === activeIndex()"
+              class="flex items-center gap-3 px-2 min-h-11 rounded-lg cursor-pointer text-sm"
+              [class.bg-hover]="r.index === activeIndex()"
+              (mouseenter)="activeIndex.set(r.index)"
+              (click)="execute(r.cmd)">
+              @if (r.cmd.image) {
+                <img [src]="'/' + r.cmd.image" alt="" class="w-6 h-6 rounded-md object-cover ring-1 ring-border shrink-0" />
+              } @else if (r.cmd.icon) {
+                <span class="w-6 h-6 rounded-md bg-surface text-text2 flex items-center justify-center shrink-0">
+                  <app-icon [name]="r.cmd.icon" [size]="14" />
+                </span>
+              }
+              <span class="flex-1 min-w-0 truncate text-text">{{ r.cmd.label }}</span>
+              @if (r.cmd.hint) {
+                <span class="text-xs text-text2 truncate max-w-[45%]">{{ r.cmd.hint }}</span>
+              }
+              @if (r.index === activeIndex()) {
+                <app-icon name="corner-down-left" [size]="14" class="text-text2 shrink-0" />
+              }
+            </li>
+          }
+        } @empty {
+          <li class="px-3 py-10 text-center text-sm text-text2">No results for "{{ query() }}"</li>
+        }
+      </ul>
+
+      <div class="flex items-center gap-4 px-4 py-2.5 border-t border-border text-xs text-text2">
+        <span class="inline-flex items-center gap-1"><kbd class="kbd">↑</kbd><kbd class="kbd">↓</kbd> navigate</span>
+        <span class="inline-flex items-center gap-1"><kbd class="kbd">Enter</kbd> open</span>
+      </div>
+    </div>
+  </div>
+}

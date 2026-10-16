@@ -5,6 +5,7 @@ import { AppTile } from '../../../core/models/app-registry.model';
 
 export type AppRowDensity = 'comfortable' | 'compact';
 export type AppRowAction = 'arrow' | 'external-link';
+export type AppStatus = 'checking' | 'ok' | 'down';
 
 /**
  * One numbered entry in the studio directory. The whole row is a single
@@ -29,6 +30,10 @@ export class AppRowComponent {
   readonly disabled = input(false);
   /** Shown under the description when disabled, so state isn't color-only. */
   readonly disabledReason = input('Currently unavailable');
+  /** Backend health for the status chip; omit to hide the chip. */
+  readonly status = input<AppStatus | null>(null);
+  /** One headline number, e.g. "12 articles". */
+  readonly metric = input<string | null>(null);
 
   readonly number = computed(() => String(this.index() + 1).padStart(2, '0'));
 

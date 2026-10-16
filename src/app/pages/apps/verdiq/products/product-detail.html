@@ -1,21 +1,17 @@
 <div class="page">
-  <div class="page-head">
-    <div>
-      <a class="back-link" routerLink="/products">← Back to products</a>
-      <h1>{{ isNew ? 'Add product' : 'Edit product' }}</h1>
-      @if (!isNew && product(); as p) {
-        <p class="muted">{{ p.barcode || 'No barcode' }}</p>
-      }
-    </div>
-  </div>
+  <app-page-header [title]="isNew ? 'Add product' : 'Edit product'">
+    @if (!isNew && product(); as p) {
+      <span pageDescription>{{ p.barcode || 'No barcode' }}</span>
+    }
+  </app-page-header>
 
   @if (loading()) {
-    <div class="card state">Loading…</div>
+    <app-skeleton variant="cards" [count]="1" />
   } @else if (error() && !isNew && !product()) {
     <div class="card state error">{{ error() }}</div>
   } @else if (isNew || product()) {
     <div class="card panel">
-      @if (notice()) { <div class="notice">{{ notice() }}</div> }
+
       @if (error()) { <div class="form-error">{{ error() }}</div> }
 
       @if (isNew) {

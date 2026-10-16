@@ -1,14 +1,11 @@
 <div class="page">
-  <div class="page-head">
-    <div>
-      <h1>Coverage &amp; gaps</h1>
-      <p class="muted">What's missing before the app can rely on cached data — the "add next" list.</p>
-    </div>
-    <button class="btn btn-ghost" (click)="load()" [disabled]="loading()">Refresh</button>
-  </div>
+  <app-page-header title="Coverage &amp; gaps">
+    <span pageDescription>What's missing before the app can rely on cached data — the "add next" list.</span>
+    <button type="button" class="btn btn-ghost" (click)="load()" [disabled]="loading()"><app-icon name="refresh" [size]="16" /> Refresh</button>
+  </app-page-header>
 
   @if (loading()) {
-    <div class="card state">Loading gaps report…</div>
+    <app-skeleton [count]="5" />
   } @else if (error()) {
     <div class="card state error">{{ error() }}</div>
   } @else if (report(); as r) {
@@ -82,7 +79,7 @@
               <span class="wl-meta">{{ p.brand || '—' }} · <code>{{ p.barcode || '—' }}</code></span>
             </li>
           } @empty {
-            <li class="muted">Nothing missing 🎉</li>
+            <li class="muted inline-flex items-center gap-1.5"><app-icon name="check-circle" [size]="14" class="text-success" />Nothing missing</li>
           }
         </ul>
       </div>

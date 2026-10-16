@@ -1,14 +1,20 @@
 @if (visible()) {
-  <div
-    class="fixed inset-0 z-[9999] flex items-center justify-center bg-bg/70 backdrop-blur-[1px]"
-    role="status"
-    aria-live="polite"
-    aria-busy="true"
-  >
-    <span class="sr-only">Loading…</span>
-    <div class="loading-stamp" [class.loading-stamp--extended]="extended()" aria-hidden="true">
-      <span class="loading-stamp__ring"></span>
-      <span class="loading-stamp__mark">V</span>
+  @if (!booted()) {
+    <!-- First load only: the full-screen stamp while the console boots. -->
+    <div
+      class="fixed inset-0 z-[9999] flex items-center justify-center bg-bg/70 backdrop-blur-[1px]"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <span class="sr-only">Loading…</span>
+      <div class="loading-stamp" [class.loading-stamp--extended]="extended()" aria-hidden="true">
+        <span class="loading-stamp__ring"></span>
+        <span class="loading-stamp__mark">V</span>
+      </div>
     </div>
-  </div>
+  } @else {
+    <!-- After boot: a thin, non-blocking top bar; pages show their own skeletons. -->
+    <div class="top-progress" role="progressbar" aria-label="Loading" aria-busy="true"></div>
+  }
 }

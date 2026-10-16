@@ -1,20 +1,15 @@
 <div class="page">
-  <div class="page-head">
-    <div>
-      <h1>Alternatives</h1>
-      <p class="muted">Screen 3: homemade swaps &amp; cleaner packaged picks for flagged products.</p>
-    </div>
-    <button class="btn btn-ghost" (click)="load()" [disabled]="loading()">Refresh</button>
-  </div>
+  <app-page-header title="Alternatives" description="Screen 3: homemade swaps &amp; cleaner packaged picks for flagged products.">
+    <button type="button" class="btn btn-ghost" (click)="load()" [disabled]="loading()"><app-icon name="refresh" [size]="16" /> Refresh</button>
+  </app-page-header>
 
-  @if (notice()) { <div class="card notice">{{ notice() }}</div> }
   @if (error()) { <div class="card state error">{{ error() }}</div> }
 
   <!-- Add form -->
   <div class="card panel add-form">
     <h2>Add an alternative</h2>
     <p class="guard">
-      ⚠ Homemade swaps must be <b>allergy-aware</b> — put any allergen caveat in the note.
+      <app-icon name="alert-triangle" [size]="14" class="align-[-2px] mr-1" />Homemade swaps must be <b>allergy-aware</b> — put any allergen caveat in the note.
       Cleaner-SKU picks must be evidence-based with <b>no commercial input</b>.
     </p>
     <div class="form-grid">
@@ -58,7 +53,7 @@
   </div>
 
   @if (loading()) {
-    <div class="card state">Loading…</div>
+    <app-skeleton [count]="5" />
   } @else {
     <div class="card">
       <div class="table-scroll">

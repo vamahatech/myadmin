@@ -3,13 +3,16 @@ import { DecimalPipe } from '@angular/common';
 
 import { AdminApi } from '../../../../core/services/verdiq/admin-api';
 import { GapsReport } from '../../../../core/models/verdiq/coverage.model';
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
+import { SkeletonComponent } from '../../../../shared/components/skeleton/skeleton.component';
 
 // Coverage & gaps — the "what needs to be added next" view. Surfaces the
 // backfill worklist (missing nutrition), per-category scoreable coverage, and
 // how thin the enrichment tables (double-standards, alternatives, additives) are.
 @Component({
   selector: 'app-coverage',
-  imports: [DecimalPipe],
+  imports: [SkeletonComponent, PageHeaderComponent, IconComponent, DecimalPipe],
   templateUrl: './coverage.html',
   styleUrl: './coverage.sass',
 })

@@ -3,13 +3,16 @@ import { DecimalPipe } from '@angular/common';
 
 import { AdminApi } from '../../../../core/services/verdiq/admin-api';
 import { Analytics as AnalyticsData } from '../../../../core/models/verdiq/analytics.model';
+import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
+import { SkeletonComponent } from '../../../../shared/components/skeleton/skeleton.component';
+import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 
 // Scan analytics — activity from scan_events: scans/day, cache hit-rate, verdict
 // mix, most-scanned, and the unfound "add next" list. Real data once the app
 // starts scanning; empty-but-honest until then.
 @Component({
   selector: 'app-analytics',
-  imports: [DecimalPipe],
+  imports: [EmptyStateComponent, SkeletonComponent, PageHeaderComponent, DecimalPipe],
   templateUrl: './analytics.html',
   styleUrl: './analytics.sass',
 })

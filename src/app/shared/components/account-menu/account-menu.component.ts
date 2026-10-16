@@ -2,6 +2,7 @@ import { Component, ElementRef, HostListener, inject, signal, viewChild } from '
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { IconComponent } from '../icon/icon.component';
+import { ThemeSwitchComponent } from '../theme-switch/theme-switch.component';
 
 /**
  * Header account trigger + dropdown: who is signed in, a link to the
@@ -11,7 +12,7 @@ import { IconComponent } from '../icon/icon.component';
 @Component({
   selector: 'app-account-menu',
   standalone: true,
-  imports: [RouterLink, IconComponent],
+  imports: [RouterLink, IconComponent, ThemeSwitchComponent],
   templateUrl: './account-menu.component.html',
   host: { class: 'relative block' },
 })

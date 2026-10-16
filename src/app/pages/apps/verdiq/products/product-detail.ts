@@ -1,8 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import { AdminApi } from '../../../../core/services/verdiq/admin-api';
+import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
+import { ToastService } from '../../../../core/services/toast.service';
+import { SkeletonComponent } from '../../../../shared/components/skeleton/skeleton.component';
 import {
   ProductDetail as ProductDetailModel,
   ProductCreate,
@@ -21,12 +24,13 @@ import {
 // otherwise identical field-for-field.
 @Component({
   selector: 'app-product-detail',
-  imports: [FormsModule, RouterLink],
+  imports: [SkeletonComponent, PageHeaderComponent, FormsModule],
   templateUrl: './product-detail.html',
   styleUrl: './product-detail.sass',
 })
 export class ProductDetail {
   private api = inject(AdminApi);
+  private readonly toast = inject(ToastService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
 
@@ -41,7 +45,6 @@ export class ProductDetail {
   readonly loading = signal(!this.isNew);
   readonly saving = signal(false);
   readonly error = signal<string | null>(null);
-  readonly notice = signal<string | null>(null);
 
   // Form fields, populated once the product loads (blank for a new product).
   name = '';
@@ -81,7 +84,6 @@ export class ProductDetail {
 
   save(): void {
     this.error.set(null);
-    this.notice.set(null);
 
     if (this.isNew && !this.name.trim()) {
       this.error.set('Name is required.');
@@ -116,7 +118,7 @@ export class ProductDetail {
         next: (created) => {
           // Land on the edit form for the row just created — arriving there
           // with the fields already populated is itself the confirmation.
-          this.router.navigate(['/products', created.id]);
+          this.router.navigate(['/apps/verdiq/products', created.id]);
         },
         error: (e) => {
           this.saving.set(false);
@@ -146,7 +148,7 @@ export class ProductDetail {
     this.api.updateProduct(this.id!, body).subscribe({
       next: () => {
         this.saving.set(false);
-        this.notice.set('Saved.');
+        this.toast.success('Saved.');
       },
       error: (e) => {
         this.saving.set(false);
@@ -160,6 +162,6 @@ export class ProductDetail {
   }
 
   back(): void {
-    this.router.navigate(['/products']);
+    this.router.navigate(['/apps/verdiq/products']);
   }
 }

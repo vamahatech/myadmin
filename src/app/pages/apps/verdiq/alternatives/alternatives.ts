@@ -4,6 +4,11 @@ import { FormsModule } from '@angular/forms';
 
 import { AdminApi } from '../../../../core/services/verdiq/admin-api';
 import { AlternativeInput, AlternativeRow } from '../../../../core/models/verdiq/alternative.model';
+import { ConfirmService } from '../../../../core/services/confirm.service';
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
+import { ToastService } from '../../../../core/services/toast.service';
+import { SkeletonComponent } from '../../../../shared/components/skeleton/skeleton.component';
 
 // Screen-3 alternatives curation: homemade swaps (P1-4) + cleaner packaged SKU
 // (P1-5). A barcode can have several rows (per kind + age band), so this is
@@ -14,17 +19,18 @@ import { AlternativeInput, AlternativeRow } from '../../../../core/models/verdiq
 // ⚠ Cleaner-SKU picks must be evidence-based with NO commercial input.
 @Component({
   selector: 'app-alternatives',
-  imports: [DatePipe, FormsModule],
+  imports: [SkeletonComponent, PageHeaderComponent, IconComponent, DatePipe, FormsModule],
   templateUrl: './alternatives.html',
   styleUrl: './alternatives.sass',
 })
 export class Alternatives {
   private api = inject(AdminApi);
+  private readonly toast = inject(ToastService);
+  private readonly confirm = inject(ConfirmService);
 
   readonly rows = signal<AlternativeRow[]>([]);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
-  readonly notice = signal<string | null>(null);
   readonly busy = signal<string | null>(null);
 
   filterBarcode = '';
@@ -73,7 +79,7 @@ export class Alternatives {
       .subscribe({
         next: () => {
           this.busy.set(null);
-          this.notice.set(`Added ${this.form.kind} alternative for ${this.form.barcode}.`);
+          this.toast.success(`Added ${this.form.kind} alternative for ${this.form.barcode}.`);
           // Keep barcode/age band/kind so adding several to one product is fast.
           this.form = { ...this.form, name: '', note: '' };
           this.load();
@@ -85,13 +91,13 @@ export class Alternatives {
       });
   }
 
-  remove(r: AlternativeRow): void {
-    if (!confirm(`Delete this ${r.kind} alternative "${r.name}"?`)) return;
+  async remove(r: AlternativeRow): Promise<void> {
+    if (!(await this.confirm.ask({ title: 'Delete alternative?', message: `The ${r.kind} alternative "${r.name}" will be removed.`, confirmLabel: 'Delete', tone: 'danger' }))) return;
     this.busy.set(r.id);
     this.api.deleteAlternative(r.id).subscribe({
       next: () => {
         this.busy.set(null);
-        this.notice.set('Deleted.');
+        this.toast.success('Deleted.');
         this.load();
       },
       error: () => {

@@ -3,6 +3,10 @@ import { DatePipe } from '@angular/common';
 
 import { AdminApi } from '../../../../core/services/verdiq/admin-api';
 import { AppFeedback, AppFeedbackList, FeedbackStatus } from '../../../../core/models/verdiq/feedback.model';
+import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { SkeletonComponent } from '../../../../shared/components/skeleton/skeleton.component';
+import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 
 type Tab = 'new' | 'read' | 'all';
 
@@ -10,7 +14,7 @@ type Tab = 'new' | 'read' | 'all';
 // just bookkeeping for the admin, not audited (unlike report/submission writes).
 @Component({
   selector: 'app-feedback',
-  imports: [DatePipe],
+  imports: [EmptyStateComponent, SkeletonComponent, IconComponent, PageHeaderComponent, DatePipe],
   templateUrl: './feedback.html',
   styleUrl: './feedback.sass',
 })

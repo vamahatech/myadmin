@@ -5,13 +5,18 @@ import { RouterLink } from '@angular/router';
 
 import { AdminApi } from '../../../../core/services/verdiq/admin-api';
 import { ProductPage, ProductRow, SearchField } from '../../../../core/models/verdiq/product.model';
-import { ConfirmDeleteModal } from '../../../../shared/components/verdiq/confirm-delete-modal/confirm-delete-modal';
+import { ConfirmDeleteModal } from '../../../../shared/components/confirm-delete-modal/confirm-delete-modal';
+import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { SkeletonComponent } from '../../../../shared/components/skeleton/skeleton.component';
+import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
+import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 
 // Searchable, filterable, paged product grid. The "incomplete" toggle surfaces
 // the null-nutrition backfill worklist directly.
 @Component({
   selector: 'app-products-list',
-  imports: [DecimalPipe, FormsModule, RouterLink, ConfirmDeleteModal],
+  imports: [PaginationComponent, EmptyStateComponent, SkeletonComponent, IconComponent, PageHeaderComponent, FormsModule, RouterLink, ConfirmDeleteModal],
   templateUrl: './products-list.html',
   styleUrl: './products-list.sass',
 })
@@ -87,6 +92,18 @@ export class ProductsList {
       this.page++;
       this.load();
     }
+  }
+
+  goToPage(p: number): void {
+    this.page = p;
+    this.load();
+  }
+
+  clearFilters(): void {
+    this.q = '';
+    this.field = '';
+    this.incompleteOnly = false;
+    this.applyFilters();
   }
 
   // Which row is mid-delete — disables its button so a double-click can't fire twice.

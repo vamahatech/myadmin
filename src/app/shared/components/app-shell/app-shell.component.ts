@@ -4,6 +4,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { AppNavItem, findApp } from '../../../core/models/app-registry.model';
 import { GlobalHeaderComponent } from '../global-header/global-header.component';
 import { AppSidebarComponent } from '../app-sidebar/app-sidebar.component';
+import { ShellContext } from './shell-context';
 
 /**
  * Layout shared by every studio app: global header, the app's own sidebar
@@ -15,6 +16,7 @@ import { AppSidebarComponent } from '../app-sidebar/app-sidebar.component';
   standalone: true,
   imports: [RouterOutlet, GlobalHeaderComponent, AppSidebarComponent],
   templateUrl: './app-shell.component.html',
+  providers: [ShellContext],
 })
 export class AppShellComponent implements OnInit {
   private readonly auth = inject(AuthService);
@@ -25,6 +27,8 @@ export class AppShellComponent implements OnInit {
   readonly appName = this.data['appName'] as string;
   readonly app = findApp(this.data['appId'] as string);
   readonly navItems = this.data['navItems'] as AppNavItem[];
+  /** Exposed to the shell as --app-accent (active nav marker, icons). */
+  readonly accent = this.app?.accentColor ?? 'var(--color-primary)';
   /** Optional app-scoped class (e.g. Verdiq's legacy token scope). */
   readonly contentClass = this.data['contentClass'] as string | undefined;
   readonly basePath = '/' + (this.route.snapshot.routeConfig?.path ?? '');

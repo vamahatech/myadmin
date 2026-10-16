@@ -1,36 +1,46 @@
-<main class="relative min-h-screen overflow-hidden bg-bg text-text flex items-center justify-center px-6 py-10">
-  <img
-    src="illustrations/Team goals-rafiki.svg"
-    alt=""
-    aria-hidden="true"
-    class="pointer-events-none absolute bottom-[-4rem] right-[-4rem] w-[min(90vw,38rem)] opacity-[0.12] grayscale"
-  />
-  <img
-    src="illustrations/Team goals-pana.svg"
-    alt=""
-    aria-hidden="true"
-    class="pointer-events-none absolute bottom-[-4rem] left-[-5rem] w-[min(72vw,30rem)] opacity-[0.08] grayscale -scale-x-100"
-  />
-  <img
-    src="illustrations/Webinar-bro.svg"
-    alt=""
-    aria-hidden="true"
-    class="pointer-events-none absolute top-[-6rem] left-[-5rem] w-[min(58vw,24rem)] opacity-[0.07] grayscale rotate-[-8deg]"
-  />
+<main class="min-h-screen bg-bg text-text grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+  <!-- Brand panel (lg+): what this console is, and the apps it runs. -->
+  <section class="hidden lg:flex flex-col justify-between bg-surface border-r border-border px-12 py-10">
+    <div>
+      <img src="/vamaha-wordmark.png" alt="Vamaha" class="wordmark-light h-8 w-auto" />
+      <img src="/vamaha-wordmark-dark.png" alt="Vamaha" class="wordmark-dark h-8 w-auto" />
+    </div>
 
-  <div class="relative z-10 w-full max-w-sm">
-    <section>
-      <div class="flex items-center gap-3 mb-10">
-        <span class="ink-seal text-primary w-9 h-9 text-lg">V</span>
-        <div>
-          <p class="text-xs uppercase tracking-[0.2em] text-primary font-bold">Vamaha Studio — Internal</p>
-          <h1 class="text-3xl font-extrabold leading-tight text-text">Open the ledger</h1>
-        </div>
+    <div class="max-w-md">
+      <p class="text-[11px] font-semibold uppercase tracking-[0.12em] text-text2">Studio console</p>
+      <h2 class="mt-3 text-[32px] leading-[40px] font-semibold tracking-[-0.01em]">
+        Every studio app, managed from one place.
+      </h2>
+      <ul class="mt-8 flex flex-col gap-3" aria-label="Applications">
+        @for (app of apps; track app.id) {
+          <li class="flex items-center gap-3">
+            <img [src]="'/' + app.icon" alt="" class="w-9 h-9 rounded-lg object-cover ring-1 ring-border bg-card" />
+            <div class="min-w-0">
+              <p class="text-sm font-semibold">{{ app.name }}</p>
+              <p class="text-xs text-text2 truncate">{{ app.tagline }}</p>
+            </div>
+          </li>
+        }
+      </ul>
+    </div>
+
+    <p class="text-xs text-text2">Authorised access only.</p>
+  </section>
+
+  <!-- Sign-in form -->
+  <section class="flex items-center justify-center px-[var(--page-px)] py-10">
+    <div class="w-full max-w-sm">
+      <div class="lg:hidden mb-10">
+        <img src="/vamaha-wordmark.png" alt="Vamaha" class="wordmark-light h-7 w-auto" />
+        <img src="/vamaha-wordmark-dark.png" alt="Vamaha" class="wordmark-dark h-7 w-auto" />
       </div>
 
-      <form (ngSubmit)="submit()" class="space-y-7">
+      <h1 class="text-2xl leading-8 font-semibold">Sign in</h1>
+      <p class="muted mt-1">Use your studio admin account.</p>
+
+      <form (ngSubmit)="submit()" class="mt-8 space-y-5" novalidate>
         <div>
-          <label for="email" class="block text-sm font-bold text-text mb-2">Email</label>
+          <label for="email" class="field-label">Email</label>
           <input
             id="email"
             name="email"
@@ -38,13 +48,15 @@
             [(ngModel)]="email"
             required
             autocomplete="username"
-            class="w-full px-4 py-3 bg-card border-2 border-border rounded-xl text-text placeholder:text-text2 focus:outline-none focus:border-primary transition-colors"
+            class="input min-h-11"
             placeholder="you@vamaha.tech"
+            [attr.aria-invalid]="status() === 'error' ? 'true' : null"
+            aria-describedby="login-error"
           />
         </div>
 
         <div>
-          <label for="password" class="block text-sm font-bold text-text mb-2">Password</label>
+          <label for="password" class="field-label">Password</label>
           <div class="relative">
             <input
               id="password"
@@ -53,46 +65,45 @@
               [(ngModel)]="password"
               required
               autocomplete="current-password"
-              class="w-full px-4 py-3 pr-12 bg-card border-2 border-border rounded-xl text-text placeholder:text-text2 focus:outline-none focus:border-primary transition-colors"
-              placeholder="••••••••"
+              class="input min-h-11 pr-12"
+              [attr.aria-invalid]="status() === 'error' ? 'true' : null"
+              aria-describedby="login-error"
             />
             <button
               type="button"
               (click)="togglePasswordVisibility()"
               [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
-              class="absolute right-3 top-1/2 -translate-y-1/2 text-text2 hover:text-text transition-colors"
+              [attr.aria-pressed]="showPassword()"
+              class="icon-btn absolute right-1 top-1/2 -translate-y-1/2"
             >
-              <img
-                [src]="showPassword() ? 'hidepassword.svg' : 'showpassord.svg'"
-                alt=""
-                class="w-5 h-5"
-              />
+              <app-icon [name]="showPassword() ? 'eye-off' : 'eye'" [size]="18" />
             </button>
           </div>
         </div>
 
-        @if (error()) {
-          <p class="text-danger text-sm">{{ error() }}</p>
-        }
+        <p id="login-error" class="field-error flex items-center gap-1.5 min-h-[18px]" role="alert">
+          @if (error()) {
+            <app-icon name="alert-triangle" [size]="14" />
+            {{ error() }}
+          }
+        </p>
 
         <button
           type="submit"
+          class="btn w-full min-h-11"
           [disabled]="status() === 'submitting' || !email || !password"
-          (click)="stamp()"
-          class="w-full flex items-center justify-center gap-3 py-3.5 bg-primary hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed text-white text-base font-bold rounded-2xl transition-colors"
         >
-          <span
-            class="ink-seal text-white w-5 h-5 text-[10px]"
-            [class.ink-seal--pressed]="pressed()"
-            (animationend)="pressed.set(false)"
-          >V</span>
-          {{ status() === 'submitting' ? 'Signing in…' : 'Sign in' }}
+          @if (status() === 'submitting') {
+            <app-icon name="loader" [size]="16" class="animate-spin motion-reduce:animate-none" />
+            Signing in…
+          } @else {
+            Sign in
+            <app-icon name="arrow-right" [size]="16" />
+          }
         </button>
       </form>
 
-      <p class="text-center text-text2 text-xs mt-8">
-        Authorised access only.
-      </p>
-    </section>
-  </div>
+      <p class="lg:hidden text-center text-text2 text-xs mt-10">Authorised access only.</p>
+    </div>
+  </section>
 </main>

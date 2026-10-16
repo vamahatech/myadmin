@@ -4,6 +4,11 @@ import { FormsModule } from '@angular/forms';
 
 import { AdminApi } from '../../../../core/services/verdiq/admin-api';
 import { VerdictLevel, VerdictPage, VerdictRow } from '../../../../core/models/verdiq/verdict.model';
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
+import { ToastService } from '../../../../core/services/toast.service';
+import { SkeletonComponent } from '../../../../shared/components/skeleton/skeleton.component';
+import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 
 // Verdict review queue — every cached verdict with its reason, citation, flags,
 // and decoded additives, newest first. Admins can RECOMPUTE (re-run the
@@ -11,19 +16,19 @@ import { VerdictLevel, VerdictPage, VerdictRow } from '../../../../core/models/v
 // the verdict). Both go through the backend verdict store and are audit-logged.
 @Component({
   selector: 'app-verdict-review',
-  imports: [DatePipe, FormsModule],
+  imports: [EmptyStateComponent, SkeletonComponent, PageHeaderComponent, IconComponent, DatePipe, FormsModule],
   templateUrl: './verdict-review.html',
   styleUrl: './verdict-review.sass',
 })
 export class VerdictReview {
   private api = inject(AdminApi);
+  private readonly toast = inject(ToastService);
 
   page = 1;
   readonly pageSize = 25;
   readonly data = signal<VerdictPage | null>(null);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
-  readonly notice = signal<string | null>(null);
   readonly busyKey = signal<string | null>(null);
 
   // Which row's override form is open (keyed by barcode::age_band), + its draft.
@@ -56,7 +61,6 @@ export class VerdictReview {
   saveOverride(v: VerdictRow): void {
     if (!this.draft.reason.trim() || !this.draft.citation.trim()) return;
     this.busyKey.set(this.key(v));
-    this.notice.set(null);
     this.api
       .overrideVerdict({
         barcode: v.barcode,
@@ -69,7 +73,7 @@ export class VerdictReview {
         next: () => {
           this.busyKey.set(null);
           this.editingKey.set(null);
-          this.notice.set(`Overrode ${v.product_name || v.barcode} (${this.ageLabel(v.age_band)}).`);
+          this.toast.success(`Overrode ${v.product_name || v.barcode} (${this.ageLabel(v.age_band)}).`);
           this.load();
         },
         error: () => {
@@ -81,11 +85,10 @@ export class VerdictReview {
 
   recompute(v: VerdictRow): void {
     this.busyKey.set(this.key(v));
-    this.notice.set(null);
     this.api.recomputeVerdict(v.barcode, v.age_band).subscribe({
       next: () => {
         this.busyKey.set(null);
-        this.notice.set(`Recomputed ${v.product_name || v.barcode} (${this.ageLabel(v.age_band)}).`);
+        this.toast.success(`Recomputed ${v.product_name || v.barcode} (${this.ageLabel(v.age_band)}).`);
         this.load();
       },
       error: (err) => {

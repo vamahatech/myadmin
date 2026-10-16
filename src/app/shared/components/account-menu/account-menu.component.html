@@ -8,14 +8,14 @@
   aria-controls="account-menu-panel"
   aria-haspopup="true"
   [attr.aria-label]="u ? 'Account: ' + u.name : 'Account'"
-  class="flex items-center gap-3 min-h-11 rounded-full pl-1 pr-1 sm:pl-3 border border-transparent hover:border-border hover:bg-hover active:bg-pressed transition-colors duration-150 motion-reduce:transition-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus">
+  class="flex items-center gap-3 min-h-11 rounded-full pl-1 pr-1 sm:pl-3 border border-transparent hover:border-border hover:bg-card active:bg-pressed transition-colors duration-150 motion-reduce:transition-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus">
   @if (u) {
     <span class="text-right leading-tight hidden sm:block">
       <span class="block text-sm font-semibold text-text">{{ u.name }}</span>
       <span class="block text-[11px] leading-4 font-medium uppercase tracking-wide text-text2">{{ u.role }}</span>
     </span>
   }
-  <span class="w-9 h-9 rounded-full bg-surface text-text2 flex items-center justify-center">
+  <span class="w-9 h-9 rounded-full bg-card ring-1 ring-border text-text2 flex items-center justify-center">
     <app-icon name="user" />
   </span>
 </button>
@@ -23,7 +23,7 @@
 @if (open()) {
   <div
     id="account-menu-panel"
-    class="absolute right-0 top-full mt-2 w-64 z-40 rounded-xl border border-border bg-card shadow-md py-2">
+    class="absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-32px)] z-40 rounded-xl border border-border bg-card shadow-md py-2">
     @if (u) {
       <div class="px-4 py-2 border-b border-border mb-1">
         <p class="text-sm font-semibold text-text truncate">{{ u.name }}</p>
@@ -31,6 +31,10 @@
         <p class="mt-1 text-[11px] font-medium uppercase tracking-wide text-text2">{{ u.role }}</p>
       </div>
     }
+    <div class="px-3 pt-1 pb-2 border-b border-border mb-1">
+      <p class="px-1 pb-1.5 text-[11px] font-medium uppercase tracking-wide text-text2">Theme</p>
+      <app-theme-switch />
+    </div>
     <a
       routerLink="/settings"
       (click)="close()"

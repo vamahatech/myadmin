@@ -1,44 +1,40 @@
 <div class="page">
-  <div class="page-head">
-    <div>
-      <h1>Overview</h1>
-      <p class="muted">Live data-health snapshot — what the app actually has to work with.</p>
-    </div>
-    <button class="btn btn-ghost" (click)="load()" [disabled]="loading()">Refresh</button>
-  </div>
+  <app-page-header title="Overview" description="Live data-health snapshot — what the app actually has to work with.">
+    <button type="button" class="btn btn-ghost" (click)="load()" [disabled]="loading()"><app-icon name="refresh" [size]="16" /> Refresh</button>
+  </app-page-header>
 
   @if (loading()) {
-    <div class="card state">Loading metrics…</div>
+    <app-skeleton variant="stats" [count]="6" />
   } @else if (error()) {
     <div class="card state error">{{ error() }}</div>
   } @else if (metrics(); as m) {
 
-    <div class="kpi-grid">
-      <div class="card kpi">
-        <span class="kpi-label">Products</span>
-        <span class="kpi-value">{{ m.counts.products | number }}</span>
+    <div class="stat-grid">
+      <div class="stat">
+        <p class="stat__label">Products</p>
+        <p class="stat__value">{{ m.counts.products | number }}</p>
       </div>
-      <div class="card kpi" [class.alarm]="m.counts.verdicts < m.counts.products">
-        <span class="kpi-label">Verdicts cached</span>
-        <span class="kpi-value">{{ m.counts.verdicts | number }}</span>
-        <span class="kpi-sub">of {{ m.counts.products | number }} products</span>
+      <div class="stat" [class.is-alert]="m.counts.verdicts < m.counts.products">
+        <p class="stat__label">Verdicts cached</p>
+        <p class="stat__value">{{ m.counts.verdicts | number }}</p>
+        <p class="stat__hint">of {{ m.counts.products | number }} products</p>
       </div>
-      <div class="card kpi" [class.alarm]="m.counts.additives === 0">
-        <span class="kpi-label">Additives (INS)</span>
-        <span class="kpi-value">{{ m.counts.additives | number }}</span>
-        <span class="kpi-sub">{{ m.counts.additives === 0 ? 'table empty' : 'decoded' }}</span>
+      <div class="stat" [class.is-alert]="m.counts.additives === 0">
+        <p class="stat__label">Additives (INS)</p>
+        <p class="stat__value">{{ m.counts.additives | number }}</p>
+        <p class="stat__hint">{{ m.counts.additives === 0 ? 'table empty' : 'decoded' }}</p>
       </div>
-      <div class="card kpi">
-        <span class="kpi-label">Double standards</span>
-        <span class="kpi-value">{{ m.counts.doubleStandards | number }}</span>
+      <div class="stat">
+        <p class="stat__label">Double standards</p>
+        <p class="stat__value">{{ m.counts.doubleStandards | number }}</p>
       </div>
-      <div class="card kpi">
-        <span class="kpi-label">Alternatives</span>
-        <span class="kpi-value">{{ m.counts.alternatives | number }}</span>
+      <div class="stat">
+        <p class="stat__label">Alternatives</p>
+        <p class="stat__value">{{ m.counts.alternatives | number }}</p>
       </div>
-      <div class="card kpi">
-        <span class="kpi-label">Users / children</span>
-        <span class="kpi-value">{{ m.counts.users }} / {{ m.counts.children }}</span>
+      <div class="stat">
+        <p class="stat__label">Users / children</p>
+        <p class="stat__value">{{ m.counts.users }} / {{ m.counts.children }}</p>
       </div>
     </div>
 
@@ -54,7 +50,7 @@
           </div>
           <div class="bar"><div class="fill nutrition" [style.width.%]="m.completeness.nutritionPct"></div></div>
           @if (m.completeness.nutritionPct === 0) {
-            <span class="hint">⚠ No product has nutrition — the seed can't be batch-scored.</span>
+            <span class="hint"><app-icon name="alert-triangle" [size]="14" class="align-[-2px] mr-1" />No product has nutrition — the seed can't be batch-scored.</span>
           }
         </div>
 

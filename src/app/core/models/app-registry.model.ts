@@ -63,8 +63,30 @@ export interface AppNavItem {
   /** Extra child paths that should also mark this item active
    *  (e.g. an article editor under the Articles list). */
   activePrefixes?: string[];
+  /** Optional sidebar section label. Consecutive items with the same group
+   *  render under one heading; apps with few items can omit it. */
+  group?: string;
 }
 
 export function findApp(id: string | undefined): AppTile | undefined {
   return APP_REGISTRY.find(a => a.id === id);
+}
+
+/** Absolute link for a nav item under an app's base route. */
+export function navLink(basePath: string, item: AppNavItem): string {
+  return item.path ? `${basePath}/${item.path}` : basePath;
+}
+
+/** Whether `url` belongs to `item` (exact, a child path, or an activePrefix). */
+export function isNavActive(url: string, basePath: string, item: AppNavItem): boolean {
+  const path = url.split(/[?#]/)[0];
+  const target = navLink(basePath, item);
+  if (path === target) return true;
+  // The landing item ('') only matches exactly, or it would light up for
+  // every other page in the app.
+  if (item.path && path.startsWith(target + '/')) return true;
+  return (item.activePrefixes ?? []).some(p => {
+    const prefix = `${basePath}/${p}`;
+    return path === prefix || path.startsWith(prefix + '/');
+  });
 }

@@ -1,41 +1,38 @@
 <div class="page">
-  <div class="page-head">
-    <div>
-      <h1>Analytics</h1>
-      <p class="muted">Scan activity from <code>scan_events</code>. Fills as the app scans.</p>
+  <app-page-header title="Analytics">
+    <span pageDescription>Scan activity from <code>scan_events</code>. Fills as the app scans.</span>
+    <div class="segmented" role="group" aria-label="Date range">
+      <button type="button" [attr.aria-pressed]="days === 7" (click)="setDays(7)">7d</button>
+      <button type="button" [attr.aria-pressed]="days === 30" (click)="setDays(30)">30d</button>
+      <button type="button" [attr.aria-pressed]="days === 90" (click)="setDays(90)">90d</button>
     </div>
-    <div class="range">
-      <button class="btn btn-ghost" [class.on]="days === 7" (click)="setDays(7)">7d</button>
-      <button class="btn btn-ghost" [class.on]="days === 30" (click)="setDays(30)">30d</button>
-      <button class="btn btn-ghost" [class.on]="days === 90" (click)="setDays(90)">90d</button>
-    </div>
-  </div>
+  </app-page-header>
 
   @if (loading()) {
-    <div class="card state">Loading…</div>
+    <app-skeleton variant="stats" [count]="3" />
   } @else if (error()) {
     <div class="card state error">{{ error() }}</div>
   } @else if (data(); as d) {
 
-    <div class="kpi-grid">
-      <div class="card kpi">
-        <span class="kpi-label">Scans ({{ d.days }}d)</span>
-        <span class="kpi-value">{{ d.totals.total | number }}</span>
+    <div class="stat-grid">
+      <div class="stat">
+        <p class="stat__label">Scans ({{ d.days }}d)</p>
+        <p class="stat__value">{{ d.totals.total | number }}</p>
       </div>
-      <div class="card kpi">
-        <span class="kpi-label">Cache hit rate</span>
-        <span class="kpi-value">{{ d.totals.cacheHitRate }}%</span>
-        <span class="kpi-sub">{{ d.totals.cacheHits | number }} served from cache</span>
+      <div class="stat">
+        <p class="stat__label">Cache hit rate</p>
+        <p class="stat__value">{{ d.totals.cacheHitRate }}%</p>
+        <p class="stat__hint">{{ d.totals.cacheHits | number }} served from cache</p>
       </div>
-      <div class="card kpi" [class.alarm]="d.totals.unfound > 0">
-        <span class="kpi-label">Unfound scans</span>
-        <span class="kpi-value">{{ d.totals.unfound | number }}</span>
-        <span class="kpi-sub">products we don't have</span>
+      <div class="stat" [class.is-alert]="d.totals.unfound > 0">
+        <p class="stat__label">Unfound scans</p>
+        <p class="stat__value">{{ d.totals.unfound | number }}</p>
+        <p class="stat__hint">products we don't have</p>
       </div>
     </div>
 
     @if (d.totals.total === 0) {
-      <div class="card state">No scans recorded yet in this window.</div>
+      <div class="card"><app-empty-state icon="trending-up" title="No scans recorded yet in this window" /></div>
     } @else {
       <!-- Trend -->
       <div class="card panel">
@@ -81,7 +78,7 @@
             <tbody>
               @for (u of d.unfound; track u.barcode) {
                 <tr><td class="mono">{{ u.barcode }}</td><td class="num">{{ u.scans | number }}</td></tr>
-              } @empty { <tr><td colspan="2" class="muted">None 🎉</td></tr> }
+              } @empty { <tr><td colspan="2" class="muted">None</td></tr> }
             </tbody>
           </table>
         </div>

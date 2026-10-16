@@ -26,6 +26,10 @@ module.exports = {
         hover:   withAlpha('--color-hover'),
         pressed: withAlpha('--color-pressed'),
         focus:   withAlpha('--color-focus'),
+        blue:    withAlpha('--color-blue'),
+        'chart-1': withAlpha('--color-chart-1'),
+        'chart-2': withAlpha('--color-chart-2'),
+        'chart-3': withAlpha('--color-chart-3'),
       },
       fontFamily: {
         sans: ['Manrope', 'Hind', 'system-ui', 'sans-serif'],

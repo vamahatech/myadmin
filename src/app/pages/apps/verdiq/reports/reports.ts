@@ -3,6 +3,12 @@ import { DatePipe } from '@angular/common';
 
 import { AdminApi } from '../../../../core/services/verdiq/admin-api';
 import { ProductReport, ProductReportList, ReportStatus } from '../../../../core/models/verdiq/report.model';
+import { ConfirmService } from '../../../../core/services/confirm.service';
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
+import { ToastService } from '../../../../core/services/toast.service';
+import { SkeletonComponent } from '../../../../shared/components/skeleton/skeleton.component';
+import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 
 type Tab = 'pending' | 'approved' | 'rejected';
 
@@ -12,18 +18,19 @@ type Tab = 'pending' | 'approved' | 'rejected';
 // audit-logged server-side (see routes/admin.ts).
 @Component({
   selector: 'app-reports',
-  imports: [DatePipe],
+  imports: [EmptyStateComponent, SkeletonComponent, PageHeaderComponent, IconComponent, DatePipe],
   templateUrl: './reports.html',
   styleUrl: './reports.sass',
 })
 export class Reports {
   private api = inject(AdminApi);
+  private readonly toast = inject(ToastService);
+  private readonly confirm = inject(ConfirmService);
 
   tab: Tab = 'pending';
   readonly data = signal<ProductReportList | null>(null);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
-  readonly notice = signal<string | null>(null);
   readonly busy = signal<string | null>(null);
 
   constructor() {
@@ -50,13 +57,13 @@ export class Reports {
     this.load();
   }
 
-  approve(r: ProductReport): void {
-    if (!confirm(`Mark this report on "${r.product_name || r.barcode}" as valid? This does not change the product — fix the data separately.`)) return;
+  async approve(r: ProductReport): Promise<void> {
+    if (!(await this.confirm.ask({ title: 'Mark report valid?', message: `The report on "${r.product_name || r.barcode}" is marked valid. This does not change the product — fix the data separately.`, confirmLabel: 'Mark valid' }))) return;
     this.busy.set(r.id);
     this.api.approveReport(r.id).subscribe({
       next: () => {
         this.busy.set(null);
-        this.notice.set(`Marked valid — remember to fix "${r.product_name || r.barcode}" separately.`);
+        this.toast.success(`Marked valid — remember to fix "${r.product_name || r.barcode}" separately.`);
         this.load();
       },
       error: () => {
@@ -72,7 +79,7 @@ export class Reports {
     this.api.rejectReport(r.id, note).subscribe({
       next: () => {
         this.busy.set(null);
-        this.notice.set(`Rejected report on "${r.product_name || r.barcode}".`);
+        this.toast.success(`Rejected report on "${r.product_name || r.barcode}".`);
         this.load();
       },
       error: () => {

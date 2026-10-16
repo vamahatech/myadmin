@@ -1,0 +1,57 @@
+// Platform tokens only, so the dialog renders the same inside .verdiq-app
+// and at the app root (ConfirmDialog host).
+.modal-backdrop
+  position: fixed
+  inset: 0
+  background: color-mix(in srgb, var(--color-text) 40%, transparent)
+  display: flex
+  align-items: center
+  justify-content: center
+  padding: 16px
+  z-index: 100
+  animation: modal-fade 150ms ease-out
+
+.modal-panel
+  background: var(--color-card)
+  color: var(--color-text)
+  border: 1px solid var(--color-border)
+  border-radius: 12px
+  box-shadow: 0 12px 32px -12px color-mix(in srgb, var(--color-text) 35%, transparent)
+  width: 100%
+  max-width: 560px
+  max-height: 90vh
+  overflow-y: auto
+  animation: modal-rise 180ms ease-out
+
+  &.modal-panel--sm
+    max-width: 420px
+
+.modal-head
+  display: flex
+  align-items: center
+  justify-content: space-between
+  gap: 12px
+  padding: 16px 20px
+  border-bottom: 1px solid var(--color-border)
+
+.modal-head h2
+  margin: 0
+  font-size: 16px
+  line-height: 24px
+  font-weight: 600
+
+.modal-body
+  padding: 20px
+
+@keyframes modal-fade
+  from
+    opacity: 0
+
+@keyframes modal-rise
+  from
+    opacity: 0
+    transform: translateY(8px) scale(.98)
+
+@media (prefers-reduced-motion: reduce)
+  .modal-backdrop, .modal-panel
+    animation: none

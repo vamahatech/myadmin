@@ -11,6 +11,9 @@ import {
   EventBreakdown,
 } from '../../../../models/app-events.model';
 import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { SkeletonComponent } from '../../../../shared/components/skeleton/skeleton.component';
+import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 
 const APP_SLUG = 'emi-planner';
 
@@ -68,7 +71,7 @@ const FUNNELS: FunnelStep[] = [
 @Component({
   selector: 'app-analytics',
   standalone: true,
-  imports: [DecimalPipe, LowerCasePipe, FormsModule, PageHeaderComponent],
+  imports: [EmptyStateComponent, SkeletonComponent, IconComponent, DecimalPipe, LowerCasePipe, FormsModule, PageHeaderComponent],
   templateUrl: './analytics.component.html',
 })
 export class AnalyticsComponent implements OnInit {

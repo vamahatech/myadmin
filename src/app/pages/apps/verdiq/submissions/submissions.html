@@ -1,32 +1,27 @@
 <div class="page">
-  <div class="page-head">
-    <div>
-      <h1>Submissions</h1>
-      <p class="muted">Parent-submitted products. Approve → becomes a real product; reject → records a reason.</p>
-    </div>
-    <button class="btn btn-ghost" (click)="load()" [disabled]="loading()">Refresh</button>
-  </div>
+  <app-page-header title="Submissions" description="Parent-submitted products. Approve → becomes a real product; reject → records a reason.">
+    <button type="button" class="btn btn-ghost" (click)="load()" [disabled]="loading()"><app-icon name="refresh" [size]="16" /> Refresh</button>
+  </app-page-header>
 
-  @if (notice()) { <div class="card notice">{{ notice() }}</div> }
   @if (error()) { <div class="card state error">{{ error() }}</div> }
 
   @if (data(); as d) {
-    <div class="tabs">
-      <button class="tab" [class.on]="tab === 'pending'" (click)="setTab('pending')">
-        Pending <span class="count">{{ d.counts.pending }}</span>
+    <div class="segmented" role="group" aria-label="Filter by status">
+      <button type="button" [attr.aria-pressed]="tab === 'pending'" (click)="setTab('pending')">
+        Pending <span class="segmented__count">{{ d.counts.pending }}</span>
       </button>
-      <button class="tab" [class.on]="tab === 'approved'" (click)="setTab('approved')">
-        Approved <span class="count">{{ d.counts.approved }}</span>
+      <button type="button" [attr.aria-pressed]="tab === 'approved'" (click)="setTab('approved')">
+        Approved <span class="segmented__count">{{ d.counts.approved }}</span>
       </button>
-      <button class="tab" [class.on]="tab === 'rejected'" (click)="setTab('rejected')">
-        Rejected <span class="count">{{ d.counts.rejected }}</span>
+      <button type="button" [attr.aria-pressed]="tab === 'rejected'" (click)="setTab('rejected')">
+        Rejected <span class="segmented__count">{{ d.counts.rejected }}</span>
       </button>
     </div>
 
     @if (loading()) {
-      <div class="card state">Loading…</div>
+      <app-skeleton variant="cards" [count]="3" />
     } @else if (d.rows.length === 0) {
-      <div class="card state">No {{ tab }} submissions.</div>
+      <div class="card"><app-empty-state icon="inbox" title="No {{ tab }} submissions" /></div>
     } @else {
       <div class="sub-list">
         @for (s of d.rows; track s.id) {
@@ -61,7 +56,7 @@
               </div>
             }
 
-            @if (s.note) { <p class="sub-note">📝 {{ s.note }}</p> }
+            @if (s.note) { <p class="sub-note"><app-icon name="note" [size]="14" class="align-[-2px] mr-1" />{{ s.note }}</p> }
             @if (s.review_note) { <p class="sub-review">Review: {{ s.review_note }}</p> }
 
             @if (s.status === 'pending') {

@@ -11,17 +11,20 @@ import { PublishPanelComponent } from '../../../../shared/components/publish-pan
 import { environment } from '../../../../../environments/environment';
 import { StatusBadgeComponent } from '../../../../shared/components/status-badge/status-badge.component';
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { ConfirmService } from '../../../../core/services/confirm.service';
+import { SkeletonComponent } from '../../../../shared/components/skeleton/skeleton.component';
 
 const AUTOSAVE_DEBOUNCE_MS = 2000;
 
 @Component({
   selector: 'app-admin-article',
   standalone: true,
-  imports: [FormsModule, RouterLink, MarkdownEditorComponent, PublishPanelComponent, StatusBadgeComponent, IconComponent],
+  imports: [SkeletonComponent, FormsModule, RouterLink, MarkdownEditorComponent, PublishPanelComponent, StatusBadgeComponent, IconComponent],
   templateUrl: './admin-article.component.html',
 })
 export class AdminArticleComponent implements OnInit {
   private readonly admin = inject(AdminContentService);
+  private readonly confirm = inject(ConfirmService);
   private readonly route = inject(ActivatedRoute);
   private readonly meta = inject(Meta);
   private readonly destroyRef = inject(DestroyRef);
@@ -112,9 +115,9 @@ export class AdminArticleComponent implements OnInit {
       });
   }
 
-  publish(): void {
+  async publish(): Promise<void> {
     if (this.publishStatus() === 'publishing') return;
-    if (!confirm('Publish this article? It will go live on the site.')) return;
+    if (!(await this.confirm.ask({ title: 'Publish article?', message: 'It will go live on the site and in the app.', confirmLabel: 'Publish' }))) return;
     this.publishStatus.set('publishing');
     this.actionError.set('');
     this.admin.publish(this.id).subscribe({

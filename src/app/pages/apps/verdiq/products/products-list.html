@@ -1,97 +1,90 @@
 <div class="page">
-  <div class="page-head">
-    <div>
-      <h1>Products</h1>
-      <p class="muted">Browse the seeded catalog. Toggle "missing nutrition" for the backfill worklist.</p>
-    </div>
-    <a class="btn" routerLink="/products/new">+ Add product</a>
-  </div>
-
-  <div class="card panel toolbar">
-    <select class="select" [(ngModel)]="field" (change)="applyFilters()">
-      @for (f of fields; track f.value) {
-      <option [ngValue]="f.value">{{ f.label }}</option>
-      }
-    </select>
-    <input class="input search" type="text"
-      [placeholder]="field ? ('Search ' + field + '…') : 'Search name, brand, or barcode…'"
-      [(ngModel)]="q" (keyup.enter)="applyFilters()" />
-    <label class="check">
-      <input type="checkbox" [(ngModel)]="incompleteOnly" (change)="applyFilters()" />
-      Missing nutrition only
-    </label>
-    <button class="btn" (click)="applyFilters()" [disabled]="loading()">Search</button>
-  </div>
+  <app-page-header title="Products">
+    <span pageDescription>Browse the seeded catalog. Toggle "missing nutrition" for the backfill worklist.</span>
+    <a class="btn" routerLink="/apps/verdiq/products/new"><app-icon name="plus" [size]="16" /> Add product</a>
+  </app-page-header>
 
   @if (error()) {
-  <div class="card state error">{{ error() }}</div>
-  } @else if (data(); as d) {
-  <div class="card">
-    <div class="table-scroll">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Brand</th>
-            <th>Category</th>
-            <th>Barcode</th>
-            <th>Ingredients</th>
-            <th>Nutrition</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (row of d.rows; track row.id) {
-          <tr>
-            <td class="strong">{{ row.name || '—' }}</td>
-            <td>{{ row.brand || '—' }}</td>
-            <td>{{ row.category || '—' }}</td>
-            <td class="mono">{{ row.barcode || '—' }}</td>
-            <td>
-              <span class="pill" [class.yes]="row.has_ingredients" [class.no]="!row.has_ingredients">
-                {{ row.has_ingredients ? 'yes' : 'no' }}
-              </span>
-            </td>
-            <td>
-              <span class="pill" [class.yes]="row.has_nutrition" [class.no]="!row.has_nutrition">
-                {{ row.has_nutrition ? 'yes' : 'no' }}
-              </span>
-            </td>
-            <td class="actions">
-              <a class="btn btn-ghost btn-sm" [routerLink]="['/products', row.id]">Edit</a>
-              <button class="icon-btn icon-danger" (click)="openDelete(row)"
-                [disabled]="deletingId() === row.id" title="Delete product" aria-label="Delete product">
-                @if (deletingId() === row.id) {
-                <span class="spin">⋯</span>
-                } @else {
-                <svg width="13" height="16" viewBox="0 0 11 14" aria-hidden="true">
-                  <path fill="currentColor"
-                    d="M.768 12.286c.002.847.689 1.533 1.536 1.536h6.143c.848-.003 1.534-.689 1.536-1.536V3.075H.768v9.21zM10.75.768H8.062L7.295 0H3.455l-.768.768H0v1.535h10.75V.768z" />
-                </svg>
-                }
-              </button>
-            </td>
-          </tr>
-          } @empty {
-          <tr>
-            <td colspan="7" class="empty">No products match.</td>
-          </tr>
+    <div class="card state error" role="alert">{{ error() }}</div>
+  }
+
+  <section class="card overflow-hidden" aria-label="Products">
+    <div class="card-toolbar">
+      <div class="card-toolbar__group flex-1">
+        <label class="sr-only" for="product-field">Search in</label>
+        <select id="product-field" class="input w-auto" [(ngModel)]="field" (change)="applyFilters()">
+          @for (f of fields; track f.value) {
+            <option [ngValue]="f.value">{{ f.label }}</option>
           }
-        </tbody>
-      </table>
+        </select>
+        <label class="search-field flex-1 sm:max-w-sm">
+          <span class="sr-only">Search products</span>
+          <app-icon name="search" [size]="16" />
+          <input class="input" type="search"
+            [placeholder]="field ? ('Search ' + field) : 'Search name, brand, or barcode'"
+            [(ngModel)]="q" (keyup.enter)="applyFilters()" />
+        </label>
+      </div>
+      <label class="check">
+        <input type="checkbox" [(ngModel)]="incompleteOnly" (change)="applyFilters()" />
+        Missing nutrition only
+      </label>
     </div>
 
-    <div class="pager">
-      <span class="muted">
-        {{ d.total | number }} products · page {{ d.page }} of {{ totalPages() }}
-      </span>
-      <div class="pager-btns">
-        <button class="btn btn-ghost" (click)="prev()" [disabled]="d.page <= 1 || loading()">Prev</button>
-        <button class="btn btn-ghost" (click)="next()" [disabled]="d.page >= totalPages() || loading()">Next</button>
-      </div>
-    </div>
-  </div>
-  }
+    @if (loading() && !data()) {
+      <div class="p-4"><app-skeleton [count]="8" /></div>
+    } @else if (data(); as d) {
+      @if (d.rows.length === 0) {
+        <app-empty-state icon="package" title="No products match" body="Try another search term or field.">
+          <button type="button" class="btn btn-secondary btn-sm" (click)="clearFilters()">Clear filters</button>
+        </app-empty-state>
+      } @else {
+        <div class="table-scroll" [class.opacity-60]="loading()">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Brand</th>
+                <th>Category</th>
+                <th>Barcode</th>
+                <th>Ingredients</th>
+                <th>Nutrition</th>
+                <th><span class="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of d.rows; track row.id) {
+                <tr>
+                  <td class="strong">{{ row.name || '—' }}</td>
+                  <td>{{ row.brand || '—' }}</td>
+                  <td>{{ row.category || '—' }}</td>
+                  <td class="mono">{{ row.barcode || '—' }}</td>
+                  <td>
+                    <span class="badge" [class.badge-success]="row.has_ingredients" [class.badge-danger]="!row.has_ingredients">
+                      {{ row.has_ingredients ? 'Yes' : 'No' }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="badge" [class.badge-success]="row.has_nutrition" [class.badge-danger]="!row.has_nutrition">
+                      {{ row.has_nutrition ? 'Yes' : 'No' }}
+                    </span>
+                  </td>
+                  <td class="actions">
+                    <a class="btn btn-secondary btn-sm" [routerLink]="['/apps/verdiq/products', row.id]">Edit</a>
+                    <button type="button" class="icon-btn icon-danger" (click)="openDelete(row)"
+                      [disabled]="deletingId() === row.id" [attr.aria-label]="'Delete ' + deleteLabel(row)">
+                      <app-icon [name]="deletingId() === row.id ? 'loader' : 'trash'" [size]="16" />
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <app-pagination [page]="d.page" [pageSize]="d.pageSize" [total]="d.total" (pageChange)="goToPage($event)" />
+      }
+    }
+  </section>
 
   <app-confirm-delete-modal
     [open]="deleteTarget() !== null"

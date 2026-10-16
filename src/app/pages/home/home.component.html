@@ -1,8 +1,8 @@
 <div class="min-h-screen bg-bg text-text flex flex-col">
-  <app-global-header [contained]="true" />
+  <app-global-header />
 
   @if (!loading()) {
-    <main class="flex-1 w-full max-w-[1280px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 pt-10 sm:pt-12 pb-12">
+    <main class="flex-1 w-full shell-content">
       <h1 class="font-sans text-[28px] leading-[34px] sm:text-[32px] sm:leading-[38px] font-semibold tracking-[-0.01em]">
         Studio applications
       </h1>
@@ -16,7 +16,7 @@
       <ul class="mt-8 border border-border rounded-xl overflow-hidden divide-y divide-border" aria-label="Studio applications">
         @for (app of apps; track app.id; let i = $index) {
           <li class="ledger-row [&:first-child_a]:rounded-t-xl [&:last-child_a]:rounded-b-xl" [style.animation-delay]="(i * 60) + 'ms'">
-            <app-row [app]="app" [index]="i" />
+            <app-row [app]="app" [index]="i" [status]="health()[app.id].status" [metric]="health()[app.id].metric" />
           </li>
         }
       </ul>

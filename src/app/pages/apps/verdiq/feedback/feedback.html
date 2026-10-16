@@ -1,29 +1,25 @@
 <div class="page">
-  <div class="page-head">
-    <div>
-      <h1>Feedback</h1>
-      <p class="muted">General feedback parents send from Settings — not tied to any product.</p>
-    </div>
-    <button class="btn btn-ghost" (click)="load()" [disabled]="loading()">Refresh</button>
-  </div>
+  <app-page-header title="Feedback" description="General feedback parents send from Settings — not tied to any product.">
+    <button type="button" class="btn btn-ghost" (click)="load()" [disabled]="loading()"><app-icon name="refresh" [size]="16" /> Refresh</button>
+  </app-page-header>
 
   @if (error()) { <div class="card state error">{{ error() }}</div> }
 
   @if (data(); as d) {
-    <div class="tabs">
-      <button class="tab" [class.on]="tab === 'new'" (click)="setTab('new')">
-        New <span class="count">{{ d.counts.new }}</span>
+    <div class="segmented" role="group" aria-label="Filter by status">
+      <button type="button" [attr.aria-pressed]="tab === 'new'" (click)="setTab('new')">
+        New <span class="segmented__count">{{ d.counts.new }}</span>
       </button>
-      <button class="tab" [class.on]="tab === 'read'" (click)="setTab('read')">
-        Read <span class="count">{{ d.counts.read }}</span>
+      <button type="button" [attr.aria-pressed]="tab === 'read'" (click)="setTab('read')">
+        Read <span class="segmented__count">{{ d.counts.read }}</span>
       </button>
-      <button class="tab" [class.on]="tab === 'all'" (click)="setTab('all')">All</button>
+      <button type="button" [attr.aria-pressed]="tab === 'all'" (click)="setTab('all')">All</button>
     </div>
 
     @if (loading()) {
-      <div class="card state">Loading…</div>
+      <app-skeleton variant="cards" [count]="4" />
     } @else if (d.rows.length === 0) {
-      <div class="card state">No {{ tab === 'all' ? '' : tab }} feedback.</div>
+      <div class="card"><app-empty-state icon="message" title="No {{ tab === 'all' ? '' : tab }} feedback" /></div>
     } @else {
       <div class="fb-list">
         @for (f of d.rows; track f.id) {

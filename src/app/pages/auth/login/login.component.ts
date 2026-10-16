@@ -3,11 +3,13 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Meta } from '@angular/platform-browser';
 import { AuthService } from '../../../core/services/auth.service';
+import { APP_REGISTRY } from '../../../core/models/app-registry.model';
+import { IconComponent } from '../../../shared/components/icon/icon.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, IconComponent],
   templateUrl: './login.component.html',
 })
 export class LoginComponent implements OnInit {
@@ -15,17 +17,13 @@ export class LoginComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly meta = inject(Meta);
 
+  readonly apps = APP_REGISTRY;
+
   email = '';
   password = '';
   readonly status = signal<'idle' | 'submitting' | 'error'>('idle');
   readonly error = signal<string>('');
-  readonly pressed = signal(false);
   readonly showPassword = signal(false);
-
-  /** Presses the ink-seal on the submit button; the animation clears the flag itself. */
-  stamp(): void {
-    this.pressed.set(true);
-  }
 
   togglePasswordVisibility(): void {
     this.showPassword.update((v) => !v);

@@ -1,19 +1,22 @@
 <div class="max-w-3xl">
-  <a routerLink="/apps/vamaha" class="btn btn-tertiary btn-sm -ml-3">
-    <app-icon name="arrow-left" [size]="16" />
-    Articles
-  </a>
+  <nav aria-label="Breadcrumb">
+    <ol class="flex flex-wrap items-center gap-1 text-xs leading-[18px] text-text2">
+      <li class="flex items-center gap-1"><a routerLink="/apps/vamaha" class="rounded hover:text-text hover:underline">Vamaha</a><app-icon name="chevron-right" [size]="12" /></li>
+      <li class="flex items-center gap-1"><a routerLink="/apps/vamaha" class="rounded hover:text-text hover:underline">Articles</a><app-icon name="chevron-right" [size]="12" /></li>
+      <li><span class="text-text font-medium" aria-current="page">New article</span></li>
+    </ol>
+  </nav>
 
   @switch (mode()) {
     @case ('choose') {
-      <h1 class="text-2xl leading-8 font-semibold mt-4 mb-6">New article</h1>
+      <h1 class="text-2xl leading-8 font-semibold mt-2 mb-6">New article</h1>
 
       <div class="grid sm:grid-cols-2 gap-5">
         <button
           type="button" (click)="mode.set('manual')"
-          class="text-left bg-card border border-border hover:border-primary rounded-xl p-6 md:p-8 transition-colors"
+          class="text-left card hover:border-primary p-6 md:p-8 transition-colors"
         >
-          <span class="text-2xl">✍️</span>
+          <span class="w-10 h-10 rounded-lg bg-primary/10 text-primary inline-flex items-center justify-center"><app-icon name="pen" /></span>
           <h2 class="text-lg font-bold mt-3 mb-1.5">Write manually</h2>
           <p class="text-text2 text-sm">
             Start a blank draft and write it by hand in the editor. Free — no
@@ -23,9 +26,9 @@
 
         <button
           type="button" (click)="mode.set('generate')"
-          class="text-left bg-card border border-border hover:border-primary rounded-xl p-6 md:p-8 transition-colors"
+          class="text-left card hover:border-primary p-6 md:p-8 transition-colors"
         >
-          <span class="text-2xl">✨</span>
+          <span class="w-10 h-10 rounded-lg bg-primary/10 text-primary inline-flex items-center justify-center"><app-icon name="sparkles" /></span>
           <h2 class="text-lg font-bold mt-3 mb-1.5">Generate a draft</h2>
           <p class="text-text2 text-sm">
             Give a topic and trusted source URLs (RBI / SEBI). The draft is
@@ -36,8 +39,8 @@
     }
 
     @case ('manual') {
-      <button type="button" (click)="mode.set('choose')" class="text-sm text-text2 hover:text-text transition-colors mt-4">
-        ← Choose a different way to start
+      <button type="button" (click)="mode.set('choose')" class="btn btn-tertiary btn-sm -ml-3 mt-4">
+        <app-icon name="arrow-left" [size]="14" /> Choose a different way to start
       </button>
       <h1 class="text-2xl leading-8 font-semibold mt-4 mb-1">Write manually</h1>
       <p class="text-text2 text-sm mb-6">
@@ -47,7 +50,7 @@
 
       <form
         (ngSubmit)="writeNew()"
-        class="bg-card border border-border rounded-xl p-6 md:p-8 flex flex-col sm:flex-row gap-4 sm:items-end"
+        class="card p-6 md:p-8 flex flex-col sm:flex-row gap-4 sm:items-end"
       >
         <div class="flex-1">
           <label for="newTitle" class="field-label">Article title</label>
@@ -73,8 +76,8 @@
     }
 
     @case ('generate') {
-      <button type="button" (click)="mode.set('choose')" class="text-sm text-text2 hover:text-text transition-colors mt-4">
-        ← Choose a different way to start
+      <button type="button" (click)="mode.set('choose')" class="btn btn-tertiary btn-sm -ml-3 mt-4">
+        <app-icon name="arrow-left" [size]="14" /> Choose a different way to start
       </button>
       <h1 class="text-2xl leading-8 font-semibold mt-4 mb-1">Generate a draft</h1>
       <p class="text-text2 text-sm mb-6">
@@ -85,7 +88,7 @@
 
       <form
         (ngSubmit)="generate()"
-        class="bg-card border border-border rounded-xl p-6 md:p-8 space-y-5"
+        class="card p-6 md:p-8 space-y-5"
       >
         <div>
           <label for="topic" class="field-label">Topic</label>

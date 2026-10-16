@@ -5,19 +5,24 @@ import { FormsModule } from '@angular/forms';
 import { AdminApi } from '../../../../core/services/verdiq/admin-api';
 import { VerdiqAuthService } from '../../../../core/services/verdiq/verdiq-auth';
 import { UserRow, UsersReport } from '../../../../core/models/verdiq/admin-user.model';
-import { Modal } from '../../../../shared/components/verdiq/modal/modal';
-import { ConfirmDeleteModal } from '../../../../shared/components/verdiq/confirm-delete-modal/confirm-delete-modal';
+import { Modal } from '../../../../shared/components/modal/modal';
+import { ConfirmDeleteModal } from '../../../../shared/components/confirm-delete-modal/confirm-delete-modal';
+import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { ToastService } from '../../../../core/services/toast.service';
+import { SkeletonComponent } from '../../../../shared/components/skeleton/skeleton.component';
 
 // Users & testers. Overview (list, child counts, tester opt-in, 14-day inactivity
 // flag) plus admin account creation — the backend generates + emails a password.
 @Component({
   selector: 'app-users',
-  imports: [DatePipe, DecimalPipe, FormsModule, Modal, ConfirmDeleteModal],
+  imports: [SkeletonComponent, IconComponent, PageHeaderComponent, DatePipe, DecimalPipe, FormsModule, Modal, ConfirmDeleteModal],
   templateUrl: './users.html',
   styleUrl: './users.sass',
 })
 export class Users {
   private api = inject(AdminApi);
+  private readonly toast = inject(ToastService);
   private auth = inject(VerdiqAuthService);
 
   readonly data = signal<UsersReport | null>(null);
@@ -35,7 +40,6 @@ export class Users {
   newEmail = '';
   newIsAdmin = false;
   readonly creating = signal(false);
-  readonly notice = signal<string | null>(null);
   readonly createError = signal<string | null>(null);
 
   // Which row is mid-role-change — disables its button so a double-click
@@ -78,7 +82,6 @@ export class Users {
 
   createUser(): void {
     const email = this.newEmail.trim();
-    this.notice.set(null);
     this.createError.set(null);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       this.createError.set('Enter a valid email address.');
@@ -90,9 +93,7 @@ export class Users {
         this.creating.set(false);
         this.newEmail = '';
         this.createOpen.set(false);
-        this.notice.set(
-          `${this.newIsAdmin ? 'Admin' : 'Account'} created for ${email} — password emailed.`,
-        );
+        this.toast.success(`${this.newIsAdmin ? 'Admin' : 'Account'} created for ${email} — password emailed.`);
         this.load();
       },
       error: (e) => {
@@ -107,15 +108,12 @@ export class Users {
   }
 
   toggleAdmin(user: UserRow): void {
-    this.notice.set(null);
     this.error.set(null);
     this.roleChangingId.set(user.id);
     this.api.setUserAdmin(user.id, !user.is_admin).subscribe({
       next: () => {
         this.roleChangingId.set(null);
-        this.notice.set(
-          user.is_admin ? `${user.email} is no longer an admin.` : `${user.email} is now an admin.`,
-        );
+        this.toast.success(user.is_admin ? `${user.email} is no longer an admin.` : `${user.email} is now an admin.`,);
         this.load();
       },
       error: (e) => {
@@ -140,14 +138,13 @@ export class Users {
   confirmDelete(): void {
     const target = this.deleteTarget();
     if (!target) return;
-    this.notice.set(null);
     this.error.set(null);
     this.deleting.set(true);
     this.api.deleteUser(target.id).subscribe({
       next: () => {
         this.deleting.set(false);
         this.deleteTarget.set(null);
-        this.notice.set(`Deleted ${target.email}.`);
+        this.toast.success(`Deleted ${target.email}.`);
         this.load();
       },
       error: (e) => {

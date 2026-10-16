@@ -13,7 +13,7 @@
           @switch (autosaveStatus()) {
             @case ('dirty') { <span class="text-text2 text-xs" role="status">Unsaved changes</span> }
             @case ('saving') { <span class="text-text2 text-xs" role="status">Saving…</span> }
-            @case ('saved') { <span class="text-success text-xs" role="status">Saved ✓</span> }
+            @case ('saved') { <span class="text-success text-xs inline-flex items-center gap-1" role="status"><app-icon name="check" [size]="12" />Saved</span> }
             @case ('error') { <span class="text-danger text-xs" role="alert">Error saving</span> }
           }
         </div>
@@ -40,7 +40,7 @@
 
   <div>
     @if (loading()) {
-      <div class="card state">Loading article…</div>
+      <app-skeleton variant="cards" [count]="1" />
     } @else if (loadError()) {
       <div class="card state error" role="alert">{{ loadError() }}</div>
     } @else if (article(); as a) {
@@ -51,19 +51,9 @@
       }
 
       <div class="flex flex-wrap items-center gap-3 mb-8 max-w-3xl mx-auto">
-        <div class="inline-flex rounded-lg border border-border overflow-hidden text-sm" role="group" aria-label="Article language">
-          <button
-            type="button" (click)="lang.set('en')"
-            [class.bg-primary]="lang() === 'en'" [class.text-white]="lang() === 'en'"
-            [class.text-text2]="lang() !== 'en'"
-            class="px-4 py-2 font-medium transition-colors"
-          >English</button>
-          <button
-            type="button" (click)="lang.set('te')"
-            [class.bg-primary]="lang() === 'te'" [class.text-white]="lang() === 'te'"
-            [class.text-text2]="lang() !== 'te'"
-            class="px-4 py-2 font-medium transition-colors border-l border-border"
-          >తెలుగు</button>
+        <div class="segmented" role="group" aria-label="Article language">
+          <button type="button" (click)="lang.set('en')" [attr.aria-pressed]="lang() === 'en'">English</button>
+          <button type="button" (click)="lang.set('te')" [attr.aria-pressed]="lang() === 'te'" lang="te">తెలుగు</button>
         </div>
         <p class="text-text2 text-xs">
           @if (lang() === 'en') {

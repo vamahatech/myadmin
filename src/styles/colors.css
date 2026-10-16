@@ -23,6 +23,13 @@
 
   --color-blue:    #2F6B8F;
 
+  /* Data series — for charts only, never for actions or status. Assign in
+     this fixed order (series 1 first). Validated with the dataviz skill's
+     validate_palette.js against the card surface, all-pairs, both modes. */
+  --color-chart-1: #2A70B0;
+  --color-chart-2: #C47A1E;
+  --color-chart-3: #B04A7A;
+
   /* Directory interaction states (studio home) */
   --color-sage:    #728B72;
   --color-hover:   #F0F3EA;
@@ -47,6 +54,11 @@ html.dark {
   --color-warning: #E0A64A;
   --color-danger:  #E08763;
   --color-gold:    #F7C85C;
+  --color-blue:    #6FA8DC;
+
+  --color-chart-1: #4A8FD0;
+  --color-chart-2: #BD7B22;
+  --color-chart-3: #C9608F;
 
   --color-sage:    #93AC92;
   --color-hover:   #172A1D;

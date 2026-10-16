@@ -3,25 +3,31 @@ import { FormsModule } from '@angular/forms';
 
 import { AdminApi } from '../../../../core/services/verdiq/admin-api';
 import { Additive } from '../../../../core/models/verdiq/additive.model';
-import { Modal } from '../../../../shared/components/verdiq/modal/modal';
+import { Modal } from '../../../../shared/components/modal/modal';
+import { ConfirmService } from '../../../../core/services/confirm.service';
+import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { ToastService } from '../../../../core/services/toast.service';
+import { SkeletonComponent } from '../../../../shared/components/skeleton/skeleton.component';
 
 // INS additive decode manager — the first WRITE surface. Seed the empty table
 // from code in one click, then add / edit / delete entries. Every write is
 // audit-logged server-side.
 @Component({
   selector: 'app-additives',
-  imports: [FormsModule, Modal],
+  imports: [SkeletonComponent, IconComponent, PageHeaderComponent, FormsModule, Modal],
   templateUrl: './additives.html',
   styleUrl: './additives.sass',
 })
 export class Additives {
   private api = inject(AdminApi);
+  private readonly toast = inject(ToastService);
+  private readonly confirm = inject(ConfirmService);
 
   readonly rows = signal<Additive[]>([]);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
   readonly busy = signal(false);
-  readonly notice = signal<string | null>(null);
 
   // Edit/create form state. `editing` holds the INS being edited (null = new).
   // `formOpen` drives the modal — was a top-of-page card, invisible when a
@@ -58,11 +64,10 @@ export class Additives {
 
   seed(): void {
     this.busy.set(true);
-    this.notice.set(null);
     this.api.seedAdditives().subscribe({
       next: (res) => {
         this.busy.set(false);
-        this.notice.set(`Seeded ${res.seeded} entries from code — table now has ${res.total}.`);
+        this.toast.success(`Seeded ${res.seeded} entries from code — table now has ${res.total}.`);
         this.load();
       },
       error: () => {
@@ -96,7 +101,7 @@ export class Additives {
     this.api.upsertAdditive({ ...this.form, ins: this.form.ins.trim() }).subscribe({
       next: () => {
         this.busy.set(false);
-        this.notice.set(`Saved INS ${this.form.ins}.`);
+        this.toast.success(`Saved INS ${this.form.ins}.`);
         this.cancel();
         this.load();
       },
@@ -107,13 +112,13 @@ export class Additives {
     });
   }
 
-  remove(a: Additive): void {
-    if (!confirm(`Delete INS ${a.ins} — ${a.name}?`)) return;
+  async remove(a: Additive): Promise<void> {
+    if (!(await this.confirm.ask({ title: 'Delete additive?', message: `INS ${a.ins} — ${a.name} will be removed.`, confirmLabel: 'Delete', tone: 'danger' }))) return;
     this.busy.set(true);
     this.api.deleteAdditive(a.ins).subscribe({
       next: () => {
         this.busy.set(false);
-        this.notice.set(`Deleted INS ${a.ins}.`);
+        this.toast.success(`Deleted INS ${a.ins}.`);
         this.load();
       },
       error: () => {

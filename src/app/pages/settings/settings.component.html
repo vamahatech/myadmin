@@ -1,7 +1,7 @@
 <div class="min-h-screen bg-bg text-text flex flex-col">
-  <app-global-header [contained]="true" />
+  <app-global-header />
 
-  <main class="flex-1 w-full max-w-[1280px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 pt-10 sm:pt-12 pb-12">
+  <main class="flex-1 w-full shell-content">
     <a routerLink="/" class="btn btn-tertiary btn-sm -ml-3 mb-4">
       <app-icon name="arrow-left" [size]="16" />
       All applications
@@ -23,6 +23,12 @@
           Sign out
         </button>
       </div>
+
+      <section class="card p-6" aria-labelledby="appearance-title">
+        <h2 id="appearance-title" class="section-title">Appearance</h2>
+        <p class="muted mt-1 mb-4">System follows your device's light or dark setting.</p>
+        <app-theme-switch />
+      </section>
     </div>
   </main>
 </div>
