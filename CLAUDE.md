@@ -4,6 +4,12 @@ Superadmin console for every Vamaha app. One Angular frontend; each app is a
 route subtree rendered inside one shared shell. Read this before UI work —
 the design system below is already built; reuse it, don't re-invent it.
 
+**Monitoring features (overview, users, activity, analytics, errors, feedback, audit) follow
+[docs/standards/monitoring-standard.md](docs/standards/monitoring-standard.md)** (metric
+definitions, admin API contract, data/privacy rules, per-app status) and
+[docs/standards/development-rules.md](docs/standards/development-rules.md) (build order, page
+structure, backend rules, definition of done). Read both before building any of them.
+
 ## Stack & commands
 - Angular 21 standalone components, signals, `@if/@for` control flow
 - Tailwind CSS v3.4 + plain CSS component layer; fonts Manrope (UI) / Fraunces (opt-in)
@@ -17,7 +23,7 @@ the design system below is already built; reuse it, don't re-invent it.
 | Vamaha | `/apps/vamaha` (Articles list), `/push`, `/articles/new`, `/articles/:id` (editor) | vamaha-backend `apiBaseUrl` (:9991 local), shell JWT |
 | EMI Planner | `/apps/emi-planner/{analytics,push,feedback}` | vamaha-backend |
 | Verdiq | `/apps/verdiq/{overview,products,coverage,verdicts,additives,double-standards,alternatives,analytics,submissions,reports,feedback,ingest,users}` | verdiq-backend, silent service login (`verdiqSessionGuard`) |
-| RenewLoop | `/apps/renewloop/{users,notifications}` | sbmint backend, silent service login (`renewloopSessionGuard`) |
+| RenewLoop | `/apps/renewloop/{users,activity,notifications}` | sbmint backend, silent service login (`renewloopSessionGuard`) |
 Also: `/` directory (home), `/settings`, `/login`. All guarded by `authGuard` (token in localStorage `vamaha_admin_token`).
 
 Each app route uses `AppShellComponent` with route `data`: `appId` (matches APP_REGISTRY id),
