@@ -234,6 +234,7 @@ export const routes: Routes = [
       appName: 'RenewLoop',
       navItems: [
         { label: 'Users', icon: 'users', path: 'users' },
+        { label: 'Activity', icon: 'activity', path: 'activity' },
         { label: 'Notifications', icon: 'bell', path: 'notifications' },
       ],
     },
@@ -243,6 +244,11 @@ export const routes: Routes = [
         path: 'users',
         loadComponent: () =>
           import('./pages/apps/renewloop/users/users').then(m => m.RenewloopUsers),
+      },
+      {
+        path: 'activity',
+        loadComponent: () =>
+          import('./pages/apps/renewloop/activity/activity').then(m => m.RenewloopActivity),
       },
       {
         path: 'notifications',

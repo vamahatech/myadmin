@@ -56,3 +56,17 @@ export interface SendNotificationResult {
   successCount: number;
   failureCount: number;
 }
+
+// GET /admin/users/:id — one user plus the devices they have signed in from.
+export interface KnownDevice {
+  label: string;
+  firstSeenAt: string;
+  lastSeenAt: string;
+}
+
+export interface UserDetail extends UserRow {
+  emailVerified: boolean;
+  /** Most recent sign-in on any device; null if never recorded. */
+  lastSeenAt: string | null;
+  devices: KnownDevice[];
+}

@@ -1,72 +1,81 @@
-import { Component, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subject, debounceTime } from 'rxjs';
 
 import { RenewloopAdminApi } from '../../../../core/services/renewloop/admin-api';
-import { SendNotificationResult, UserRow } from '../../../../core/models/renewloop/user.model';
+import { UserRow } from '../../../../core/models/renewloop/user.model';
 import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { PushComposerComponent } from '../../../../shared/components/push-composer/push-composer.component';
+import { ConfirmService } from '../../../../core/services/confirm.service';
+import { ToastService } from '../../../../core/services/toast.service';
+
+type Audience = 'all' | 'users';
 
 @Component({
   selector: 'app-renewloop-notifications',
   standalone: true,
-  imports: [FormsModule, PageHeaderComponent, IconComponent],
+  imports: [PageHeaderComponent, IconComponent, PushComposerComponent],
   templateUrl: './notifications.html',
 })
 export class RenewloopNotifications {
   private api = inject(RenewloopAdminApi);
+  private readonly confirm = inject(ConfirmService);
+  private readonly toast = inject(ToastService);
 
-  broadcastTitle = '';
-  broadcastBody = '';
-  readonly broadcastStatus = signal<'idle' | 'sending' | 'error'>('idle');
-  readonly broadcastResult = signal<SendNotificationResult | null>(null);
-  readonly broadcastError = signal('');
+  readonly audience = signal<Audience>('all');
+  title = '';
+  body = '';
+  readonly sending = signal(false);
+  readonly error = signal('');
 
-  userSearch = '';
+  readonly userSearch = signal('');
   readonly userResults = signal<UserRow[]>([]);
   readonly userSearchLoading = signal(false);
   readonly selectedUsers = signal<UserRow[]>([]);
-  targetedTitle = '';
-  targetedBody = '';
-  readonly targetedStatus = signal<'idle' | 'sending' | 'error'>('idle');
-  readonly targetedError = signal('');
-  readonly targetedResult = signal<SendNotificationResult | null>(null);
+  private readonly search$ = new Subject<string>();
 
-  sendBroadcast(): void {
-    if (this.broadcastStatus() === 'sending') return;
-    const title = this.broadcastTitle.trim();
-    const body = this.broadcastBody.trim();
-    if (!title || !body) {
-      this.broadcastStatus.set('error');
-      this.broadcastError.set('Title and body are both required.');
-      return;
+  readonly audienceLabel = computed(() => {
+    if (this.audience() === 'all') return 'every user with a registered device';
+    const n = this.selectedUsers().length;
+    return `${n} selected user${n === 1 ? '' : 's'}`;
+  });
+
+  readonly disabledReason = computed(() =>
+    this.audience() === 'users' && this.selectedUsers().length === 0 ? 'Pick at least one recipient above.' : null,
+  );
+
+  constructor() {
+    // Users page "Notify" hands over recipients via navigation state.
+    const recipients = (globalThis.history?.state as { recipients?: UserRow[] } | undefined)?.recipients;
+    if (recipients?.length) {
+      this.audience.set('users');
+      this.selectedUsers.set(recipients);
     }
-    if (!confirm('Send this notification to every user with a registered device?')) return;
 
-    this.broadcastStatus.set('sending');
-    this.broadcastError.set('');
-    this.broadcastResult.set(null);
-    this.api.broadcastPush(title, body).subscribe({
-      next: (result) => {
-        this.broadcastResult.set(result);
-        this.broadcastStatus.set('idle');
-        this.broadcastTitle = '';
-        this.broadcastBody = '';
-      },
-      error: (e) => {
-        this.broadcastStatus.set('error');
-        this.broadcastError.set(e?.error?.errors?.[0] ?? 'Broadcast failed. Please try again.');
-      },
-    });
+    this.search$
+      .pipe(debounceTime(300), takeUntilDestroyed(inject(DestroyRef)))
+      .subscribe((term) => this.searchUsers(term));
   }
 
-  searchUsers(): void {
-    const term = this.userSearch.trim();
-    if (!term) {
+  setAudience(a: Audience): void {
+    this.audience.set(a);
+    this.error.set('');
+  }
+
+  onSearch(term: string): void {
+    this.userSearch.set(term);
+    this.search$.next(term);
+  }
+
+  private searchUsers(term: string): void {
+    const t = term.trim();
+    if (!t) {
       this.userResults.set([]);
       return;
     }
     this.userSearchLoading.set(true);
-    this.api.getUsers({ search: term, limit: 10 }).subscribe({
+    this.api.getUsers({ search: t, limit: 8 }).subscribe({
       next: (page) => {
         this.userResults.set(page.users);
         this.userSearchLoading.set(false);
@@ -85,39 +94,33 @@ export class RenewloopNotifications {
     return this.selectedUsers().some((u) => u.id === user.id);
   }
 
-  removeSelected(user: UserRow): void {
-    this.selectedUsers.set(this.selectedUsers().filter((u) => u.id !== user.id));
-  }
+  async send(): Promise<void> {
+    const title = this.title.trim();
+    const body = this.body.trim();
+    const toAll = this.audience() === 'all';
+    const ok = await this.confirm.ask({
+      title: toAll ? 'Send to everyone?' : 'Send to selected users?',
+      message: `"${title}" goes to ${this.audienceLabel()} right away.`,
+      confirmLabel: 'Send now',
+    });
+    if (!ok) return;
 
-  sendTargeted(): void {
-    if (this.targetedStatus() === 'sending') return;
-    const title = this.targetedTitle.trim();
-    const body = this.targetedBody.trim();
-    const userIds = this.selectedUsers().map((u) => u.id);
-    if (userIds.length === 0) {
-      this.targetedStatus.set('error');
-      this.targetedError.set('Select at least one user.');
-      return;
-    }
-    if (!title || !body) {
-      this.targetedStatus.set('error');
-      this.targetedError.set('Title and body are both required.');
-      return;
-    }
-    this.targetedStatus.set('sending');
-    this.targetedError.set('');
-    this.targetedResult.set(null);
-    this.api.sendPushToUsers(userIds, title, body).subscribe({
-      next: (result) => {
-        this.targetedResult.set(result);
-        this.targetedStatus.set('idle');
-        this.targetedTitle = '';
-        this.targetedBody = '';
-        this.selectedUsers.set([]);
+    this.sending.set(true);
+    this.error.set('');
+    const req = toAll
+      ? this.api.broadcastPush(title, body)
+      : this.api.sendPushToUsers(this.selectedUsers().map((u) => u.id), title, body);
+    req.subscribe({
+      next: (r) => {
+        this.sending.set(false);
+        this.title = '';
+        this.body = '';
+        if (!toAll) this.selectedUsers.set([]);
+        this.toast.success(`Delivered to ${r.successCount}` + (r.failureCount ? ` · ${r.failureCount} failed` : '') + '.');
       },
       error: (e) => {
-        this.targetedStatus.set('error');
-        this.targetedError.set(e?.error?.errors?.[0] ?? 'Failed to send the notification.');
+        this.sending.set(false);
+        this.error.set(e?.error?.errors?.[0] ?? 'Sending failed. Please try again.');
       },
     });
   }

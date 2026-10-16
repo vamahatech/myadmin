@@ -1,0 +1,97 @@
+<div class="page">
+  <app-page-header title="Activity" />
+
+  @if (error()) {
+    <div class="card state error" role="alert">{{ error() }}</div>
+  }
+
+  <section class="card overflow-hidden" aria-label="Activity log">
+    <div class="card-toolbar">
+      <div class="card-toolbar__group">
+        <h2 class="text-base font-semibold">Activity log</h2>
+        @if (userId()) {
+          <span class="badge badge-info">
+            {{ userName() ?? 'Loading…' }}
+            <button type="button" class="-mr-1 inline-flex" aria-label="Show everyone's activity" (click)="clearUser()">
+              <app-icon name="x" [size]="12" />
+            </button>
+          </span>
+        }
+      </div>
+      <div class="card-toolbar__group">
+        <label class="select-field">
+          <span class="sr-only">Filter by action</span>
+          <select class="input" [value]="event()" (change)="setEvent($any($event.target).value)">
+            <option value="" [selected]="event() === ''">All actions</option>
+            @for (e of events; track e.value) {
+              <option [value]="e.value" [selected]="event() === e.value">{{ e.label }}</option>
+            }
+          </select>
+          <app-icon name="chevron-down" [size]="16" />
+        </label>
+        <label class="select-field">
+          <span class="sr-only">Time range</span>
+          <select class="input" [value]="range()" (change)="setRange($any($event.target).value)">
+            @for (r of ranges; track r.value) {
+              <option [value]="r.value" [selected]="range() === r.value">{{ r.label }}</option>
+            }
+          </select>
+          <app-icon name="chevron-down" [size]="16" />
+        </label>
+      </div>
+    </div>
+
+    @if (loading() && !page()) {
+      <div class="p-4"><app-skeleton [count]="6" /></div>
+    } @else if (page(); as p) {
+      @if (p.activity.length === 0) {
+        <app-empty-state icon="activity" title="No activity yet" body="Nothing matches these filters. Sign-ins, account changes and subscription edits show up here.">
+          <button type="button" class="btn btn-secondary btn-sm" (click)="clearFilters()">Clear filters</button>
+        </app-empty-state>
+      } @else {
+        <div class="table-scroll" [class.opacity-60]="loading()">
+          <table class="data-table is-compact">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Action</th>
+                <th>Device</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (a of p.activity; track a.id) {
+                <tr>
+                  <td>
+                    @if (a.user; as u) {
+                      <button type="button" class="flex items-center gap-2.5 min-w-0 text-left rounded hover:underline" [title]="u.email" (click)="showUser(u.id)">
+                        <span class="avatar" aria-hidden="true" [style.--avatar-color]="avatarColor(u.id)">{{ initials(u.name) }}</span>
+                        <span class="font-medium truncate">{{ u.name }}</span>
+                      </button>
+                    } @else if (a.deletedUser) {
+                      <span class="text-text2 italic">Deleted account</span>
+                    } @else {
+                      <div class="flex items-center gap-2.5">
+                        <span class="avatar" aria-hidden="true" style="--avatar-color: var(--color-text2)"><app-icon name="settings" [size]="14" /></span>
+                        <span class="font-medium">Admin</span>
+                      </div>
+                    }
+                  </td>
+                  <td>
+                    <span>{{ label(a) }}</span>
+                    @if (detail(a); as d) {
+                      <span class="text-text2"> · {{ d }}</span>
+                    }
+                  </td>
+                  <td class="text-text2">{{ a.device ?? '—' }}</td>
+                  <td class="text-text2 tabular-nums whitespace-nowrap" [title]="a.createdAt | date: 'medium'">{{ a.createdAt | date: 'dd MMM yyyy, h:mm a' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <app-pagination [page]="p.pagination.page" [pageSize]="p.pagination.limit" [total]="p.pagination.total" (pageChange)="goToPage($event)" />
+      }
+    }
+  </section>
+</div>

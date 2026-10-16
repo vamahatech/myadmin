@@ -1,109 +1,84 @@
 <div class="page">
-    <app-page-header title="Push notifications" description="Broadcast to every registered device, or target specific users." />
+  <app-page-header title="Push notifications" description="Broadcast to every registered device, or target specific users." />
 
-    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-      <div>
-        <h2 class="section-title mb-4">Broadcast to all users</h2>
-        <div class="card p-5 space-y-3">
-          <input
-            [(ngModel)]="broadcastTitle"
-            placeholder="Title"
-            aria-label="Broadcast title"
-            class="input"
-          />
-          <textarea
-            [(ngModel)]="broadcastBody"
-            placeholder="Body"
-            aria-label="Broadcast body"
-            rows="3"
-            class="input"
-          ></textarea>
-          @if (broadcastStatus() === 'error') {
-            <p class="text-sm text-danger">{{ broadcastError() }}</p>
-          }
-          @if (broadcastResult(); as r) {
-            <p class="text-sm text-success">Delivered: {{ r.successCount }} · Failed: {{ r.failureCount }}</p>
-          }
-          <button
-            (click)="sendBroadcast()"
-            [disabled]="broadcastStatus() === 'sending'"
-            class="btn"
-          >
-            {{ broadcastStatus() === 'sending' ? 'Sending…' : 'Send to all devices' }}
-          </button>
-        </div>
+  <section class="card" aria-labelledby="compose-title">
+    <div class="card-toolbar">
+      <h2 id="compose-title" class="section-title text-[15px] leading-6">New notification</h2>
+      <div class="segmented" role="group" aria-label="Audience">
+        <button type="button" [attr.aria-pressed]="audience() === 'all'" (click)="setAudience('all')">
+          <app-icon name="users" [size]="14" /> Everyone
+        </button>
+        <button type="button" [attr.aria-pressed]="audience() === 'users'" (click)="setAudience('users')">
+          <app-icon name="user" [size]="14" /> Specific users
+          @if (selectedUsers().length) { <span class="segmented__count">{{ selectedUsers().length }}</span> }
+        </button>
       </div>
+    </div>
 
-      <div>
-        <h2 class="section-title mb-4">Send to specific users</h2>
-        <div class="card p-5 space-y-3">
-          <input
-            [(ngModel)]="userSearch"
-            (keyup.enter)="searchUsers()"
-            placeholder="Search by name or email…"
-            aria-label="Search users by name or email"
-            class="input"
-          />
-          <button (click)="searchUsers()" class="btn btn-secondary btn-sm">Search</button>
+    <div class="p-5">
+      <app-push-composer
+        appName="RenewLoop"
+        appIcon="renewloop.png"
+        [audience]="audienceLabel()"
+        [sending]="sending()"
+        [error]="error()"
+        [disabledReason]="disabledReason()"
+        [submitLabel]="audience() === 'all' ? 'Send to everyone' : 'Send to selected'"
+        [(title)]="title"
+        [(body)]="body"
+        (send)="send()">
 
-          @if (userSearchLoading()) {
-            <p class="muted" role="status">Searching…</p>
-          } @else if (userResults().length > 0) {
-            <ul class="border border-border rounded-lg divide-y divide-border overflow-hidden">
-              @for (u of userResults(); track u.id) {
-                <li>
-                  <button type="button" (click)="toggleUser(u)" [attr.aria-pressed]="isSelected(u)" class="w-full text-left px-3 min-h-11 text-sm hover:bg-hover flex items-center justify-between gap-3">
-                    <span>{{ u.name }} — {{ u.email }}</span>
-                    @if (isSelected(u)) {
-                      <span class="badge badge-success">Selected</span>
-                    }
-                  </button>
-                </li>
-              }
-            </ul>
-          }
+        @if (audience() === 'users') {
+          <div composerTop>
+            <label class="field-label" for="recipient-search">Recipients</label>
+            <label class="search-field w-full sm:w-full">
+              <app-icon name="search" [size]="16" />
+              <input id="recipient-search" type="search" class="input" placeholder="Search by name or email"
+                [value]="userSearch()" (input)="onSearch($any($event.target).value)" autocomplete="off" />
+            </label>
 
-          @if (selectedUsers().length > 0) {
-            <div class="space-y-2">
-              <p class="text-sm font-medium">Selected ({{ selectedUsers().length }}):</p>
-              <ul class="flex flex-wrap gap-2">
+            @if (selectedUsers().length) {
+              <ul class="mt-2 flex flex-wrap gap-1.5" aria-label="Selected recipients">
                 @for (u of selectedUsers(); track u.id) {
-                  <li class="badge badge-neutral pr-1">
+                  <li class="badge badge-info pr-0.5">
                     {{ u.email }}
-                    <button type="button" (click)="removeSelected(u)" class="icon-btn w-6 h-6 hover:text-danger" [attr.aria-label]="'Remove ' + u.email"><app-icon name="x" [size]="14" /></button>
+                    <button type="button" (click)="toggleUser(u)" class="icon-btn w-6 h-6" [attr.aria-label]="'Remove ' + u.email">
+                      <app-icon name="x" [size]="12" />
+                    </button>
                   </li>
                 }
               </ul>
+            }
 
-              <input
-                [(ngModel)]="targetedTitle"
-                placeholder="Title"
-                aria-label="Message title"
-                class="input"
-              />
-              <textarea
-                [(ngModel)]="targetedBody"
-                placeholder="Body"
-                aria-label="Message body"
-                rows="3"
-                class="input"
-              ></textarea>
-              @if (targetedStatus() === 'error') {
-                <p class="text-sm text-danger">{{ targetedError() }}</p>
-              }
-              @if (targetedResult(); as r) {
-                <p class="text-sm text-success">Delivered: {{ r.successCount }} · Failed: {{ r.failureCount }}</p>
-              }
-              <button
-                (click)="sendTargeted()"
-                [disabled]="targetedStatus() === 'sending'"
-                class="btn"
-              >
-                {{ targetedStatus() === 'sending' ? 'Sending…' : 'Send' }}
-              </button>
-            </div>
-          }
-        </div>
-      </div>
-    </section>
+            @if (userSearchLoading()) {
+              <div class="mt-2 card p-3 space-y-2" aria-hidden="true">
+                <div class="skeleton h-4 w-2/3"></div><div class="skeleton h-4 w-1/2"></div>
+              </div>
+            } @else if (userResults().length) {
+              <ul class="mt-2 card overflow-hidden divide-y divide-border max-h-64 overflow-y-auto" aria-label="Search results">
+                @for (u of userResults(); track u.id) {
+                  <li>
+                    <button type="button" (click)="toggleUser(u)" [attr.aria-pressed]="isSelected(u)"
+                      class="w-full text-left px-3 min-h-11 text-sm hover:bg-hover flex items-center justify-between gap-3 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus">
+                      <span class="min-w-0">
+                        <span class="block font-medium truncate">{{ u.name }}</span>
+                        <span class="block text-xs text-text2 truncate">{{ u.email }}</span>
+                      </span>
+                      @if (isSelected(u)) {
+                        <app-icon name="check-circle" [size]="16" class="text-primary" />
+                      } @else {
+                        <app-icon name="plus" [size]="16" class="text-text2" />
+                      }
+                    </button>
+                  </li>
+                }
+              </ul>
+            } @else if (userSearch().trim()) {
+              <p class="field-help">No users match "{{ userSearch() }}".</p>
+            }
+          </div>
+        }
+      </app-push-composer>
+    </div>
+  </section>
 </div>
