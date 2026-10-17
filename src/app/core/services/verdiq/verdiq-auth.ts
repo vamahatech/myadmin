@@ -69,12 +69,13 @@ export class VerdiqAuthService {
    * AppSessionService to decide whether a truthy-but-dead token still needs
    * a fresh silent login.
    */
-  isTokenExpired(): boolean {
+  /** True when there is no token, it can't be read, or it expires within `marginMs`. */
+  isTokenExpired(marginMs = 0): boolean {
     const token = this.storage.getToken();
     if (!token) return true;
     const claims = decodeJwt(token) as { exp?: number } | null;
     if (!claims || typeof claims.exp !== 'number') return true;
-    return claims.exp * 1000 <= Date.now();
+    return claims.exp * 1000 - marginMs <= Date.now();
   }
 
   private userFromStoredToken(): AdminUser | null {

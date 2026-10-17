@@ -229,13 +229,12 @@ The sidebar and the Overview hide modules an app doesn't support. A module goes 
   ADMIN with per-app `VIEWER` (read) < `EDITOR` (create/edit/triage) < `MANAGER` (send, delete,
   export), plus an optional module allow-list. Backend routes declare
   `@AppPermission(app, module, level)`; the console hides what the role can't do.
-- **App backends with their own auth (built: broker).** Verdiq and RenewLoop are reached through
-  vamaha-backend's session broker, which holds their service credentials and issues a session
-  only to admins with access to that app. No secret ships in the frontend. **Still to do:** the
-  app backends verify the Vamaha admin JWT themselves (shared public key/JWKS), so module-level
-  limits are enforced there too and their audit logs name the real admin. Until then those apps'
-  own logs record the service account; vamaha-backend's `app_session.issue` entries show who
-  opened which app.
+- **App backends with their own auth (built: signed sessions).** vamaha-backend's session broker
+  mints a short-lived RS256 token per admin per app (audience = the app; claims = admin id,
+  email, name, role and modules on that app). Verdiq and RenewLoop verify it with the public key,
+  enforce modules per route (deny by default for unmapped routes) and record the real admin in
+  their own audit/activity logs. No shared secret exists; the legacy service-password mode is
+  only a per-app fallback (`<APP>_SESSION_MODE=password`) during rollout.
 - Rate-limit admin login; lock out after repeated failures; record admin sign-ins in the audit log.
 
 ## 8. Privacy and retention
@@ -268,7 +267,7 @@ The sidebar and the Overview hide modules an app doesn't support. A module goes 
 | Feedback | ✅ (NEW/READ/ARCHIVED) | ✅ via vamaha-backend | ✅ `app_feedback` | ✅ in-app form + inbox |
 | Audit | ❌ | ❌ | ✅ `admin_audit_log` | admin sends + status changes (activity log) |
 | Suspend / export | n/a | n/a | ❌ | ❌ |
-| Admin identity | Vamaha admin JWT + per-app roles | Vamaha admin JWT + per-app roles | broker (service account) | broker (service account) |
+| Admin identity | Vamaha admin JWT + per-app roles | Vamaha admin JWT + per-app roles | signed per-admin token, modules enforced | signed per-admin token, modules enforced |
 
 ## 10. Roadmap
 
@@ -294,5 +293,6 @@ Tracked in `renewloop/docs/BACKLOG.md` › Monitoring. Next apps: Verdiq (needs 
 **Progress (2026-10-17):** admin accounts shipped. Invite by email, forgot/reset/change
 password (signs out other sessions), per-app roles + module ticks enforced in vamaha-backend and
 mirrored in the console, superadmin guardrails, admin audit log, and the session broker
-replacing the bundled service passwords. Next for §7: app backends verify the admin JWT;
+replacing the bundled service passwords. Signed per-admin app tokens
+followed: Verdiq and RenewLoop now verify the admin and enforce modules themselves. Next for §7:
 two-factor sign-in for superadmins.

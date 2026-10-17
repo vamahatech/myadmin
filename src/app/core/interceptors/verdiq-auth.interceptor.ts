@@ -2,6 +2,8 @@ import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { VerdiqAuthService } from '../services/verdiq/verdiq-auth';
 import { environment } from '../../../environments/environment';
+import { AppSessionService } from '../services/app-session.service';
+import { withAppSession } from './app-session-auth';
 
 /**
  * Attaches the verdiq-backend JWT (obtained via silent service-credential
@@ -14,11 +16,8 @@ import { environment } from '../../../environments/environment';
 const VERDIQ_BASE = environment.verdiq.apiBaseUrl.replace(/\/$/, '') + '/';
 
 export const verdiqAuthInterceptor: HttpInterceptorFn = (req, next) => {
-  const token = inject(VerdiqAuthService).getToken();
-  if (token && req.url.startsWith(VERDIQ_BASE)) {
-    return next(
-      req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }),
-    );
-  }
-  return next(req);
+  if (!req.url.startsWith(VERDIQ_BASE)) return next(req);
+  const auth = inject(VerdiqAuthService);
+  const session = inject(AppSessionService);
+  return withAppSession(req, next, (force) => session.ensureVerdiqSession(force), () => auth.getToken());
 };

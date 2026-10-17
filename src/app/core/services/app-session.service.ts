@@ -13,29 +13,40 @@ interface BrokeredSession {
   user?: Partial<AdminUser>;
 }
 
+type BrokeredApp = 'verdiq' | 'renewloop';
+
+/** Fetch a new app token this long before the current one expires. */
+const REFRESH_MARGIN_MS = 60_000;
+
 /**
- * Sessions for apps whose backend differs from vamaha-backend (Verdiq, RenewLoop).
- * vamaha-backend's session broker (POST /app-sessions/:appId) holds those backends'
- * service credentials and only issues a session to admins with access to the app,
- * so no password ships in this bundle. Each app's auth service keeps the token in
- * its own storage; this only fetches one when none is valid yet.
+ * Sessions for apps whose backend differs from vamaha-backend (Verdiq, RenewLoop),
+ * issued by vamaha-backend's session broker (POST /app-sessions/:appId) only to
+ * admins with access to the app. With signed sessions the token names this admin
+ * and lasts ~15 minutes, so the app interceptors call ensure*Session() before each
+ * request (cheap while the token is fresh) and once more on a 401.
  */
 @Injectable({ providedIn: 'root' })
 export class AppSessionService {
   private readonly http = inject(HttpClient);
   private readonly verdiqAuth = inject(VerdiqAuthService);
   private readonly renewloopAuth = inject(RenewloopAuthService);
+  /** Parallel requests share one broker call per app. */
+  private readonly inflight = new Map<BrokeredApp, Promise<void>>();
 
-  async ensureVerdiqSession(): Promise<void> {
-    if (this.verdiqAuth.getToken() && !this.verdiqAuth.isTokenExpired()) return;
-    const session = await this.broker('verdiq');
-    this.verdiqAuth.adoptSession(session.token, session.user);
+  ensureVerdiqSession(force = false): Promise<void> {
+    if (!force && !this.verdiqAuth.isTokenExpired(REFRESH_MARGIN_MS)) return Promise.resolve();
+    return this.once('verdiq', async () => {
+      const session = await this.broker('verdiq');
+      this.verdiqAuth.adoptSession(session.token, session.user);
+    });
   }
 
-  async ensureRenewloopSession(): Promise<void> {
-    if (this.renewloopAuth.getToken() && !this.renewloopAuth.isTokenExpired()) return;
-    const session = await this.broker('renewloop');
-    this.renewloopAuth.adoptSession(session.token);
+  ensureRenewloopSession(force = false): Promise<void> {
+    if (!force && !this.renewloopAuth.isTokenExpired(REFRESH_MARGIN_MS)) return Promise.resolve();
+    return this.once('renewloop', async () => {
+      const session = await this.broker('renewloop');
+      this.renewloopAuth.adoptSession(session.token);
+    });
   }
 
   /** Clears every app session. Called from AuthService on sign-out and on a new sign-in,
@@ -46,7 +57,16 @@ export class AppSessionService {
     this.renewloopAuth.logout();
   }
 
-  private broker(appId: 'verdiq' | 'renewloop'): Promise<BrokeredSession> {
+  private once(app: BrokeredApp, run: () => Promise<void>): Promise<void> {
+    let pending = this.inflight.get(app);
+    if (!pending) {
+      pending = run().finally(() => this.inflight.delete(app));
+      this.inflight.set(app, pending);
+    }
+    return pending;
+  }
+
+  private broker(appId: BrokeredApp): Promise<BrokeredSession> {
     return firstValueFrom(
       this.http
         .post<{ data: BrokeredSession }>(`${environment.apiBaseUrl}/app-sessions/${appId}`, {})

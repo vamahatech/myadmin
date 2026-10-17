@@ -93,6 +93,12 @@ export class RenewloopActivity {
     return u.devices.map((d) => d.label).join(', ');
   }
 
+  /** Which console admin did it (recorded since signed sessions); older entries just say Admin. */
+  adminName(e: ActivityEntry): string {
+    const name = e.details['actorName'] ?? e.details['actorEmail'];
+    return typeof name === 'string' && name ? name : 'Admin';
+  }
+
   label(e: ActivityEntry): string {
     return ACTIVITY_LABELS[e.event] ?? e.event;
   }

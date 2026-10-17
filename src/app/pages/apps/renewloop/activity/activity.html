@@ -136,7 +136,10 @@
                     } @else {
                       <div class="flex items-center gap-2.5">
                         <span class="avatar" aria-hidden="true" style="--avatar-color: var(--color-text2)"><app-icon name="settings" [size]="14" /></span>
-                        <span class="font-medium">Admin</span>
+                        <span class="min-w-0">
+                          <span class="block font-medium truncate">{{ adminName(a) }}</span>
+                          <span class="block text-xs text-text2">Admin{{ a.details['actorType'] === 'service' ? ' · service account' : '' }}</span>
+                        </span>
                       </div>
                     }
                   </td>

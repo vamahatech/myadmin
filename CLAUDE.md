@@ -43,6 +43,9 @@ allow-list (module id = nav item `module` or first path segment; Vamaha's '' Art
   triage (edit), Vamaha "New article" (edit).
 - Verdiq/RenewLoop sessions come from the vamaha-backend **session broker** (`POST /app-sessions/:appId`,
   `AppSessionService` → `adoptSession` on each app's auth service). No service password is in this bundle.
+  With signed sessions the token names the admin and lasts ~15 min: the Verdiq/RenewLoop interceptors
+  (`core/interceptors/app-session-auth.ts`) refresh it 60 s before expiry and retry once on a 401;
+  parallel requests share one broker call. Those backends enforce modules themselves.
 - Pages: `settings/admins` (invite with per-app role + module ticks, edit, resend invite, send reset,
   deactivate, audit log tab), Settings (change password, "your access"), auth pages share
   `shared/components/auth-layout` and `password-fields` (≥ 10 characters + confirm).
