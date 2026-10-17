@@ -1,44 +1,149 @@
 <div class="page">
-  <app-page-header title="Feedback" description="General feedback parents send from Settings — not tied to any product.">
+  <app-page-header title="Feedback" description="General feedback parents send from Settings, not tied to a product.">
     <button type="button" class="btn btn-ghost" (click)="load()" [disabled]="loading()"><app-icon name="refresh" [size]="16" /> Refresh</button>
   </app-page-header>
 
-  @if (error()) { <div class="card state error">{{ error() }}</div> }
+  <div class="kpi-grid" aria-label="Feedback summary">
+    @if (data(); as d) {
+      <div class="kpi" style="--kpi-color: var(--color-danger)">
+        <p class="kpi__label">Needs a look</p>
+        <div class="kpi__body">
+          <span class="kpi__icon"><app-icon name="inbox" [size]="20" /></span>
+          <p class="kpi__value">{{ d.counts.new | number }}</p>
+        </div>
+        <div class="kpi__foot"><span>New, not read yet</span></div>
+      </div>
+      <div class="kpi" style="--kpi-color: var(--color-success)">
+        <p class="kpi__label">Read</p>
+        <div class="kpi__body">
+          <span class="kpi__icon"><app-icon name="check-circle" [size]="20" /></span>
+          <p class="kpi__value">{{ d.counts.read | number }}</p>
+        </div>
+        <div class="kpi__foot"><span>Already reviewed</span></div>
+      </div>
+      <div class="kpi" style="--kpi-color: var(--color-blue)">
+        <p class="kpi__label">All feedback</p>
+        <div class="kpi__body">
+          <span class="kpi__icon"><app-icon name="message" [size]="20" /></span>
+          <p class="kpi__value">{{ d.counts.new + d.counts.read | number }}</p>
+        </div>
+        <div class="kpi__foot"><span>Since launch</span></div>
+      </div>
+    } @else if (loading()) {
+      @for (i of [1, 2, 3]; track i) {
+        <div class="kpi"><app-skeleton [count]="3" /></div>
+      }
+    }
+  </div>
 
-  @if (data(); as d) {
-    <div class="segmented" role="group" aria-label="Filter by status">
-      <button type="button" [attr.aria-pressed]="tab === 'new'" (click)="setTab('new')">
-        New <span class="segmented__count">{{ d.counts.new }}</span>
-      </button>
-      <button type="button" [attr.aria-pressed]="tab === 'read'" (click)="setTab('read')">
-        Read <span class="segmented__count">{{ d.counts.read }}</span>
-      </button>
-      <button type="button" [attr.aria-pressed]="tab === 'all'" (click)="setTab('all')">All</button>
-    </div>
+  @if (error()) {
+    <div class="card state error" role="alert">{{ error() }}</div>
+  }
 
-    @if (loading()) {
-      <app-skeleton variant="cards" [count]="4" />
-    } @else if (d.rows.length === 0) {
-      <div class="card"><app-empty-state icon="message" title="No {{ tab === 'all' ? '' : tab }} feedback" /></div>
-    } @else {
-      <div class="fb-list">
-        @for (f of d.rows; track f.id) {
-          <div class="card fb-card">
-            <div class="fb-head">
-              <span class="pill" [class.yes]="f.status === 'read'" [class.neutral]="f.status === 'new'">{{ f.status }}</span>
-              <span class="fb-meta">{{ f.created_at | date:'medium' }} · {{ f.sender_email || 'unknown' }}</span>
-            </div>
-            <p class="fb-note">{{ f.note }}</p>
-            @if (f.status === 'new') {
-              <div class="fb-actions">
-                <button class="btn btn-ghost" (click)="markRead(f)" [disabled]="busy() === f.id">
-                  {{ busy() === f.id ? 'Working…' : 'Mark read' }}
-                </button>
-              </div>
-            }
-          </div>
+  <section class="card overflow-hidden" aria-label="Feedback inbox">
+    <div class="card-toolbar">
+      <div class="card-toolbar__group">
+        <h2 class="text-base font-semibold">Feedback inbox</h2>
+        @if (data()) {
+          <span class="badge badge-neutral tabular-nums">{{ filtered().length | number }}</span>
         }
       </div>
+      <div class="card-toolbar__group">
+        <label class="select-field">
+          <span class="sr-only">Status</span>
+          <select class="input" [value]="status()" (change)="setStatus($any($event.target).value)">
+            @for (o of statusOptions; track o.value) {
+              <option [value]="o.value" [selected]="status() === o.value">{{ o.label }}</option>
+            }
+          </select>
+          <app-icon name="chevron-down" [size]="16" />
+        </label>
+        <label class="search-field">
+          <span class="sr-only">Search feedback</span>
+          <app-icon name="search" [size]="16" />
+          <input type="search" class="input" placeholder="Message or email" (input)="onSearch($any($event.target).value)" />
+        </label>
+      </div>
+    </div>
+
+    @if (loading() && !data()) {
+      <div class="p-4"><app-skeleton [count]="6" /></div>
+    } @else if (data()) {
+      @if (filtered().length === 0) {
+        <app-empty-state icon="message" title="No feedback here" body="Feedback sent from the app's Settings › Send feedback screen shows up here.">
+          <button type="button" class="btn btn-secondary btn-sm" (click)="clearFilters()">Show all feedback</button>
+        </app-empty-state>
+      } @else {
+        <div class="table-scroll" [class.opacity-60]="loading()">
+          <table class="data-table is-compact">
+            <thead>
+              <tr>
+                <th>From</th>
+                <th>Message</th>
+                <th>Received</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (f of rows(); track f.id) {
+                <tr class="cursor-pointer" (click)="open(f)">
+                  <td>
+                    @if (f.sender_email; as email) {
+                      <div class="flex items-center gap-2.5 min-w-0" [title]="email">
+                        <span class="avatar" aria-hidden="true" [style.--avatar-color]="avatarColor(email)">{{ initials(email) }}</span>
+                        <span class="truncate max-w-[16rem]">{{ email }}</span>
+                      </div>
+                    } @else {
+                      <span class="text-text2 italic">Deleted account</span>
+                    }
+                  </td>
+                  <td class="min-w-[16rem] max-w-[36rem]">
+                    <button type="button" class="text-left line-clamp-2 hover:underline" [class.font-medium]="f.status === 'new'" (click)="$event.stopPropagation(); open(f)">{{ f.note }}</button>
+                  </td>
+                  <td class="text-text2 tabular-nums whitespace-nowrap" [title]="f.created_at | date: 'medium'">{{ f.created_at | date: 'dd MMM yyyy' }}</td>
+                  <td><span [class]="'badge ' + tone(f.status)">{{ statusLabel(f.status) }}</span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <app-pagination [page]="page()" [pageSize]="pageSize" [total]="filtered().length" (pageChange)="page.set($event)" />
+      }
     }
-  }
+  </section>
+
+  <app-modal [open]="!!selected()" title="Feedback" (closed)="close()">
+    @if (selected(); as f) {
+      <div class="flex flex-col gap-4">
+        @if (f.sender_email; as email) {
+          <div class="flex items-center gap-3">
+            <span class="avatar" style="width: 40px; height: 40px; font-size: 14px" aria-hidden="true" [style.--avatar-color]="avatarColor(email)">{{ initials(email) }}</span>
+            <div class="min-w-0">
+              <p class="font-semibold truncate">{{ email }}</p>
+              <p class="text-sm text-text2 tabular-nums">{{ f.created_at | date: 'dd MMM yyyy, h:mm a' }}</p>
+            </div>
+          </div>
+        } @else {
+          <p class="text-sm text-text2 italic">Sent by an account that has since been deleted.</p>
+        }
+
+        <blockquote class="rounded-lg border border-border bg-surface p-3 text-sm whitespace-pre-wrap break-words">{{ f.note }}</blockquote>
+
+        <div class="flex flex-wrap items-center justify-end gap-2">
+          @if (replyLink(f); as link) {
+            <a class="btn btn-secondary btn-sm mr-auto" [href]="link"><app-icon name="message" [size]="14" /> Reply by email</a>
+          }
+          @if (f.status === 'new') {
+            @if (canEdit()) {
+              <button type="button" class="btn btn-sm" [disabled]="busy()" (click)="markRead()">{{ busy() ? 'Saving…' : 'Mark read' }}</button>
+            } @else {
+              <span class="text-sm text-text2">View only: marking read needs the Editor role.</span>
+            }
+          } @else {
+            <span [class]="'badge ' + tone(f.status)">{{ statusLabel(f.status) }}</span>
+          }
+        </div>
+      </div>
+    }
+  </app-modal>
 </div>

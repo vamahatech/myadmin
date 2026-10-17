@@ -1,24 +1,194 @@
 <div class="page">
   <app-page-header title="Users &amp; testers" description="Accounts, child age bands, and the closed-test inactivity watchlist.">
-    <button type="button" class="btn btn-ghost" (click)="openCreate()"><app-icon name="plus" [size]="16" /> New user</button>
     <button type="button" class="btn btn-ghost" (click)="load()" [disabled]="loading()"><app-icon name="refresh" [size]="16" /> Refresh</button>
+    @if (canManage()) {
+      <button type="button" class="btn btn-sm" (click)="openCreate()"><app-icon name="plus" [size]="14" /> New user</button>
+    }
   </app-page-header>
 
-  <app-modal [open]="createOpen()" title="Create account" (closed)="closeCreate()">
-    <div class="create-row">
-      <input class="input" type="email" placeholder="new-user@example.com"
-        [(ngModel)]="newEmail" (keyup.enter)="createUser()" [disabled]="creating()" />
+  <div class="kpi-grid" aria-label="User summary">
+    @if (data(); as d) {
+      <div class="kpi" style="--kpi-color: var(--color-blue)">
+        <p class="kpi__label">Total users</p>
+        <div class="kpi__body">
+          <span class="kpi__icon"><app-icon name="users" [size]="20" /></span>
+          <p class="kpi__value">{{ d.summary.total_users | number }}</p>
+        </div>
+        <div class="kpi__foot"><span>{{ d.summary.admins | number }} admin{{ d.summary.admins === 1 ? '' : 's' }}</span></div>
+      </div>
+      <div class="kpi" style="--kpi-color: var(--color-success)">
+        <p class="kpi__label">Testers opted in</p>
+        <div class="kpi__body">
+          <span class="kpi__icon"><app-icon name="check-circle" [size]="20" /></span>
+          <p class="kpi__value">{{ d.summary.testers | number }}</p>
+        </div>
+        <div class="kpi__foot"><span>Closed-test participants</span></div>
+      </div>
+      <div class="kpi" style="--kpi-color: var(--color-danger)">
+        <p class="kpi__label">Inactive testers (14d+)</p>
+        <div class="kpi__body">
+          <span class="kpi__icon"><app-icon name="user-x" [size]="20" /></span>
+          <p class="kpi__value">{{ d.summary.inactive_testers | number }}</p>
+        </div>
+        <div class="kpi__foot">
+          @if (d.summary.inactive_testers > 0) {
+            <button type="button" class="hover:underline" (click)="setFilter('inactive')">Show them</button>
+            <span>· nudge before the clock breaks</span>
+          } @else {
+            <span>Everyone is active</span>
+          }
+        </div>
+      </div>
+      <div class="kpi" style="--kpi-color: var(--color-gold)">
+        <p class="kpi__label">Children by age band</p>
+        <div class="kpi__body">
+          <span class="kpi__icon"><app-icon name="user" [size]="20" /></span>
+          <p class="kpi__value">{{ d.ageBands.under_2 + d.ageBands['2_to_5'] | number }}</p>
+        </div>
+        <div class="kpi__foot"><span>{{ d.ageBands.under_2 | number }} under 2 · {{ d.ageBands['2_to_5'] | number }} aged 2–5</span></div>
+      </div>
+    } @else if (loading()) {
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="kpi"><app-skeleton [count]="3" /></div>
+      }
+    }
+  </div>
+
+  @if (error()) {
+    <div class="card state error" role="alert">{{ error() }}</div>
+  }
+
+  <section class="card overflow-hidden" aria-label="Users">
+    <div class="card-toolbar">
+      <div class="card-toolbar__group">
+        <h2 class="text-base font-semibold">User list</h2>
+        @if (data()) {
+          <span class="badge badge-neutral tabular-nums">{{ filtered().length | number }}</span>
+        }
+      </div>
+      <div class="card-toolbar__group">
+        <label class="select-field">
+          <span class="sr-only">Filter users</span>
+          <select class="input" [value]="filter()" (change)="setFilter($any($event.target).value)">
+            @for (f of filters; track f.value) {
+              <option [value]="f.value" [selected]="filter() === f.value">{{ f.label }}</option>
+            }
+          </select>
+          <app-icon name="chevron-down" [size]="16" />
+        </label>
+        <label class="search-field">
+          <span class="sr-only">Search users by email</span>
+          <app-icon name="search" [size]="16" />
+          <input type="search" class="input" placeholder="Search email" (input)="onSearch($any($event.target).value)" />
+        </label>
+      </div>
     </div>
-    <label class="check">
-      <input type="checkbox" [(ngModel)]="newIsAdmin" [disabled]="creating()" />
-      Is admin
-    </label>
-    @if (createError()) { <p class="create-error">{{ createError() }}</p> }
-    <div class="form-actions">
-      <button class="btn btn-ghost" (click)="closeCreate()" [disabled]="creating()">Cancel</button>
-      <button class="btn" (click)="createUser()" [disabled]="creating()">
-        {{ creating() ? 'Creating…' : (newIsAdmin ? 'Create admin & email password' : 'Create account & email password') }}
-      </button>
+
+    @if (loading() && !data()) {
+      <div class="p-4"><app-skeleton [count]="6" /></div>
+    } @else if (data()) {
+      @if (filtered().length === 0) {
+        <app-empty-state icon="users" title="No users found" body="Try a different search or filter.">
+          <button type="button" class="btn btn-secondary btn-sm" (click)="clearFilters()">Clear filters</button>
+        </app-empty-state>
+      } @else {
+        <div class="table-scroll" [class.opacity-60]="loading()">
+          <table class="data-table is-compact">
+            <thead>
+              <tr>
+                <th [attr.aria-sort]="ariaSort('email')">
+                  <button type="button" class="th-sort" (click)="sort('email')">
+                    User
+                    <app-icon [name]="sortIcon('email')" [size]="12" [class.sort-idle]="sortBy() !== 'email'" />
+                  </button>
+                </th>
+                <th>Role</th>
+                <th class="text-right">Children</th>
+                <th>Tester</th>
+                <th [attr.aria-sort]="ariaSort('last_seen_at')">
+                  <button type="button" class="th-sort" (click)="sort('last_seen_at')">
+                    Last seen
+                    <app-icon [name]="sortIcon('last_seen_at')" [size]="12" [class.sort-idle]="sortBy() !== 'last_seen_at'" />
+                  </button>
+                </th>
+                <th [attr.aria-sort]="ariaSort('created_at')">
+                  <button type="button" class="th-sort" (click)="sort('created_at')">
+                    Joined
+                    <app-icon [name]="sortIcon('created_at')" [size]="12" [class.sort-idle]="sortBy() !== 'created_at'" />
+                  </button>
+                </th>
+                @if (canManage()) {
+                  <th class="text-right"><span class="sr-only">Actions</span></th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (u of rows(); track u.id) {
+                <tr>
+                  <td>
+                    <div class="flex items-center gap-2.5 min-w-0" [title]="u.email">
+                      <span class="avatar" aria-hidden="true" [style.--avatar-color]="avatarColor(u.id)">{{ initials(u.email) }}</span>
+                      <span class="font-medium truncate max-w-[18rem]">{{ u.email }}</span>
+                      @if (u.id === currentUserId) { <span class="badge badge-neutral">You</span> }
+                    </div>
+                  </td>
+                  <td>
+                    @if (u.is_admin) { <span class="badge badge-info">Admin</span> }
+                    @else { <span class="badge badge-neutral">Parent</span> }
+                  </td>
+                  <td class="text-right tabular-nums">{{ u.children }}</td>
+                  <td>
+                    @if (u.tester_opted_in) {
+                      @if (u.inactive_tester) { <span class="badge badge-danger">Inactive</span> }
+                      @else { <span class="badge badge-success">Active</span> }
+                    } @else { <span class="text-text2">—</span> }
+                  </td>
+                  <td class="text-text2 tabular-nums whitespace-nowrap" [title]="u.last_seen_at ? (u.last_seen_at | date: 'medium') : 'Never'">{{ u.last_seen_at ? (u.last_seen_at | date: 'dd MMM yyyy') : '—' }}</td>
+                  <td class="text-text2 tabular-nums whitespace-nowrap" [title]="u.created_at | date: 'medium'">{{ u.created_at | date: 'dd MMM yyyy' }}</td>
+                  @if (canManage()) {
+                    <td class="text-right whitespace-nowrap">
+                      <button type="button" class="btn btn-ghost btn-sm" (click)="toggleAdmin(u)"
+                        [disabled]="roleChangingId() === u.id || u.id === currentUserId"
+                        [title]="u.id === currentUserId ? 'You cannot change your own admin status here' : ''">
+                        {{ u.is_admin ? 'Remove admin' : 'Make admin' }}
+                      </button>
+                      <button type="button" class="icon-btn is-sm icon-danger" (click)="openDelete(u)"
+                        [disabled]="u.id === currentUserId"
+                        [title]="u.id === currentUserId ? 'Ask another admin to remove your account' : 'Delete user'"
+                        [attr.aria-label]="'Delete ' + u.email">
+                        <app-icon name="trash" [size]="15" />
+                      </button>
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <app-pagination [page]="page()" [pageSize]="pageSize" [total]="filtered().length" (pageChange)="page.set($event)" />
+      }
+    }
+  </section>
+
+  <app-modal [open]="createOpen()" title="Create account" size="sm" (closed)="closeCreate()">
+    <div class="flex flex-col gap-3">
+      <label class="block">
+        <span class="field-label">Email</span>
+        <input class="input" type="email" placeholder="new-user@example.com" [(ngModel)]="newEmail" name="newEmail"
+          (keyup.enter)="createUser()" [disabled]="creating()" />
+      </label>
+      <label class="flex items-center gap-2 text-sm">
+        <input type="checkbox" [(ngModel)]="newIsAdmin" name="newIsAdmin" [disabled]="creating()" />
+        Make this account a Verdiq admin
+      </label>
+      @if (createError()) { <p class="text-sm text-danger" role="alert">{{ createError() }}</p> }
+      <p class="text-sm text-text2">We generate a password and email it to them.</p>
+      <div class="flex justify-end gap-2">
+        <button type="button" class="btn btn-ghost" (click)="closeCreate()" [disabled]="creating()">Cancel</button>
+        <button type="button" class="btn" (click)="createUser()" [disabled]="creating()">
+          {{ creating() ? 'Creating…' : (newIsAdmin ? 'Create admin' : 'Create account') }}
+        </button>
+      </div>
     </div>
   </app-modal>
 
@@ -29,84 +199,4 @@
     (confirmed)="confirmDelete()"
     (closed)="closeDelete()"
   ></app-confirm-delete-modal>
-
-  @if (loading()) {
-    <app-skeleton [count]="5" />
-  } @else if (error()) {
-    <div class="card state error">{{ error() }}</div>
-  } @else if (data(); as d) {
-
-    <div class="kpi-grid">
-      <div class="card kpi">
-        <span class="kpi-label">Users</span>
-        <span class="kpi-value">{{ d.summary.total_users | number }}</span>
-        <span class="kpi-sub">{{ d.summary.admins }} admin</span>
-      </div>
-      <div class="card kpi">
-        <span class="kpi-label">Testers opted in</span>
-        <span class="kpi-value">{{ d.summary.testers | number }}</span>
-      </div>
-      <div class="card kpi" [class.alarm]="d.summary.inactive_testers > 0">
-        <span class="kpi-label">Inactive testers (14d+)</span>
-        <span class="kpi-value">{{ d.summary.inactive_testers | number }}</span>
-        <span class="kpi-sub">nudge before the clock breaks</span>
-      </div>
-      <div class="card kpi">
-        <span class="kpi-label">Children by band</span>
-        <span class="kpi-value band">
-          <span>{{ d.ageBands.under_2 }} <small>under 2</small></span>
-          <span>{{ d.ageBands['2_to_5'] }} <small>2–5</small></span>
-        </span>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="table-scroll">
-        <table class="data-table">
-          <thead>
-            <tr><th>Email</th><th>Role</th><th class="num">Children</th><th>Tester</th><th>Last seen</th><th>Joined</th><th></th></tr>
-          </thead>
-          <tbody>
-            @for (u of d.rows; track u.id) {
-              <tr [class.inactive]="u.inactive_tester">
-                <td class="strong">{{ u.email }}</td>
-                <td>
-                  @if (u.is_admin) { <span class="pill yes">admin</span> }
-                  @else { <span class="pill neutral">parent</span> }
-                </td>
-                <td class="num">{{ u.children }}</td>
-                <td>
-                  @if (u.tester_opted_in) {
-                    @if (u.inactive_tester) { <span class="pill no">inactive</span> }
-                    @else { <span class="pill yes">active</span> }
-                  } @else { <span class="muted">—</span> }
-                </td>
-                <td class="nowrap">{{ u.last_seen_at ? (u.last_seen_at | date:'mediumDate') : '—' }}</td>
-                <td class="nowrap">{{ u.created_at | date:'mediumDate' }}</td>
-                <td class="actions">
-                  <button class="btn btn-ghost btn-sm" (click)="toggleAdmin(u)"
-                    [disabled]="roleChangingId() === u.id || u.id === currentUserId"
-                    [title]="u.id === currentUserId ? 'You cannot change your own admin status here' : ''">
-                    {{ u.is_admin ? 'Remove admin' : 'Make admin' }}
-                  </button>
-                  <button class="icon-btn icon-danger" (click)="openDelete(u)"
-                    [disabled]="u.id === currentUserId"
-                    [title]="u.id === currentUserId ? 'Ask another admin to remove your account' : 'Delete user'"
-                    aria-label="Delete user">
-                    <svg width="13" height="16" viewBox="0 0 11 14" aria-hidden="true">
-                      <path fill="currentColor"
-                        d="M.768 12.286c.002.847.689 1.533 1.536 1.536h6.143c.848-.003 1.534-.689 1.536-1.536V3.075H.768v9.21zM10.75.768H8.062L7.295 0H3.455l-.768.768H0v1.535h10.75V.768z" />
-                    </svg>
-                  </button>
-                </td>
-              </tr>
-            } @empty {
-              <tr><td colspan="7" class="empty">No users.</td></tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-  }
 </div>

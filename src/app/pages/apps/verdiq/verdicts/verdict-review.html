@@ -3,111 +3,165 @@
     <button type="button" class="btn btn-ghost" (click)="load()" [disabled]="loading()"><app-icon name="refresh" [size]="16" /> Refresh</button>
   </app-page-header>
 
-  @if (loading()) {
-    <app-skeleton variant="cards" [count]="4" />
-  } @else if (error()) {
-    <div class="card state error">{{ error() }}</div>
-  } @else if (data(); as d) {
+  @if (error()) {
+    <div class="card state error" role="alert">{{ error() }}</div>
+  }
 
-    @if (d.total === 0) {
-      <div class="card"><app-empty-state icon="scale" title="No verdicts cached yet" /></div>
-    } @else {
-      <div class="verdict-list">
-        @for (v of d.rows; track v.barcode + v.age_band) {
-          <div class="card verdict-card">
-            <div class="vc-head">
-              <div class="vc-title">
-                <span class="badge" [class.ok]="v.verdict === 'OK'"
-                                    [class.caution]="v.verdict === 'Caution'"
-                                    [class.avoid]="v.verdict === 'Avoid'">{{ v.verdict }}</span>
-                <span class="vc-name">{{ v.product_name || 'Unknown product' }}</span>
-                <span class="age-chip">{{ ageLabel(v.age_band) }}</span>
-              </div>
-              <div class="vc-meta">
-                <code>{{ v.barcode }}</code>
-                <span>updated {{ v.updated_at | date:'mediumDate' }}</span>
-                @if (v.stale_days > 30) {
-                  <span class="stale">stale {{ v.stale_days }}d</span>
-                }
-              </div>
-            </div>
-
-            <p class="vc-reason">{{ v.reason }}</p>
-            <p class="vc-citation"><app-icon name="book" [size]="14" class="align-[-2px] mr-1" />{{ v.citation }}</p>
-
-            @if (v.flags?.length) {
-              <div class="chips">
-                @for (f of v.flags; track f) {
-                  <span class="chip flag">{{ f }}</span>
-                }
-              </div>
-            }
-
-            @if (v.additives?.length) {
-              <div class="additives">
-                @for (a of v.additives; track a.ins) {
-                  <div class="additive" [class.controversial]="a.controversial">
-                    <span class="ins">INS {{ a.ins }}</span>
-                    <span class="aname">{{ a.name }}</span>
-                    <span class="arisk">{{ a.risk }}</span>
-                  </div>
-                }
-              </div>
-            }
-
-            <!-- Actions -->
-            <div class="vc-actions">
-              <button class="btn btn-ghost" (click)="recompute(v)"
-                      [disabled]="busyKey() === key(v)">
-                {{ busyKey() === key(v) ? 'Working…' : '↻ Recompute' }}
-              </button>
-              @if (editingKey() !== key(v)) {
-                <button class="btn btn-ghost" (click)="startOverride(v)"
-                        [disabled]="busyKey() === key(v)"><app-icon name="pen" [size]="14" /> Override</button>
-              }
-            </div>
-
-            <!-- Override form -->
-            @if (editingKey() === key(v)) {
-              <div class="override">
-                <div class="override-row">
-                  <label class="of">
-                    <span>Verdict</span>
-                    <select class="input" [(ngModel)]="draft.verdict">
-                      @for (l of levels; track l) { <option [value]="l">{{ l }}</option> }
-                    </select>
-                  </label>
-                  <label class="of grow">
-                    <span>Reason</span>
-                    <input class="input" [(ngModel)]="draft.reason" />
-                  </label>
-                </div>
-                <label class="of">
-                  <span>Citation (must be defensible)</span>
-                  <input class="input" [(ngModel)]="draft.citation" />
-                </label>
-                <div class="override-actions">
-                  <button class="btn btn-ghost" (click)="cancelOverride()">Cancel</button>
-                  <button class="btn" (click)="saveOverride(v)"
-                          [disabled]="busyKey() === key(v) || !draft.reason.trim() || !draft.citation.trim()">
-                    Save override
-                  </button>
-                </div>
-                <p class="override-note">Overrides are logged. Flags &amp; additives are preserved.</p>
-              </div>
-            }
-          </div>
+  <section class="card overflow-hidden" aria-label="Cached verdicts">
+    <div class="card-toolbar">
+      <div class="card-toolbar__group">
+        <h2 class="text-base font-semibold">Cached verdicts</h2>
+        @if (data(); as d) {
+          <span class="badge badge-neutral tabular-nums">{{ d.total }}</span>
         }
       </div>
+      <p class="text-sm text-text2">Newest first. Stale = not recomputed for 30+ days.</p>
+    </div>
 
-      <div class="card pager">
-        <span class="muted">{{ d.total }} verdicts · page {{ d.page }} of {{ totalPages() }}</span>
-        <div class="pager-btns">
-          <button class="btn btn-ghost" (click)="prev()" [disabled]="d.page <= 1 || loading()">Prev</button>
-          <button class="btn btn-ghost" (click)="next()" [disabled]="d.page >= totalPages() || loading()">Next</button>
+    @if (loading() && !data()) {
+      <div class="p-4"><app-skeleton [count]="8" /></div>
+    } @else if (data(); as d) {
+      @if (d.total === 0) {
+        <app-empty-state icon="scale" title="No verdicts cached yet" body="Verdicts appear here once parents scan products." />
+      } @else {
+        <div class="table-scroll" [class.opacity-60]="loading()">
+          <table class="data-table is-compact">
+            <thead>
+              <tr>
+                <th>Verdict</th>
+                <th>Product</th>
+                <th>Age band</th>
+                <th>Reason</th>
+                <th class="text-right">Flags</th>
+                <th class="text-right">Additives</th>
+                <th>Updated</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (v of d.rows; track key(v)) {
+                <tr class="cursor-pointer" (click)="open(v)">
+                  <td><span [class]="'badge ' + tone(v.verdict)">{{ v.verdict }}</span></td>
+                  <td class="min-w-[12rem] max-w-[20rem]">
+                    <button type="button" class="block font-medium truncate text-left hover:underline max-w-full" [title]="v.product_name || ''" (click)="$event.stopPropagation(); open(v)">{{ v.product_name || 'Unknown product' }}</button>
+                    <span class="block text-xs text-text2 font-mono">{{ v.barcode }}</span>
+                  </td>
+                  <td class="whitespace-nowrap">{{ ageLabel(v.age_band) }}</td>
+                  <td class="min-w-[16rem] max-w-[28rem]"><span class="line-clamp-2 text-text2" [title]="v.reason">{{ v.reason }}</span></td>
+                  <td class="text-right tabular-nums">{{ v.flags.length }}</td>
+                  <td class="text-right tabular-nums whitespace-nowrap">
+                    {{ v.additives.length }}
+                    @if (controversialCount(v); as c) {
+                      <span class="badge badge-danger ml-1" [title]="c + ' controversial'">{{ c }} flagged</span>
+                    }
+                  </td>
+                  <td class="text-text2 tabular-nums whitespace-nowrap" [title]="v.updated_at | date: 'medium'">
+                    {{ v.updated_at | date: 'dd MMM yyyy' }}
+                    @if (v.stale_days > 30) { <span class="badge badge-warning ml-1">Stale {{ v.stale_days }}d</span> }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
         </div>
+        <app-pagination [page]="d.page" [pageSize]="d.pageSize" [total]="d.total" (pageChange)="goToPage($event)" />
+      }
+    }
+  </section>
+
+  <app-modal [open]="!!selected()" [title]="selected()?.product_name || 'Verdict'" (closed)="close()">
+    @if (selected(); as v) {
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-wrap items-center gap-2">
+          <span [class]="'badge ' + tone(v.verdict)">{{ v.verdict }}</span>
+          <span class="badge badge-neutral">{{ ageLabel(v.age_band) }}</span>
+          <span class="text-sm text-text2 font-mono">{{ v.barcode }}</span>
+          @if (v.stale_days > 30) { <span class="badge badge-warning">Stale {{ v.stale_days }}d</span> }
+        </div>
+
+        <div>
+          <p class="field-label">Reason</p>
+          <p class="text-sm whitespace-pre-wrap break-words">{{ v.reason }}</p>
+        </div>
+        <div>
+          <p class="field-label">Citation</p>
+          <p class="text-sm text-text2 whitespace-pre-wrap break-words"><app-icon name="book" [size]="14" class="align-[-2px] mr-1" />{{ v.citation }}</p>
+        </div>
+
+        @if (v.flags.length) {
+          <div>
+            <p class="field-label">Flags</p>
+            <div class="flex flex-wrap gap-1.5">
+              @for (f of v.flags; track f) { <span class="badge badge-warning">{{ f }}</span> }
+            </div>
+          </div>
+        }
+
+        @if (v.additives.length) {
+          <div>
+            <p class="field-label">Additives</p>
+            <table class="data-table is-compact">
+              <tbody>
+                @for (a of v.additives; track a.ins) {
+                  <tr>
+                    <td class="font-mono whitespace-nowrap">INS {{ a.ins }}</td>
+                    <td>{{ a.name }}</td>
+                    <td class="text-right">
+                      <span class="badge" [class.badge-danger]="a.controversial" [class.badge-neutral]="!a.controversial">{{ a.risk }}</span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+
+        <p class="text-xs text-text2 tabular-nums">Updated {{ v.updated_at | date: 'dd MMM yyyy, h:mm a' }}</p>
+
+        @if (canEdit()) {
+          @if (editingKey() === key(v)) {
+            <div class="flex flex-col gap-3 border-t border-border pt-3">
+              <div class="grid gap-3 sm:grid-cols-[10rem_1fr]">
+                <label class="block">
+                  <span class="field-label">Verdict</span>
+                  <span class="select-field w-full">
+                    <select class="input w-full" [(ngModel)]="draft.verdict" name="verdict">
+                      @for (l of levels; track l) { <option [value]="l">{{ l }}</option> }
+                    </select>
+                    <app-icon name="chevron-down" [size]="16" />
+                  </span>
+                </label>
+                <label class="block">
+                  <span class="field-label">Reason</span>
+                  <input class="input" [(ngModel)]="draft.reason" name="reason" />
+                </label>
+              </div>
+              <label class="block">
+                <span class="field-label">Citation <span class="font-normal text-text2">(must be defensible)</span></span>
+                <input class="input" [(ngModel)]="draft.citation" name="citation" />
+              </label>
+              <p class="text-xs text-text2">Overrides are logged. Flags and additives are kept.</p>
+              <div class="flex justify-end gap-2">
+                <button type="button" class="btn btn-ghost" (click)="cancelOverride()">Cancel</button>
+                <button type="button" class="btn" (click)="saveOverride(v)"
+                  [disabled]="busyKey() === key(v) || !draft.reason.trim() || !draft.citation.trim()">
+                  {{ busyKey() === key(v) ? 'Saving…' : 'Save override' }}
+                </button>
+              </div>
+            </div>
+          } @else {
+            <div class="flex flex-wrap justify-end gap-2">
+              <button type="button" class="btn btn-ghost" (click)="recompute(v)" [disabled]="busyKey() === key(v)">
+                <app-icon name="refresh" [size]="14" /> {{ busyKey() === key(v) ? 'Working…' : 'Recompute' }}
+              </button>
+              <button type="button" class="btn" (click)="startOverride(v)" [disabled]="busyKey() === key(v)">
+                <app-icon name="pen" [size]="14" /> Override
+              </button>
+            </div>
+          }
+        } @else {
+          <p class="text-sm text-text2">View only: recompute and override need the Editor role.</p>
+        }
       </div>
     }
-
-  }
+  </app-modal>
 </div>

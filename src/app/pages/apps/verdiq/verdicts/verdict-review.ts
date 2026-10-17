@@ -3,6 +3,9 @@ import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 import { AdminApi } from '../../../../core/services/verdiq/admin-api';
+import { PermissionService } from '../../../../core/services/permission.service';
+import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
+import { Modal } from '../../../../shared/components/modal/modal';
 import { VerdictLevel, VerdictPage, VerdictRow } from '../../../../core/models/verdiq/verdict.model';
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
 import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
@@ -16,13 +19,17 @@ import { EmptyStateComponent } from '../../../../shared/components/empty-state/e
 // the verdict). Both go through the backend verdict store and are audit-logged.
 @Component({
   selector: 'app-verdict-review',
-  imports: [EmptyStateComponent, SkeletonComponent, PageHeaderComponent, IconComponent, DatePipe, FormsModule],
+  imports: [EmptyStateComponent, SkeletonComponent, PageHeaderComponent, IconComponent, DatePipe, FormsModule, PaginationComponent, Modal],
   templateUrl: './verdict-review.html',
-  styleUrl: './verdict-review.sass',
 })
 export class VerdictReview {
   private api = inject(AdminApi);
   private readonly toast = inject(ToastService);
+  private readonly perms = inject(PermissionService);
+  readonly canEdit = computed(() => this.perms.can('verdiq', 'verdicts', 'edit'));
+
+  /** The verdict open in the detail panel. */
+  readonly selected = signal<VerdictRow | null>(null);
 
   page = 1;
   readonly pageSize = 25;
@@ -36,10 +43,6 @@ export class VerdictReview {
   draft = { verdict: 'Caution' as VerdictLevel, reason: '', citation: '' };
   readonly levels: VerdictLevel[] = ['OK', 'Caution', 'Avoid'];
 
-  readonly totalPages = computed(() => {
-    const d = this.data();
-    return d ? Math.max(1, Math.ceil(d.total / d.pageSize)) : 1;
-  });
 
   constructor() {
     this.load();
@@ -73,12 +76,13 @@ export class VerdictReview {
         next: () => {
           this.busyKey.set(null);
           this.editingKey.set(null);
+          this.selected.set(null);
           this.toast.success(`Overrode ${v.product_name || v.barcode} (${this.ageLabel(v.age_band)}).`);
           this.load();
         },
         error: () => {
           this.busyKey.set(null);
-          this.error.set('Override failed.');
+          this.toast.error('Override failed.');
         },
       });
   }
@@ -88,14 +92,13 @@ export class VerdictReview {
     this.api.recomputeVerdict(v.barcode, v.age_band).subscribe({
       next: () => {
         this.busyKey.set(null);
+        this.selected.set(null);
         this.toast.success(`Recomputed ${v.product_name || v.barcode} (${this.ageLabel(v.age_band)}).`);
         this.load();
       },
       error: (err) => {
         this.busyKey.set(null);
-        this.error.set(
-          err?.error?.message ?? 'Recompute failed (product may have no ingredient text).',
-        );
+        this.toast.error(err?.error?.message ?? 'Recompute failed (product may have no ingredient text).');
       },
     });
   }
@@ -115,18 +118,26 @@ export class VerdictReview {
     });
   }
 
-  prev(): void {
-    if (this.page > 1) {
-      this.page--;
-      this.load();
-    }
+  goToPage(p: number): void {
+    this.page = p;
+    this.load();
   }
 
-  next(): void {
-    if (this.page < this.totalPages()) {
-      this.page++;
-      this.load();
-    }
+  open(v: VerdictRow): void {
+    this.editingKey.set(null);
+    this.selected.set(v);
+  }
+
+  close(): void {
+    if (!this.busyKey()) this.selected.set(null);
+  }
+
+  tone(level: VerdictLevel): string {
+    return level === 'OK' ? 'badge-success' : level === 'Caution' ? 'badge-warning' : 'badge-danger';
+  }
+
+  controversialCount(v: VerdictRow): number {
+    return v.additives.filter((a) => a.controversial).length;
   }
 
   ageLabel(band: string): string {

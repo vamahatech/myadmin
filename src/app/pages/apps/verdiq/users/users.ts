@@ -1,54 +1,109 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 import { AdminApi } from '../../../../core/services/verdiq/admin-api';
 import { VerdiqAuthService } from '../../../../core/services/verdiq/verdiq-auth';
+import { PermissionService } from '../../../../core/services/permission.service';
 import { UserRow, UsersReport } from '../../../../core/models/verdiq/admin-user.model';
 import { Modal } from '../../../../shared/components/modal/modal';
 import { ConfirmDeleteModal } from '../../../../shared/components/confirm-delete-modal/confirm-delete-modal';
+import { ConfirmService } from '../../../../core/services/confirm.service';
 import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
-import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { IconComponent, IconName } from '../../../../shared/components/icon/icon.component';
 import { ToastService } from '../../../../core/services/toast.service';
 import { SkeletonComponent } from '../../../../shared/components/skeleton/skeleton.component';
+import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
+import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
+import { avatarColor, initials } from '../../../../shared/utils/avatar';
+import { emailName, matchesQuery, pageOf } from '../../../../shared/utils/client-list';
+
+type Filter = 'all' | 'admins' | 'parents' | 'testers' | 'inactive';
+type SortBy = 'email' | 'last_seen_at' | 'created_at';
 
 // Users & testers. Overview (list, child counts, tester opt-in, 14-day inactivity
 // flag) plus admin account creation — the backend generates + emails a password.
+// The endpoint returns every user, so filter, sort and paging are client-side.
 @Component({
   selector: 'app-users',
-  imports: [SkeletonComponent, IconComponent, PageHeaderComponent, DatePipe, DecimalPipe, FormsModule, Modal, ConfirmDeleteModal],
+  imports: [
+    SkeletonComponent, IconComponent, PageHeaderComponent, DatePipe, DecimalPipe, FormsModule, Modal,
+    ConfirmDeleteModal, EmptyStateComponent, PaginationComponent,
+  ],
   templateUrl: './users.html',
-  styleUrl: './users.sass',
 })
 export class Users {
   private api = inject(AdminApi);
   private readonly toast = inject(ToastService);
+  private readonly confirm = inject(ConfirmService);
+  private readonly perms = inject(PermissionService);
   private auth = inject(VerdiqAuthService);
 
   readonly data = signal<UsersReport | null>(null);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
 
-  // The signed-in admin's own id — used to disable self-delete/self-demote
-  // in the UI (the backend also guards this; this just avoids a round-trip
-  // to discover a click was never going to work).
+  // The signed-in Verdiq account's id — used to disable self-delete/self-demote
+  // in the UI (the backend also guards this).
   readonly currentUserId = this.auth.user()?.id ?? null;
+  /** Account writes (create, role change, delete) are "manage" on Verdiq's users module. */
+  readonly canManage = computed(() => this.perms.can('verdiq', 'users', 'manage'));
 
-  // Create-user form. Was a card pinned above the table — easy to lose track
-  // of once you'd scrolled down into a long list. Now a modal, opened on demand.
+  readonly filter = signal<Filter>('all');
+  readonly query = signal('');
+  readonly sortBy = signal<SortBy>('created_at');
+  readonly sortDir = signal<'asc' | 'desc'>('desc');
+  readonly page = signal(1);
+  readonly pageSize = 20;
+
+  readonly filters: { value: Filter; label: string }[] = [
+    { value: 'all', label: 'All users' },
+    { value: 'parents', label: 'Parents' },
+    { value: 'admins', label: 'Admins' },
+    { value: 'testers', label: 'Testers' },
+    { value: 'inactive', label: 'Inactive testers' },
+  ];
+
+  readonly filtered = computed(() => {
+    const q = this.query();
+    const f = this.filter();
+    const by = this.sortBy();
+    const dir = this.sortDir() === 'asc' ? 1 : -1;
+    return (this.data()?.rows ?? [])
+      .filter((u) => {
+        if (f === 'admins' && !u.is_admin) return false;
+        if (f === 'parents' && u.is_admin) return false;
+        if (f === 'testers' && !u.tester_opted_in) return false;
+        if (f === 'inactive' && !u.inactive_tester) return false;
+        return matchesQuery(q, u.email);
+      })
+      .sort((a, b) => {
+        // Never-seen users sort last either way.
+        const av = a[by] ?? '';
+        const bv = b[by] ?? '';
+        if (!av && bv) return 1;
+        if (av && !bv) return -1;
+        return av < bv ? -dir : av > bv ? dir : 0;
+      });
+  });
+  readonly rows = computed(() => pageOf(this.filtered(), this.page(), this.pageSize));
+
+  // Create-user modal.
   readonly createOpen = signal(false);
   newEmail = '';
   newIsAdmin = false;
   readonly creating = signal(false);
   readonly createError = signal<string | null>(null);
 
-  // Which row is mid-role-change — disables its button so a double-click
-  // can't fire twice.
+  // Which row is mid-role-change — disables its button so a double-click can't fire twice.
   readonly roleChangingId = signal<string | null>(null);
 
   // Delete confirmation dialog state.
   readonly deleteTarget = signal<UserRow | null>(null);
-  readonly deleting = signal(false);
+
+  readonly initials = (email: string) => initials(emailName(email) || '?');
+  readonly avatarColor = avatarColor;
+  private searchTimer?: ReturnType<typeof setTimeout>;
 
   constructor() {
     this.load();
@@ -67,6 +122,44 @@ export class Users {
         this.loading.set(false);
       },
     });
+  }
+
+  setFilter(v: string): void {
+    this.filter.set(v as Filter);
+    this.page.set(1);
+  }
+
+  onSearch(v: string): void {
+    clearTimeout(this.searchTimer);
+    this.searchTimer = setTimeout(() => {
+      this.query.set(v);
+      this.page.set(1);
+    }, 250);
+  }
+
+  clearFilters(): void {
+    this.query.set('');
+    this.setFilter('all');
+  }
+
+  sort(by: SortBy): void {
+    if (this.sortBy() === by) {
+      this.sortDir.set(this.sortDir() === 'asc' ? 'desc' : 'asc');
+    } else {
+      this.sortBy.set(by);
+      this.sortDir.set(by === 'email' ? 'asc' : 'desc');
+    }
+    this.page.set(1);
+  }
+
+  sortIcon(by: SortBy): IconName {
+    if (this.sortBy() !== by) return 'chevrons-up-down';
+    return this.sortDir() === 'asc' ? 'arrow-up' : 'arrow-down';
+  }
+
+  ariaSort(by: SortBy): 'ascending' | 'descending' | 'none' {
+    if (this.sortBy() !== by) return 'none';
+    return this.sortDir() === 'asc' ? 'ascending' : 'descending';
   }
 
   openCreate(): void {
@@ -93,36 +186,39 @@ export class Users {
         this.creating.set(false);
         this.newEmail = '';
         this.createOpen.set(false);
-        this.toast.success(`${this.newIsAdmin ? 'Admin' : 'Account'} created for ${email} — password emailed.`);
+        this.toast.success(`${this.newIsAdmin ? 'Admin' : 'Account'} created for ${email}. Password emailed.`);
         this.load();
       },
       error: (e) => {
         this.creating.set(false);
         this.createError.set(
-          e?.error?.error === 'email_exists'
-            ? 'A user with that email already exists.'
-            : 'Could not create the user.',
+          e?.error?.error === 'email_exists' ? 'A user with that email already exists.' : 'Could not create the user.',
         );
       },
     });
   }
 
-  toggleAdmin(user: UserRow): void {
-    this.error.set(null);
+  async toggleAdmin(user: UserRow): Promise<void> {
+    const makeAdmin = !user.is_admin;
+    const ok = await this.confirm.ask({
+      title: makeAdmin ? 'Make admin?' : 'Remove admin?',
+      message: makeAdmin
+        ? `${user.email} will be able to sign in to Verdiq's own admin tools.`
+        : `${user.email} will lose Verdiq admin access.`,
+      confirmLabel: makeAdmin ? 'Make admin' : 'Remove admin',
+      tone: makeAdmin ? 'primary' : 'danger',
+    });
+    if (!ok) return;
     this.roleChangingId.set(user.id);
-    this.api.setUserAdmin(user.id, !user.is_admin).subscribe({
+    this.api.setUserAdmin(user.id, makeAdmin).subscribe({
       next: () => {
         this.roleChangingId.set(null);
-        this.toast.success(user.is_admin ? `${user.email} is no longer an admin.` : `${user.email} is now an admin.`,);
+        this.toast.success(makeAdmin ? `${user.email} is now an admin.` : `${user.email} is no longer an admin.`);
         this.load();
       },
       error: (e) => {
         this.roleChangingId.set(null);
-        this.error.set(
-          e?.error?.error === 'last_admin'
-            ? 'Cannot remove the only admin.'
-            : 'Could not change admin status.',
-        );
+        this.toast.error(e?.error?.error === 'last_admin' ? 'Cannot remove the only admin.' : 'Could not change admin status.');
       },
     });
   }
@@ -138,20 +234,16 @@ export class Users {
   confirmDelete(): void {
     const target = this.deleteTarget();
     if (!target) return;
-    this.error.set(null);
-    this.deleting.set(true);
     this.api.deleteUser(target.id).subscribe({
       next: () => {
-        this.deleting.set(false);
         this.deleteTarget.set(null);
         this.toast.success(`Deleted ${target.email}.`);
         this.load();
       },
       error: (e) => {
-        this.deleting.set(false);
         this.deleteTarget.set(null);
         const code = e?.error?.error;
-        this.error.set(
+        this.toast.error(
           code === 'last_admin'
             ? 'Cannot delete the only admin.'
             : code === 'self_delete'

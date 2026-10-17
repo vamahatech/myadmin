@@ -4,91 +4,202 @@
     <button type="button" class="btn btn-ghost" (click)="load()" [disabled]="loading()"><app-icon name="refresh" [size]="16" /> Refresh</button>
   </app-page-header>
 
-  @if (error()) { <div class="card state error">{{ error() }}</div> }
+  <div class="kpi-grid" aria-label="Ingest summary">
+    @if (data(); as d) {
+      <div class="kpi" style="--kpi-color: var(--color-warning)">
+        <p class="kpi__label">Waiting for review</p>
+        <div class="kpi__body">
+          <span class="kpi__icon"><app-icon name="cart" [size]="20" /></span>
+          <p class="kpi__value">{{ d.counts.pending_review | number }}</p>
+        </div>
+        <div class="kpi__foot"><span>Scraped leads to verify</span></div>
+      </div>
+      <div class="kpi" style="--kpi-color: var(--color-success)">
+        <p class="kpi__label">Approved</p>
+        <div class="kpi__body">
+          <span class="kpi__icon"><app-icon name="check-circle" [size]="20" /></span>
+          <p class="kpi__value">{{ d.counts.approved | number }}</p>
+        </div>
+        <div class="kpi__foot"><span>In the catalog</span></div>
+      </div>
+      <div class="kpi" style="--kpi-color: var(--color-danger)">
+        <p class="kpi__label">Rejected</p>
+        <div class="kpi__body">
+          <span class="kpi__icon"><app-icon name="x" [size]="20" /></span>
+          <p class="kpi__value">{{ d.counts.rejected | number }}</p>
+        </div>
+        <div class="kpi__foot"><span>{{ d.counts.duplicate | number }} more were duplicates</span></div>
+      </div>
+    } @else if (loading()) {
+      @for (i of [1, 2, 3]; track i) {
+        <div class="kpi"><app-skeleton [count]="3" /></div>
+      }
+    }
+  </div>
 
-  @if (data(); as d) {
-    <div class="segmented" role="group" aria-label="Filter by status">
-      <button type="button" [attr.aria-pressed]="tab === 'pending_review'" (click)="setTab('pending_review')">
-        Pending <span class="segmented__count">{{ d.counts.pending_review }}</span>
-      </button>
-      <button type="button" [attr.aria-pressed]="tab === 'approved'" (click)="setTab('approved')">
-        Approved <span class="segmented__count">{{ d.counts.approved }}</span>
-      </button>
-      <button type="button" [attr.aria-pressed]="tab === 'rejected'" (click)="setTab('rejected')">
-        Rejected <span class="segmented__count">{{ d.counts.rejected }}</span>
-      </button>
+  @if (error()) {
+    <div class="card state error" role="alert">{{ error() }}</div>
+  }
+
+  <section class="card overflow-hidden" aria-label="Ingest queue">
+    <div class="card-toolbar">
+      <div class="card-toolbar__group">
+        <h2 class="text-base font-semibold">Ingest queue</h2>
+        @if (data()) {
+          <span class="badge badge-neutral tabular-nums">{{ filtered().length | number }}</span>
+        }
+      </div>
+      <div class="card-toolbar__group">
+        <label class="select-field">
+          <span class="sr-only">Status</span>
+          <select class="input" [value]="status()" (change)="setStatus($any($event.target).value)">
+            @for (o of statusOptions; track o.value) {
+              <option [value]="o.value" [selected]="status() === o.value">{{ o.label }}</option>
+            }
+          </select>
+          <app-icon name="chevron-down" [size]="16" />
+        </label>
+        <label class="select-field">
+          <span class="sr-only">Source</span>
+          <select class="input" [value]="site()" (change)="setSite($any($event.target).value)">
+            <option value="" [selected]="site() === ''">All sources</option>
+            @for (o of siteOptions; track o.value) {
+              <option [value]="o.value" [selected]="site() === o.value">{{ o.label }}</option>
+            }
+          </select>
+          <app-icon name="chevron-down" [size]="16" />
+        </label>
+        <label class="search-field">
+          <span class="sr-only">Search leads</span>
+          <app-icon name="search" [size]="16" />
+          <input type="search" class="input" placeholder="Name, brand or barcode" (input)="onSearch($any($event.target).value)" />
+        </label>
+      </div>
     </div>
 
-    @if (loading()) {
-      <app-skeleton variant="cards" [count]="3" />
-    } @else if (d.rows.length === 0) {
-      <div class="card"><app-empty-state icon="inbox" title="Nothing in the {{ tab }} queue" /></div>
-    } @else {
-      <div class="ing-list">
-        @for (r of d.rows; track r.id) {
-          <div class="card ing-card">
-            <div class="ing-head">
-              <div class="ing-title">
-                <span class="ing-name">{{ r.name || '(no name)' }}</span>
-                @if (r.brand) { <span class="ing-brand">{{ r.brand }}</span> }
-                <span class="pill site">{{ siteLabel(r.source_site) }}</span>
-              </div>
-              <span class="ing-meta">{{ r.fetched_at | date:'medium' }}</span>
-            </div>
-
-            <div class="ing-fields">
-              @if (r.category) { <span><b>Category:</b> {{ r.category }}</span> }
-              @if (r.barcode) {
-                <span><b>Barcode:</b> <code>{{ r.barcode }}</code></span>
-              } @else {
-                <span class="muted"><b>Barcode:</b> none scraped</span>
+    @if (loading() && !data()) {
+      <div class="p-4"><app-skeleton [count]="6" /></div>
+    } @else if (data()) {
+      @if (filtered().length === 0) {
+        <app-empty-state icon="cart" title="Nothing in this queue" body="Run the ingredient-ingest scraper to stage new leads here.">
+          <button type="button" class="btn btn-secondary btn-sm" (click)="clearFilters()">Show all leads</button>
+        </app-empty-state>
+      } @else {
+        <div class="table-scroll" [class.opacity-60]="loading()">
+          <table class="data-table is-compact">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Source</th>
+                <th>Barcode</th>
+                <th>Category</th>
+                <th class="text-right">Ingredients</th>
+                <th>Fetched</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (r of rows(); track r.id) {
+                <tr class="cursor-pointer" (click)="open(r)">
+                  <td class="min-w-[14rem] max-w-[22rem]">
+                    <button type="button" class="block font-medium truncate text-left hover:underline max-w-full" [title]="r.name || ''" (click)="$event.stopPropagation(); open(r)">{{ r.name || '(no name)' }}</button>
+                    @if (r.brand) { <span class="block text-xs text-text2 truncate">{{ r.brand }}</span> }
+                  </td>
+                  <td><span class="badge badge-info whitespace-nowrap">{{ siteLabel(r.source_site) }}</span></td>
+                  <td class="whitespace-nowrap">
+                    @if (r.barcode) {
+                      <span class="mono">{{ r.barcode }}</span>
+                      @if (r.barcode_in_catalog) {
+                        <span class="badge badge-warning ml-1" title="This barcode already exists in the catalog. Approving updates that product.">In catalog</span>
+                      }
+                    } @else {
+                      <span class="text-text2">—</span>
+                    }
+                  </td>
+                  <td class="text-text2 max-w-[12rem] truncate" [title]="r.category || ''">{{ r.category || '—' }}</td>
+                  <td class="text-right tabular-nums">
+                    @if (r.ingredients?.length) { {{ r.ingredients!.length }} }
+                    @else { <span class="text-danger" title="No ingredients parsed">0</span> }
+                  </td>
+                  <td class="text-text2 tabular-nums whitespace-nowrap" [title]="r.fetched_at | date: 'medium'">{{ r.fetched_at | date: 'dd MMM yyyy' }}</td>
+                  <td><span [class]="'badge ' + tone(r.status)">{{ statusLabel(r.status) }}</span></td>
+                </tr>
               }
-              <a class="src-link" [href]="r.source_url" target="_blank" rel="noopener">
-                View source ↗
-              </a>
+            </tbody>
+          </table>
+        </div>
+        <app-pagination [page]="page()" [pageSize]="pageSize" [total]="filtered().length" (pageChange)="page.set($event)" />
+      }
+    }
+  </section>
+
+  <app-modal [open]="!!selected()" [title]="selected()?.name || 'Scraped lead'" (closed)="close()">
+    @if (selected(); as r) {
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-wrap items-center gap-2">
+          <span [class]="'badge ' + tone(r.status)">{{ statusLabel(r.status) }}</span>
+          <span class="badge badge-info">{{ siteLabel(r.source_site) }}</span>
+          @if (r.brand) { <span class="text-sm text-text2">{{ r.brand }}</span> }
+          <a class="ml-auto text-sm" [href]="r.source_url" target="_blank" rel="noopener">View source ↗</a>
+        </div>
+
+        <dl class="grid grid-cols-2 gap-3 text-sm">
+          <div><dt class="text-text2">Scraped barcode</dt><dd class="font-mono">{{ r.barcode || 'none' }}</dd></div>
+          <div><dt class="text-text2">Category</dt><dd>{{ r.category || '—' }}</dd></div>
+          <div><dt class="text-text2">Fetched</dt><dd class="tabular-nums">{{ r.fetched_at | date: 'dd MMM yyyy, h:mm a' }}</dd></div>
+          <div><dt class="text-text2">Source ref</dt><dd class="truncate" [title]="r.source_ref || ''">{{ r.source_ref || '—' }}</dd></div>
+        </dl>
+
+        @if (r.barcode_in_catalog) {
+          <p class="text-sm text-warning"><app-icon name="alert-triangle" [size]="14" class="align-[-2px] mr-1" />This barcode already exists in the catalog. Approving updates the existing product.</p>
+        }
+
+        @if (r.ingredients?.length) {
+          <div>
+            <p class="field-label">Ingredients (parsed)</p>
+            <div class="flex flex-wrap gap-1.5">
+              @for (item of r.ingredients; track $index) { <span class="badge badge-neutral">{{ item }}</span> }
             </div>
-
-            @if (r.barcode_in_catalog) {
-              <p class="warn"><app-icon name="alert-triangle" [size]="14" class="align-[-2px] mr-1" />This barcode already exists in the catalog — approving will
-                update the existing product.</p>
-            }
-
-            @if (r.ingredients?.length) {
-              <p class="ing-parsed"><b>Ingredients (parsed):</b>
-                @for (item of r.ingredients; track item) { <span class="chip">{{ item }}</span> }
-              </p>
-            } @else {
-              <p class="warn"><app-icon name="alert-triangle" [size]="14" class="align-[-2px] mr-1" />No ingredients parsed — verify at the source before approving.</p>
-            }
-            @if (r.ingredients_raw) {
-              <details class="ing-raw">
-                <summary>Raw scraped text</summary>
-                <p>{{ r.ingredients_raw }}</p>
-              </details>
-            }
-
-            @if (r.review_note) { <p class="ing-review">Review: {{ r.review_note }}</p> }
-
-            @if (r.status === 'pending_review') {
-              <div class="ing-approve">
-                <label>
-                  Barcode to attach
-                  <input type="text" [(ngModel)]="barcodeEdits[r.id]"
-                         [placeholder]="r.barcode || 'e.g. 8901000000001'" />
-                </label>
-                <div class="ing-actions">
-                  <button class="btn btn-ghost danger" (click)="reject(r)" [disabled]="busy() === r.id">
-                    Reject
-                  </button>
-                  <button class="btn" (click)="approve(r)" [disabled]="busy() === r.id">
-                    {{ busy() === r.id ? 'Working…' : 'Approve → catalog' }}
-                  </button>
-                </div>
-              </div>
-            }
           </div>
+        } @else {
+          <p class="text-sm text-warning"><app-icon name="alert-triangle" [size]="14" class="align-[-2px] mr-1" />No ingredients parsed. Check the source before approving.</p>
+        }
+        @if (r.ingredients_raw) {
+          <details class="text-sm">
+            <summary class="cursor-pointer text-text2">Raw scraped text</summary>
+            <p class="mt-2 whitespace-pre-wrap break-words">{{ r.ingredients_raw }}</p>
+          </details>
+        }
+
+        @if (r.status === 'pending_review') {
+          @if (canReview()) {
+            <div class="grid gap-3 sm:grid-cols-[12rem_1fr]">
+              <label class="block">
+                <span class="field-label">Barcode to attach</span>
+                <input class="input font-mono" type="text" inputmode="numeric" [(ngModel)]="barcode" name="barcode" placeholder="e.g. 8901000000001" />
+              </label>
+              <label class="block">
+                <span class="field-label">Review note <span class="font-normal text-text2">(optional)</span></span>
+                <textarea class="input" rows="2" maxlength="500" [(ngModel)]="reviewNote" name="reviewNote"></textarea>
+              </label>
+            </div>
+            @if (!barcode.trim()) {
+              <p class="text-sm text-text2">Without a barcode the product can't get cached verdicts.</p>
+            }
+            <div class="flex flex-wrap items-center justify-end gap-2">
+              <button type="button" class="btn btn-ghost danger" [disabled]="busy()" (click)="decide('reject')">Reject</button>
+              <button type="button" class="btn" [disabled]="busy()" (click)="decide('approve')">{{ busy() ? 'Working…' : 'Approve → catalog' }}</button>
+            </div>
+          } @else {
+            <p class="text-sm text-text2">View only: reviewing needs the Editor role.</p>
+          }
+        } @else if (r.review_note || r.reviewed_at) {
+          <dl class="grid grid-cols-2 gap-3 text-sm border-t border-border pt-3">
+            <div><dt class="text-text2">Reviewed</dt><dd class="tabular-nums">{{ r.reviewed_at ? (r.reviewed_at | date: 'dd MMM yyyy, h:mm a') : '—' }}</dd></div>
+            <div class="col-span-2"><dt class="text-text2">Review note</dt><dd class="whitespace-pre-wrap break-words">{{ r.review_note || '—' }}</dd></div>
+          </dl>
         }
       </div>
     }
-  }
+  </app-modal>
 </div>

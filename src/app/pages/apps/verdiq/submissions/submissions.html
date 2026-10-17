@@ -3,73 +3,191 @@
     <button type="button" class="btn btn-ghost" (click)="load()" [disabled]="loading()"><app-icon name="refresh" [size]="16" /> Refresh</button>
   </app-page-header>
 
-  @if (error()) { <div class="card state error">{{ error() }}</div> }
+  <div class="kpi-grid" aria-label="Submission summary">
+    @if (data(); as d) {
+      <div class="kpi" style="--kpi-color: var(--color-warning)">
+        <p class="kpi__label">Waiting for review</p>
+        <div class="kpi__body">
+          <span class="kpi__icon"><app-icon name="inbox" [size]="20" /></span>
+          <p class="kpi__value">{{ d.counts.pending | number }}</p>
+        </div>
+        <div class="kpi__foot"><span>Pending submissions</span></div>
+      </div>
+      <div class="kpi" style="--kpi-color: var(--color-success)">
+        <p class="kpi__label">Approved</p>
+        <div class="kpi__body">
+          <span class="kpi__icon"><app-icon name="check-circle" [size]="20" /></span>
+          <p class="kpi__value">{{ d.counts.approved | number }}</p>
+        </div>
+        <div class="kpi__foot"><span>Became catalog products</span></div>
+      </div>
+      <div class="kpi" style="--kpi-color: var(--color-danger)">
+        <p class="kpi__label">Rejected</p>
+        <div class="kpi__body">
+          <span class="kpi__icon"><app-icon name="x" [size]="20" /></span>
+          <p class="kpi__value">{{ d.counts.rejected | number }}</p>
+        </div>
+        <div class="kpi__foot"><span>Closed with a reason</span></div>
+      </div>
+    } @else if (loading()) {
+      @for (i of [1, 2, 3]; track i) {
+        <div class="kpi"><app-skeleton [count]="3" /></div>
+      }
+    }
+  </div>
 
-  @if (data(); as d) {
-    <div class="segmented" role="group" aria-label="Filter by status">
-      <button type="button" [attr.aria-pressed]="tab === 'pending'" (click)="setTab('pending')">
-        Pending <span class="segmented__count">{{ d.counts.pending }}</span>
-      </button>
-      <button type="button" [attr.aria-pressed]="tab === 'approved'" (click)="setTab('approved')">
-        Approved <span class="segmented__count">{{ d.counts.approved }}</span>
-      </button>
-      <button type="button" [attr.aria-pressed]="tab === 'rejected'" (click)="setTab('rejected')">
-        Rejected <span class="segmented__count">{{ d.counts.rejected }}</span>
-      </button>
+  @if (error()) {
+    <div class="card state error" role="alert">{{ error() }}</div>
+  }
+
+  <section class="card overflow-hidden" aria-label="Submission queue">
+    <div class="card-toolbar">
+      <div class="card-toolbar__group">
+        <h2 class="text-base font-semibold">Submission queue</h2>
+        @if (data()) {
+          <span class="badge badge-neutral tabular-nums">{{ filtered().length | number }}</span>
+        }
+      </div>
+      <div class="card-toolbar__group">
+        <label class="select-field">
+          <span class="sr-only">Status</span>
+          <select class="input" [value]="status()" (change)="setStatus($any($event.target).value)">
+            @for (o of statusOptions; track o.value) {
+              <option [value]="o.value" [selected]="status() === o.value">{{ o.label }}</option>
+            }
+          </select>
+          <app-icon name="chevron-down" [size]="16" />
+        </label>
+        <label class="search-field">
+          <span class="sr-only">Search submissions</span>
+          <app-icon name="search" [size]="16" />
+          <input type="search" class="input" placeholder="Name, brand, barcode or email" (input)="onSearch($any($event.target).value)" />
+        </label>
+      </div>
     </div>
 
-    @if (loading()) {
-      <app-skeleton variant="cards" [count]="3" />
-    } @else if (d.rows.length === 0) {
-      <div class="card"><app-empty-state icon="inbox" title="No {{ tab }} submissions" /></div>
-    } @else {
-      <div class="sub-list">
-        @for (s of d.rows; track s.id) {
-          <div class="card sub-card">
-            <div class="sub-head">
-              <div class="sub-title">
-                <span class="sub-name">{{ s.name || '(no name)' }}</span>
-                @if (s.brand) { <span class="sub-brand">{{ s.brand }}</span> }
-                <span class="pill" [class.yes]="s.status === 'approved'"
-                                   [class.no]="s.status === 'rejected'"
-                                   [class.neutral]="s.status === 'pending'">{{ s.status }}</span>
-              </div>
-              <span class="sub-meta">{{ s.created_at | date:'medium' }} · {{ s.submitter_email || 'unknown' }}</span>
-            </div>
+    @if (loading() && !data()) {
+      <div class="p-4"><app-skeleton [count]="6" /></div>
+    } @else if (data()) {
+      @if (filtered().length === 0) {
+        <app-empty-state icon="inbox" title="No submissions here" body="Products parents add from the app's Add product screen land here for review.">
+          <button type="button" class="btn btn-secondary btn-sm" (click)="clearFilters()">Show all submissions</button>
+        </app-empty-state>
+      } @else {
+        <div class="table-scroll" [class.opacity-60]="loading()">
+          <table class="data-table is-compact">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Barcode</th>
+                <th>Category</th>
+                <th class="text-right">Photos</th>
+                <th>Submitted by</th>
+                <th>Received</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (s of rows(); track s.id) {
+                <tr class="cursor-pointer" (click)="open(s)">
+                  <td class="min-w-[14rem] max-w-[22rem]">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      @if (s.images?.[0]; as img) {
+                        <img class="thumb" [src]="img.url" alt="" loading="lazy" />
+                      } @else {
+                        <span class="thumb thumb--empty" aria-hidden="true"><app-icon name="package" [size]="14" /></span>
+                      }
+                      <div class="min-w-0">
+                        <button type="button" class="block font-medium truncate text-left hover:underline max-w-full" [title]="s.name || ''" (click)="$event.stopPropagation(); open(s)">{{ s.name || '(no name)' }}</button>
+                        @if (s.brand) { <span class="block text-xs text-text2 truncate">{{ s.brand }}</span> }
+                      </div>
+                    </div>
+                  </td>
+                  <td class="mono whitespace-nowrap">{{ s.barcode || '—' }}</td>
+                  <td class="text-text2 max-w-[12rem] truncate" [title]="s.category || ''">{{ s.category || '—' }}</td>
+                  <td class="text-right tabular-nums">{{ s.images?.length ?? 0 }}</td>
+                  <td>
+                    @if (s.submitter_email; as email) {
+                      <div class="flex items-center gap-2.5 min-w-0" [title]="email">
+                        <span class="avatar" aria-hidden="true" [style.--avatar-color]="avatarColor(email)">{{ initials(email) }}</span>
+                        <span class="truncate max-w-[14rem]">{{ email }}</span>
+                      </div>
+                    } @else {
+                      <span class="text-text2 italic">Deleted account</span>
+                    }
+                  </td>
+                  <td class="text-text2 tabular-nums whitespace-nowrap" [title]="s.created_at | date: 'medium'">{{ s.created_at | date: 'dd MMM yyyy' }}</td>
+                  <td><span [class]="'badge ' + tone(s.status)">{{ statusLabel(s.status) }}</span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <app-pagination [page]="page()" [pageSize]="pageSize" [total]="filtered().length" (pageChange)="page.set($event)" />
+      }
+    }
+  </section>
 
-            <div class="sub-fields">
-              @if (s.barcode) { <span><b>Barcode:</b> <code>{{ s.barcode }}</code></span> }
-              @if (s.weight) { <span><b>Weight:</b> {{ s.weight }}</span> }
-              @if (s.category) { <span><b>Category:</b> {{ s.category }}</span> }
-            </div>
-            @if (s.ingredients) { <p class="sub-ingredients"><b>Ingredients:</b> {{ s.ingredients }}</p> }
+  <app-modal [open]="!!selected()" [title]="selected()?.name || 'Submission'" (closed)="close()">
+    @if (selected(); as s) {
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-wrap items-center gap-2">
+          <span [class]="'badge ' + tone(s.status)">{{ statusLabel(s.status) }}</span>
+          @if (s.brand) { <span class="text-sm text-text2">{{ s.brand }}</span> }
+        </div>
 
-            @if (s.images?.length) {
-              <div class="sub-photos">
-                @for (img of s.images; track img.url) {
-                  <a class="photo" [href]="img.url" target="_blank" rel="noopener"
-                     [title]="'Open ' + img.kind + ' photo full size'">
-                    <img [src]="img.url" [alt]="img.kind + ' label photo'" loading="lazy" />
-                    <span class="photo-label">{{ img.kind }}</span>
-                  </a>
-                }
-              </div>
-            }
+        <dl class="grid grid-cols-2 gap-3 text-sm">
+          <div><dt class="text-text2">Barcode</dt><dd class="font-mono">{{ s.barcode || '—' }}</dd></div>
+          <div><dt class="text-text2">Weight</dt><dd>{{ s.weight || '—' }}</dd></div>
+          <div><dt class="text-text2">Category</dt><dd>{{ s.category || '—' }}</dd></div>
+          <div><dt class="text-text2">Received</dt><dd class="tabular-nums">{{ s.created_at | date: 'dd MMM yyyy, h:mm a' }}</dd></div>
+          <div class="col-span-2"><dt class="text-text2">Submitted by</dt><dd class="truncate">{{ s.submitter_email || 'Deleted account' }}</dd></div>
+        </dl>
 
-            @if (s.note) { <p class="sub-note"><app-icon name="note" [size]="14" class="align-[-2px] mr-1" />{{ s.note }}</p> }
-            @if (s.review_note) { <p class="sub-review">Review: {{ s.review_note }}</p> }
-
-            @if (s.status === 'pending') {
-              <div class="sub-actions">
-                <button class="btn btn-ghost danger" (click)="reject(s)" [disabled]="busy() === s.id">Reject</button>
-                <button class="btn" (click)="approve(s)" [disabled]="busy() === s.id">
-                  {{ busy() === s.id ? 'Working…' : 'Approve → create product' }}
-                </button>
-              </div>
+        @if (s.images?.length) {
+          <div class="sub-photos">
+            @for (img of s.images; track img.url) {
+              <a class="photo" [href]="img.url" target="_blank" rel="noopener" [title]="'Open ' + img.kind + ' photo full size'">
+                <img [src]="img.url" [alt]="img.kind + ' label photo'" loading="lazy" />
+                <span class="photo-label">{{ img.kind }}</span>
+              </a>
             }
           </div>
         }
+
+        @if (s.ingredients) {
+          <div>
+            <p class="field-label">Ingredients</p>
+            <blockquote class="rounded-lg border border-border bg-surface p-3 text-sm whitespace-pre-wrap break-words">{{ s.ingredients }}</blockquote>
+          </div>
+        }
+        @if (s.note) {
+          <div>
+            <p class="field-label">Parent's note</p>
+            <p class="text-sm whitespace-pre-wrap break-words">{{ s.note }}</p>
+          </div>
+        }
+
+        @if (s.status === 'pending') {
+          @if (canReview()) {
+            <label class="block">
+              <span class="field-label">Review note <span class="font-normal text-text2">(optional; recorded with the decision)</span></span>
+              <textarea class="input" rows="2" maxlength="500" [(ngModel)]="reviewNote" name="reviewNote" placeholder="e.g. Label photo unreadable"></textarea>
+            </label>
+            <div class="flex flex-wrap items-center justify-end gap-2">
+              <button type="button" class="btn btn-ghost danger" [disabled]="busy()" (click)="decide('reject')">Reject</button>
+              <button type="button" class="btn" [disabled]="busy()" (click)="decide('approve')">{{ busy() ? 'Working…' : 'Approve → create product' }}</button>
+            </div>
+          } @else {
+            <p class="text-sm text-text2">View only: reviewing needs the Editor role.</p>
+          }
+        } @else {
+          <dl class="grid grid-cols-2 gap-3 text-sm border-t border-border pt-3">
+            <div><dt class="text-text2">Reviewed</dt><dd class="tabular-nums">{{ s.reviewed_at ? (s.reviewed_at | date: 'dd MMM yyyy, h:mm a') : '—' }}</dd></div>
+            <div class="col-span-2"><dt class="text-text2">Review note</dt><dd class="whitespace-pre-wrap break-words">{{ s.review_note || '—' }}</dd></div>
+          </dl>
+        }
       </div>
     }
-  }
+  </app-modal>
 </div>

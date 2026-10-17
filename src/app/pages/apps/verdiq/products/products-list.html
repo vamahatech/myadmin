@@ -1,7 +1,9 @@
 <div class="page">
   <app-page-header title="Products">
-    <span pageDescription>Browse the seeded catalog. Toggle "missing nutrition" for the backfill worklist.</span>
-    <a class="btn" routerLink="/apps/verdiq/products/new"><app-icon name="plus" [size]="16" /> Add product</a>
+    <span pageDescription>Browse the seeded catalog. Filter to "Missing nutrition" for the backfill worklist.</span>
+    @if (canEdit()) {
+      <a class="btn btn-sm" routerLink="/apps/verdiq/products/new"><app-icon name="plus" [size]="14" /> Add product</a>
+    }
   </app-page-header>
 
   @if (error()) {
@@ -10,25 +12,38 @@
 
   <section class="card overflow-hidden" aria-label="Products">
     <div class="card-toolbar">
-      <div class="card-toolbar__group flex-1">
-        <label class="sr-only" for="product-field">Search in</label>
-        <select id="product-field" class="input w-auto" [(ngModel)]="field" (change)="applyFilters()">
-          @for (f of fields; track f.value) {
-            <option [ngValue]="f.value">{{ f.label }}</option>
-          }
-        </select>
-        <label class="search-field flex-1 sm:max-w-sm">
+      <div class="card-toolbar__group">
+        <h2 class="text-base font-semibold">Catalog</h2>
+        @if (data(); as d) {
+          <span class="badge badge-neutral tabular-nums">{{ d.total | number }}</span>
+        }
+      </div>
+      <div class="card-toolbar__group">
+        <label class="select-field">
+          <span class="sr-only">Completeness</span>
+          <select class="input" (change)="setIncomplete($any($event.target).value)">
+            <option value="" [selected]="!incompleteOnly">All products</option>
+            <option value="incomplete" [selected]="incompleteOnly">Missing nutrition</option>
+          </select>
+          <app-icon name="chevron-down" [size]="16" />
+        </label>
+        <label class="select-field">
+          <span class="sr-only">Search in</span>
+          <select class="input" (change)="setField($any($event.target).value)">
+            @for (f of fields; track f.value) {
+              <option [value]="f.value" [selected]="field === f.value">{{ f.label }}</option>
+            }
+          </select>
+          <app-icon name="chevron-down" [size]="16" />
+        </label>
+        <label class="search-field">
           <span class="sr-only">Search products</span>
           <app-icon name="search" [size]="16" />
-          <input class="input" type="search"
-            [placeholder]="field ? ('Search ' + field) : 'Search name, brand, or barcode'"
-            [(ngModel)]="q" (keyup.enter)="applyFilters()" />
+          <input class="input" type="search" [value]="q"
+            [placeholder]="field ? ('Search ' + field) : 'Name, brand or barcode'"
+            (input)="onSearch($any($event.target).value)" />
         </label>
       </div>
-      <label class="check">
-        <input type="checkbox" [(ngModel)]="incompleteOnly" (change)="applyFilters()" />
-        Missing nutrition only
-      </label>
     </div>
 
     @if (loading() && !data()) {
@@ -40,7 +55,7 @@
         </app-empty-state>
       } @else {
         <div class="table-scroll" [class.opacity-60]="loading()">
-          <table class="data-table">
+          <table class="data-table is-compact">
             <thead>
               <tr>
                 <th>Name</th>
@@ -49,16 +64,18 @@
                 <th>Barcode</th>
                 <th>Ingredients</th>
                 <th>Nutrition</th>
-                <th><span class="sr-only">Actions</span></th>
+                <th class="text-right"><span class="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>
               @for (row of d.rows; track row.id) {
                 <tr>
-                  <td class="strong">{{ row.name || '—' }}</td>
-                  <td>{{ row.brand || '—' }}</td>
-                  <td>{{ row.category || '—' }}</td>
-                  <td class="mono">{{ row.barcode || '—' }}</td>
+                  <td class="max-w-[20rem]">
+                    <a class="block font-medium truncate" [routerLink]="['/apps/verdiq/products', row.id]" [title]="row.name || ''">{{ row.name || '—' }}</a>
+                  </td>
+                  <td class="text-text2 max-w-[12rem] truncate" [title]="row.brand || ''">{{ row.brand || '—' }}</td>
+                  <td class="text-text2 max-w-[12rem] truncate" [title]="row.category || ''">{{ row.category || '—' }}</td>
+                  <td class="mono whitespace-nowrap">{{ row.barcode || '—' }}</td>
                   <td>
                     <span class="badge" [class.badge-success]="row.has_ingredients" [class.badge-danger]="!row.has_ingredients">
                       {{ row.has_ingredients ? 'Yes' : 'No' }}
@@ -69,12 +86,17 @@
                       {{ row.has_nutrition ? 'Yes' : 'No' }}
                     </span>
                   </td>
-                  <td class="actions">
-                    <a class="btn btn-secondary btn-sm" [routerLink]="['/apps/verdiq/products', row.id]">Edit</a>
-                    <button type="button" class="icon-btn icon-danger" (click)="openDelete(row)"
-                      [disabled]="deletingId() === row.id" [attr.aria-label]="'Delete ' + deleteLabel(row)">
-                      <app-icon [name]="deletingId() === row.id ? 'loader' : 'trash'" [size]="16" />
-                    </button>
+                  <td class="text-right whitespace-nowrap">
+                    <a class="icon-btn is-sm" [routerLink]="['/apps/verdiq/products', row.id]"
+                      [attr.aria-label]="(canEdit() ? 'Edit ' : 'View ') + deleteLabel(row)" [title]="canEdit() ? 'Edit' : 'View'">
+                      <app-icon [name]="canEdit() ? 'pen' : 'eye'" [size]="15" />
+                    </a>
+                    @if (canDelete()) {
+                      <button type="button" class="icon-btn is-sm icon-danger" (click)="openDelete(row)"
+                        [disabled]="deletingId() === row.id" [attr.aria-label]="'Delete ' + deleteLabel(row)" title="Delete">
+                        <app-icon [name]="deletingId() === row.id ? 'loader' : 'trash'" [size]="15" />
+                      </button>
+                    }
                   </td>
                 </tr>
               }

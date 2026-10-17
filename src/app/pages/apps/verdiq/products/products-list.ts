@@ -1,9 +1,10 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { AdminApi } from '../../../../core/services/verdiq/admin-api';
+import { PermissionService } from '../../../../core/services/permission.service';
 import { ProductPage, ProductRow, SearchField } from '../../../../core/models/verdiq/product.model';
 import { ConfirmDeleteModal } from '../../../../shared/components/confirm-delete-modal/confirm-delete-modal';
 import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
@@ -16,12 +17,15 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
 // the null-nutrition backfill worklist directly.
 @Component({
   selector: 'app-products-list',
-  imports: [PaginationComponent, EmptyStateComponent, SkeletonComponent, IconComponent, PageHeaderComponent, FormsModule, RouterLink, ConfirmDeleteModal],
+  imports: [DecimalPipe, PaginationComponent, EmptyStateComponent, SkeletonComponent, IconComponent, PageHeaderComponent, FormsModule, RouterLink, ConfirmDeleteModal],
   templateUrl: './products-list.html',
-  styleUrl: './products-list.sass',
 })
 export class ProductsList {
   private api = inject(AdminApi);
+  private readonly perms = inject(PermissionService);
+  readonly canEdit = computed(() => this.perms.can('verdiq', 'products', 'edit'));
+  readonly canDelete = computed(() => this.perms.can('verdiq', 'products', 'manage'));
+  private searchTimer?: ReturnType<typeof setTimeout>;
 
   q = '';
   // Search scope. '' → search all columns (search unaffected by the dropdown).
@@ -41,13 +45,27 @@ export class ProductsList {
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
 
-  readonly totalPages = computed(() => {
-    const d = this.data();
-    return d ? Math.max(1, Math.ceil(d.total / d.pageSize)) : 1;
-  });
 
   constructor() {
+    // ?q= lets other pages (e.g. Reports) open the list already searched.
+    this.q = inject(ActivatedRoute).snapshot.queryParamMap.get('q') ?? '';
     this.load();
+  }
+
+  onSearch(v: string): void {
+    this.q = v;
+    clearTimeout(this.searchTimer);
+    this.searchTimer = setTimeout(() => this.applyFilters(), 300);
+  }
+
+  setField(v: string): void {
+    this.field = v as SearchField | '';
+    if (this.q.trim()) this.applyFilters();
+  }
+
+  setIncomplete(v: string): void {
+    this.incompleteOnly = v === 'incomplete';
+    this.applyFilters();
   }
 
   load(): void {
@@ -80,19 +98,6 @@ export class ProductsList {
     this.load();
   }
 
-  prev(): void {
-    if (this.page > 1) {
-      this.page--;
-      this.load();
-    }
-  }
-
-  next(): void {
-    if (this.page < this.totalPages()) {
-      this.page++;
-      this.load();
-    }
-  }
 
   goToPage(p: number): void {
     this.page = p;

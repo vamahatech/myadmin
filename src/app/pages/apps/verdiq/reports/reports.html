@@ -1,57 +1,174 @@
 <div class="page">
-  <app-page-header title="Reports" description="Parent-reported data problems. Approve marks the report valid (acknowledgment only — fix the product separately); reject records a reason.">
+  <app-page-header title="Reports" description="Parent-reported data problems. Marking a report valid only acknowledges it; fix the product separately.">
     <button type="button" class="btn btn-ghost" (click)="load()" [disabled]="loading()"><app-icon name="refresh" [size]="16" /> Refresh</button>
   </app-page-header>
 
-  @if (error()) { <div class="card state error">{{ error() }}</div> }
+  <div class="kpi-grid" aria-label="Report summary">
+    @if (data(); as d) {
+      <div class="kpi" style="--kpi-color: var(--color-warning)">
+        <p class="kpi__label">Waiting for review</p>
+        <div class="kpi__body">
+          <span class="kpi__icon"><app-icon name="flag" [size]="20" /></span>
+          <p class="kpi__value">{{ d.counts.pending | number }}</p>
+        </div>
+        <div class="kpi__foot"><span>Pending reports</span></div>
+      </div>
+      <div class="kpi" style="--kpi-color: var(--color-success)">
+        <p class="kpi__label">Marked valid</p>
+        <div class="kpi__body">
+          <span class="kpi__icon"><app-icon name="check-circle" [size]="20" /></span>
+          <p class="kpi__value">{{ d.counts.approved | number }}</p>
+        </div>
+        <div class="kpi__foot"><span>Confirmed data problems</span></div>
+      </div>
+      <div class="kpi" style="--kpi-color: var(--color-danger)">
+        <p class="kpi__label">Rejected</p>
+        <div class="kpi__body">
+          <span class="kpi__icon"><app-icon name="x" [size]="20" /></span>
+          <p class="kpi__value">{{ d.counts.rejected | number }}</p>
+        </div>
+        <div class="kpi__foot"><span>Closed with a reason</span></div>
+      </div>
+    } @else if (loading()) {
+      @for (i of [1, 2, 3]; track i) {
+        <div class="kpi"><app-skeleton [count]="3" /></div>
+      }
+    }
+  </div>
 
-  @if (data(); as d) {
-    <div class="segmented" role="group" aria-label="Filter by status">
-      <button type="button" [attr.aria-pressed]="tab === 'pending'" (click)="setTab('pending')">
-        Pending <span class="segmented__count">{{ d.counts.pending }}</span>
-      </button>
-      <button type="button" [attr.aria-pressed]="tab === 'approved'" (click)="setTab('approved')">
-        Approved <span class="segmented__count">{{ d.counts.approved }}</span>
-      </button>
-      <button type="button" [attr.aria-pressed]="tab === 'rejected'" (click)="setTab('rejected')">
-        Rejected <span class="segmented__count">{{ d.counts.rejected }}</span>
-      </button>
+  @if (error()) {
+    <div class="card state error" role="alert">{{ error() }}</div>
+  }
+
+  <section class="card overflow-hidden" aria-label="Report queue">
+    <div class="card-toolbar">
+      <div class="card-toolbar__group">
+        <h2 class="text-base font-semibold">Report queue</h2>
+        @if (data()) {
+          <span class="badge badge-neutral tabular-nums">{{ filtered().length | number }}</span>
+        }
+      </div>
+      <div class="card-toolbar__group">
+        <label class="select-field">
+          <span class="sr-only">Status</span>
+          <select class="input" [value]="status()" (change)="setStatus($any($event.target).value)">
+            @for (o of statusOptions; track o.value) {
+              <option [value]="o.value" [selected]="status() === o.value">{{ o.label }}</option>
+            }
+          </select>
+          <app-icon name="chevron-down" [size]="16" />
+        </label>
+        <label class="select-field">
+          <span class="sr-only">Reason</span>
+          <select class="input" [value]="reason()" (change)="setReason($any($event.target).value)">
+            <option value="" [selected]="reason() === ''">All reasons</option>
+            @for (o of reasonOptions; track o.value) {
+              <option [value]="o.value" [selected]="reason() === o.value">{{ o.label }}</option>
+            }
+          </select>
+          <app-icon name="chevron-down" [size]="16" />
+        </label>
+        <label class="search-field">
+          <span class="sr-only">Search reports</span>
+          <app-icon name="search" [size]="16" />
+          <input type="search" class="input" placeholder="Product, barcode, note or email" (input)="onSearch($any($event.target).value)" />
+        </label>
+      </div>
     </div>
 
-    @if (loading()) {
-      <app-skeleton variant="cards" [count]="3" />
-    } @else if (d.rows.length === 0) {
-      <div class="card"><app-empty-state icon="flag" title="No {{ tab }} reports" /></div>
-    } @else {
-      <div class="rep-list">
-        @for (r of d.rows; track r.id) {
-          <div class="card rep-card">
-            <div class="rep-head">
-              <div class="rep-title">
-                <span class="rep-name">{{ r.product_name || '(unknown product)' }}</span>
-                <code>{{ r.barcode }}</code>
-                <span class="pill" [class.yes]="r.status === 'approved'"
-                                   [class.no]="r.status === 'rejected'"
-                                   [class.neutral]="r.status === 'pending'">{{ r.status }}</span>
-              </div>
-              <span class="rep-meta">{{ r.created_at | date:'medium' }} · {{ r.reporter_email || 'unknown' }}</span>
+    @if (loading() && !data()) {
+      <div class="p-4"><app-skeleton [count]="6" /></div>
+    } @else if (data()) {
+      @if (filtered().length === 0) {
+        <app-empty-state icon="flag" title="No reports here" body="Reports parents send from a product's Report a problem screen land here.">
+          <button type="button" class="btn btn-secondary btn-sm" (click)="clearFilters()">Show all reports</button>
+        </app-empty-state>
+      } @else {
+        <div class="table-scroll" [class.opacity-60]="loading()">
+          <table class="data-table is-compact">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Barcode</th>
+                <th>Reason</th>
+                <th>Note</th>
+                <th>Reported by</th>
+                <th>Received</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (r of rows(); track r.id) {
+                <tr class="cursor-pointer" (click)="open(r)">
+                  <td class="max-w-[18rem]">
+                    <button type="button" class="block font-medium truncate text-left hover:underline max-w-full" [title]="r.product_name || ''" (click)="$event.stopPropagation(); open(r)">{{ r.product_name || '(unknown product)' }}</button>
+                  </td>
+                  <td class="mono whitespace-nowrap">{{ r.barcode }}</td>
+                  <td><span class="badge badge-neutral whitespace-nowrap">{{ reasonLabel(r.reason) }}</span></td>
+                  <td class="min-w-[12rem] max-w-[22rem]"><span class="line-clamp-2 text-text2" [title]="r.note || ''">{{ r.note || '—' }}</span></td>
+                  <td>
+                    @if (r.reporter_email; as email) {
+                      <div class="flex items-center gap-2.5 min-w-0" [title]="email">
+                        <span class="avatar" aria-hidden="true" [style.--avatar-color]="avatarColor(email)">{{ initials(email) }}</span>
+                        <span class="truncate max-w-[14rem]">{{ email }}</span>
+                      </div>
+                    } @else {
+                      <span class="text-text2 italic">Deleted account</span>
+                    }
+                  </td>
+                  <td class="text-text2 tabular-nums whitespace-nowrap" [title]="r.created_at | date: 'medium'">{{ r.created_at | date: 'dd MMM yyyy' }}</td>
+                  <td><span [class]="'badge ' + tone(r.status)">{{ statusLabel(r.status) }}</span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <app-pagination [page]="page()" [pageSize]="pageSize" [total]="filtered().length" (pageChange)="page.set($event)" />
+      }
+    }
+  </section>
+
+  <app-modal [open]="!!selected()" [title]="selected() ? reasonLabel(selected()!.reason) : ''" (closed)="close()">
+    @if (selected(); as r) {
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-wrap items-center gap-2">
+          <span [class]="'badge ' + tone(r.status)">{{ statusLabel(r.status) }}</span>
+          <span class="font-semibold">{{ r.product_name || '(unknown product)' }}</span>
+        </div>
+
+        @if (r.note) {
+          <blockquote class="rounded-lg border border-border bg-surface p-3 text-sm whitespace-pre-wrap break-words">{{ r.note }}</blockquote>
+        }
+
+        <dl class="grid grid-cols-2 gap-3 text-sm">
+          <div><dt class="text-text2">Barcode</dt><dd class="font-mono">{{ r.barcode }}</dd></div>
+          <div><dt class="text-text2">Received</dt><dd class="tabular-nums">{{ r.created_at | date: 'dd MMM yyyy, h:mm a' }}</dd></div>
+          <div class="col-span-2"><dt class="text-text2">Reported by</dt><dd class="truncate">{{ r.reporter_email || 'Deleted account' }}</dd></div>
+        </dl>
+
+        @if (r.status === 'pending') {
+          @if (canReview()) {
+            <label class="block">
+              <span class="field-label">Review note <span class="font-normal text-text2">(optional; recorded with the decision)</span></span>
+              <textarea class="input" rows="2" maxlength="500" [(ngModel)]="reviewNote" name="reviewNote" placeholder="e.g. Ingredients updated from the new label"></textarea>
+            </label>
+            <div class="flex flex-wrap items-center justify-end gap-2">
+              <a class="btn btn-tertiary btn-sm mr-auto" [routerLink]="['/apps/verdiq/products']" [queryParams]="{ q: r.barcode }">
+                <app-icon name="package" [size]="14" /> Find product
+              </a>
+              <button type="button" class="btn btn-ghost danger" [disabled]="busy()" (click)="decide('reject')">Reject</button>
+              <button type="button" class="btn" [disabled]="busy()" (click)="decide('approve')">{{ busy() ? 'Working…' : 'Mark valid' }}</button>
             </div>
-
-            <div class="rep-reason">{{ reasonLabel(r.reason) }}</div>
-            @if (r.note) { <p class="rep-note"><app-icon name="note" [size]="14" class="align-[-2px] mr-1" />{{ r.note }}</p> }
-            @if (r.review_note) { <p class="rep-review">Review: {{ r.review_note }}</p> }
-
-            @if (r.status === 'pending') {
-              <div class="rep-actions">
-                <button class="btn btn-ghost danger" (click)="reject(r)" [disabled]="busy() === r.id">Reject</button>
-                <button class="btn" (click)="approve(r)" [disabled]="busy() === r.id">
-                  {{ busy() === r.id ? 'Working…' : 'Mark valid' }}
-                </button>
-              </div>
-            }
-          </div>
+          } @else {
+            <p class="text-sm text-text2">View only: reviewing needs the Editor role.</p>
+          }
+        } @else {
+          <dl class="grid grid-cols-2 gap-3 text-sm border-t border-border pt-3">
+            <div><dt class="text-text2">Reviewed</dt><dd class="tabular-nums">{{ r.reviewed_at ? (r.reviewed_at | date: 'dd MMM yyyy, h:mm a') : '—' }}</dd></div>
+            <div class="col-span-2"><dt class="text-text2">Review note</dt><dd class="whitespace-pre-wrap break-words">{{ r.review_note || '—' }}</dd></div>
+          </dl>
         }
       </div>
     }
-  }
+  </app-modal>
 </div>
