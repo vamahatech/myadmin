@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -15,6 +15,7 @@ import { EmptyStateComponent } from '../../../../shared/components/empty-state/e
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { Modal } from '../../../../shared/components/modal/modal';
 import { avatarColor, initials } from '../../../../shared/utils/avatar';
+import { PermissionService } from '../../../../core/services/permission.service';
 
 type StatusFilter = FeedbackStatus | 'open' | '';
 
@@ -56,6 +57,9 @@ export class RenewloopFeedback {
   editStatus: FeedbackStatus = 'new';
   editNote = '';
   readonly saving = signal(false);
+  /** Changing status/notes needs the Editor role; viewers see the details read-only. */
+  readonly canEdit = computed(() => this.perms.can('renewloop', 'feedback', 'edit'));
+  private readonly perms = inject(PermissionService);
 
   readonly initials = initials;
   readonly avatarColor = avatarColor;

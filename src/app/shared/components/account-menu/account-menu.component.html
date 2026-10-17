@@ -12,7 +12,7 @@
   @if (u) {
     <span class="text-right leading-tight hidden sm:block">
       <span class="block text-sm font-semibold text-text">{{ u.name }}</span>
-      <span class="block text-[11px] leading-4 font-medium uppercase tracking-wide text-text2">{{ u.role }}</span>
+      <span class="block text-[11px] leading-4 font-medium uppercase tracking-wide text-text2">{{ perms.isSuperadmin() ? 'Superadmin' : 'Admin' }}</span>
     </span>
   }
   <span class="w-9 h-9 rounded-full bg-card ring-1 ring-border text-text2 flex items-center justify-center">
@@ -28,7 +28,7 @@
       <div class="px-4 py-2 border-b border-border mb-1">
         <p class="text-sm font-semibold text-text truncate">{{ u.name }}</p>
         <p class="text-xs text-text2 truncate">{{ u.email }}</p>
-        <p class="mt-1 text-[11px] font-medium uppercase tracking-wide text-text2">{{ u.role }}</p>
+        <p class="mt-1 text-[11px] font-medium uppercase tracking-wide text-text2">{{ perms.isSuperadmin() ? 'Superadmin' : 'Admin' }}</p>
       </div>
     }
     <div class="px-3 pt-1 pb-2 border-b border-border mb-1">
@@ -42,6 +42,15 @@
       <app-icon name="settings" [size]="16" class="text-text2" />
       Settings
     </a>
+    @if (perms.isSuperadmin()) {
+      <a
+        routerLink="/settings/admins"
+        (click)="close()"
+        class="flex items-center gap-3 min-h-11 px-4 text-sm text-text hover:bg-hover active:bg-pressed focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus">
+        <app-icon name="users" [size]="16" class="text-text2" />
+        Admins & permissions
+      </a>
+    }
     <button
       type="button"
       (click)="logout()"

@@ -4,6 +4,7 @@ import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { filter, map } from 'rxjs/operators';
 import { AppNavItem, AppTile, isNavActive, navLink } from '../../../core/models/app-registry.model';
 import { IconComponent } from '../icon/icon.component';
+import { PermissionService } from '../../../core/services/permission.service';
 
 const COLLAPSED_KEY = 'vamaha_admin_sidebar_collapsed';
 
@@ -41,7 +42,9 @@ export class AppSidebarComponent {
 
   readonly groups = computed<NavGroup[]>(() => {
     const out: NavGroup[] = [];
+    const app = this.app();
     for (const item of this.items()) {
+      if (app && !this.perms.canNav(app.id, item)) continue;
       const label = item.group ?? 'Modules';
       const last = out[out.length - 1];
       if (last && last.label === label) last.items.push(item);
@@ -51,6 +54,7 @@ export class AppSidebarComponent {
   });
 
   private readonly router = inject(Router);
+  private readonly perms = inject(PermissionService);
   private readonly url = toSignal(
     this.router.events.pipe(
       filter((e): e is NavigationEnd => e instanceof NavigationEnd),

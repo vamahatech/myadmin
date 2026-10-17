@@ -43,6 +43,12 @@ export class RenewloopAuthService {
     );
   }
 
+  /** Stores a session issued by the vamaha-backend broker (POST /app-sessions/renewloop). */
+  adoptSession(token: string): void {
+    this.storage.setToken(token);
+    this.sessionSig.set({ email: null });
+  }
+
   logout(): void {
     this.storage.clearToken();
     this.sessionSig.set(null);

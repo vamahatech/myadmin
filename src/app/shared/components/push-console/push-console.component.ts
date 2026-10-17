@@ -11,6 +11,7 @@ import { PushComposerComponent } from '../push-composer/push-composer.component'
 import { EmptyStateComponent } from '../empty-state/empty-state.component';
 import { SkeletonComponent } from '../skeleton/skeleton.component';
 import { IconComponent } from '../icon/icon.component';
+import { PermissionService } from '../../../core/services/permission.service';
 
 /**
  * Retention-push dashboard shared by every app that ships push (vamaha-backend
@@ -121,7 +122,7 @@ import { IconComponent } from '../icon/icon.component';
         <section class="card overflow-hidden" aria-labelledby="cron-title">
           <div class="card-toolbar">
             <h2 id="cron-title" class="section-title text-[15px] leading-6">Dormancy check history</h2>
-            <button type="button" class="btn btn-secondary btn-sm" (click)="runCronNow()" [disabled]="cronRunning()">
+            <button type="button" class="btn btn-secondary btn-sm" (click)="runCronNow()" [disabled]="cronRunning() || !canManage()">
               <app-icon [name]="cronRunning() ? 'loader' : 'repeat'" [size]="14" [class.animate-spin]="cronRunning()" />
               {{ cronRunning() ? 'Running…' : 'Run now' }}
             </button>
@@ -173,7 +174,12 @@ export class PushConsoleComponent implements OnInit {
   readonly error = signal('');
   readonly cronRunning = signal(false);
 
+  private readonly perms = inject(PermissionService);
+  /** Broadcasts and manual cron runs need the Manager role on this app. */
+  readonly canManage = computed(() => this.perms.can(this.slug(), 'push', 'manage'));
+
   readonly disabledReason = computed(() => {
+    if (!this.canManage()) return 'Sending needs the Manager role for this app. You can view devices and history.';
     const c = this.credential();
     if (c && !c.configured) return 'Set FIREBASE_SERVICE_ACCOUNT_JSON on the backend first — broadcasting is disabled until then.';
     if (!this.loading() && this.tokens().length === 0) return 'No devices registered for this app yet — nothing to send to.';

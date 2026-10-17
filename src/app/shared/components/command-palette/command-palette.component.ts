@@ -7,6 +7,7 @@ import { CommandPaletteService } from '../../../core/services/command-palette.se
 import { ThemeService } from '../../../core/services/theme.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { IconComponent, IconName } from '../icon/icon.component';
+import { PermissionService } from '../../../core/services/permission.service';
 
 interface Command {
   id: string;
@@ -41,12 +42,15 @@ export class CommandPaletteComponent {
   readonly activeIndex = signal(0);
   private opener: HTMLElement | null = null;
 
-  private readonly commands: Command[] = this.buildCommands();
+  private readonly perms = inject(PermissionService);
+  /** Recomputed when /auth/me loads, so it only offers what this admin can open. */
+  private readonly commandList = computed(() => this.buildCommands());
 
   readonly results = computed(() => {
     const q = this.query().trim().toLowerCase();
-    if (!q) return this.commands;
-    return this.commands
+    const commands = this.commandList();
+    if (!q) return commands;
+    return commands
       .map(c => ({ c, score: score(`${c.label} ${c.hint ?? ''}`.toLowerCase(), q) }))
       .filter(r => r.score > 0)
       .sort((a, b) => b.score - a.score)
@@ -124,7 +128,7 @@ export class CommandPaletteComponent {
 
   private buildCommands(): Command[] {
     const go = (url: string) => () => void this.router.navigateByUrl(url);
-    const out: Command[] = APP_REGISTRY.map(app => ({
+    const out: Command[] = this.perms.visibleApps().map(app => ({
       id: `app-${app.id}`,
       label: app.name,
       hint: app.tagline,
@@ -135,8 +139,10 @@ export class CommandPaletteComponent {
 
     for (const route of appRoutes(this.router.config)) {
       const app = APP_REGISTRY.find(a => a.id === route.data!['appId']);
+      if (!app || !this.perms.canApp(app.id)) continue;
       const base = '/' + route.path;
       for (const item of route.data!['navItems'] as AppNavItem[]) {
+        if (!this.perms.canNav(app.id, item)) continue;
         out.push({
           id: `nav-${base}-${item.path}`,
           label: item.label,
@@ -149,7 +155,12 @@ export class CommandPaletteComponent {
     }
 
     out.push(
-      { id: 'act-new-article', label: 'New article', hint: 'Vamaha', group: 'Actions', icon: 'plus', run: go('/apps/vamaha/articles/new') },
+      ...(this.perms.can('vamaha', 'articles', 'edit')
+        ? [{ id: 'act-new-article', label: 'New article', hint: 'Vamaha', group: 'Actions' as const, icon: 'plus' as const, run: go('/apps/vamaha/articles/new') }]
+        : []),
+      ...(this.perms.isSuperadmin()
+        ? [{ id: 'act-admins', label: 'Admins & permissions', group: 'Actions' as const, icon: 'users' as const, run: go('/settings/admins') }]
+        : []),
       { id: 'act-home', label: 'All applications', group: 'Actions', icon: 'apps', run: go('/') },
       { id: 'act-settings', label: 'Settings', group: 'Actions', icon: 'settings', run: go('/settings') },
       { id: 'act-theme-light', label: 'Light theme', hint: 'Appearance', group: 'Actions', icon: 'sun', run: () => this.theme.set('light') },

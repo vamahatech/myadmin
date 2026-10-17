@@ -1,6 +1,7 @@
 import { Component, ElementRef, HostListener, inject, input, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { APP_REGISTRY, AppTile } from '../../../core/models/app-registry.model';
+import { AppTile } from '../../../core/models/app-registry.model';
+import { PermissionService } from '../../../core/services/permission.service';
 import { IconComponent } from '../icon/icon.component';
 
 /**
@@ -17,7 +18,8 @@ import { IconComponent } from '../icon/icon.component';
 })
 export class AppSwitcherComponent {
   readonly current = input.required<AppTile>();
-  readonly apps = APP_REGISTRY;
+  /** Only apps this admin can open. */
+  readonly apps = inject(PermissionService).visibleApps;
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly trigger = viewChild.required<ElementRef<HTMLButtonElement>>('trigger');

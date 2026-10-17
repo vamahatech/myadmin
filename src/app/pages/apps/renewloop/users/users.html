@@ -1,9 +1,11 @@
 <div class="page">
   <app-page-header title="Users">
+    @if (canNotify()) {
     <button type="button" class="btn btn-sm" (click)="notify(selectedUsers())">
       <app-icon name="bell" [size]="14" />
       @if (selected().size > 0) { Notify {{ selected().size }} selected } @else { Notify users }
     </button>
+    }
   </app-page-header>
 
   @if (!statsFailed()) {
@@ -154,9 +156,11 @@
                     <button type="button" class="icon-btn is-sm" [attr.aria-label]="'View ' + u.name" title="View details" (click)="openUser(u)">
                       <app-icon name="eye" [size]="15" />
                     </button>
+                    @if (canNotify()) {
                     <button type="button" class="icon-btn is-sm" [attr.aria-label]="'Send notification to ' + u.name" title="Send notification" (click)="notify([u])">
                       <app-icon name="bell" [size]="15" />
                     </button>
+                    }
                   </td>
                 </tr>
               }
@@ -256,9 +260,11 @@
           <button type="button" class="btn btn-secondary btn-sm" (click)="viewAllActivity(u)">
             <app-icon name="activity" [size]="14" /> View all activity
           </button>
+          @if (canNotify()) {
           <button type="button" class="btn btn-sm" (click)="notify([u])">
             <app-icon name="bell" [size]="14" /> Send notification
           </button>
+          }
         </div>
       </div>
     }

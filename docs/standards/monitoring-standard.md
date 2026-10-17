@@ -223,15 +223,19 @@ The sidebar and the Overview hide modules an app doesn't support. A module goes 
 
 ## 7. Security and access
 
-- **Admin identity must reach the app backend.** Today Verdiq and RenewLoop use a shared
-  service credential, so their audit logs can't name which admin acted. Target: vamaha-backend
-  issues the admin JWT (with `sub`, `email`, `role`), and each app backend verifies it (shared
-  public key/JWKS). Then the service passwords go away. Until then, audit `actor` is recorded
-  as the service account.
-- **Roles:** `viewer` (read-only), `admin` (moderation, notifications, error/feedback status),
-  `superadmin` (suspend, delete, export, roles, flags). The backend checks the role on every route.
-- **No secrets in the frontend bundle.** The service passwords committed in
-  `src/environments/environment.ts` must be rotated and removed (already a known issue).
+- **One identity provider.** vamaha-backend owns admin accounts, invites, password flows, roles
+  and the admin audit log (`vamaha-backend/docs/ADMIN-ACCOUNTS.md`).
+- **Roles (built):** SUPERADMIN (everything, including admin management and the audit log), or
+  ADMIN with per-app `VIEWER` (read) < `EDITOR` (create/edit/triage) < `MANAGER` (send, delete,
+  export), plus an optional module allow-list. Backend routes declare
+  `@AppPermission(app, module, level)`; the console hides what the role can't do.
+- **App backends with their own auth (built: broker).** Verdiq and RenewLoop are reached through
+  vamaha-backend's session broker, which holds their service credentials and issues a session
+  only to admins with access to that app. No secret ships in the frontend. **Still to do:** the
+  app backends verify the Vamaha admin JWT themselves (shared public key/JWKS), so module-level
+  limits are enforced there too and their audit logs name the real admin. Until then those apps'
+  own logs record the service account; vamaha-backend's `app_session.issue` entries show who
+  opened which app.
 - Rate-limit admin login; lock out after repeated failures; record admin sign-ins in the audit log.
 
 ## 8. Privacy and retention
@@ -264,7 +268,7 @@ The sidebar and the Overview hide modules an app doesn't support. A module goes 
 | Feedback | ✅ (NEW/READ/ARCHIVED) | ✅ via vamaha-backend | ✅ `app_feedback` | ✅ in-app form + inbox |
 | Audit | ❌ | ❌ | ✅ `admin_audit_log` | admin sends + status changes (activity log) |
 | Suspend / export | n/a | n/a | ❌ | ❌ |
-| Admin identity | shell JWT + roles | shell JWT | service credential | service credential |
+| Admin identity | Vamaha admin JWT + per-app roles | Vamaha admin JWT + per-app roles | broker (service account) | broker (service account) |
 
 ## 10. Roadmap
 
@@ -286,3 +290,9 @@ per-user focus), Feedback (in-app form, inbox, triage), Errors (app + server iss
 DAU/MAU), `/admin/overview`, analytics-event retention, suspend/export, real admin identity.
 Tracked in `renewloop/docs/BACKLOG.md` › Monitoring. Next apps: Verdiq (needs `user_id` on
 `scan_events`), then EMI Planner (overview from `app_events`).
+
+**Progress (2026-10-17):** admin accounts shipped. Invite by email, forgot/reset/change
+password (signs out other sessions), per-app roles + module ticks enforced in vamaha-backend and
+mirrored in the console, superadmin guardrails, admin audit log, and the session broker
+replacing the bundled service passwords. Next for §7: app backends verify the admin JWT;
+two-factor sign-in for superadmins.

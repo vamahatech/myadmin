@@ -143,7 +143,7 @@
           <label class="block">
             <span class="field-label">Status</span>
             <span class="select-field w-full">
-              <select class="input w-full" [(ngModel)]="editStatus" name="status">
+              <select class="input w-full" [(ngModel)]="editStatus" name="status" [disabled]="!canEdit()">
                 @for (s of editStatuses; track s[0]) {
                   <option [value]="s[0]">{{ s[1] }}</option>
                 }
@@ -153,7 +153,7 @@
           </label>
           <label class="block">
             <span class="field-label">Note <span class="font-normal text-text2">(internal)</span></span>
-            <textarea class="input" rows="2" maxlength="1000" [(ngModel)]="editNote" name="note" placeholder="e.g. Fixed in 0.0.13"></textarea>
+            <textarea class="input" rows="2" maxlength="1000" [(ngModel)]="editNote" name="note" [disabled]="!canEdit()" placeholder="e.g. Fixed in 0.0.13"></textarea>
           </label>
         </div>
 
@@ -166,7 +166,11 @@
               <app-icon name="message" [size]="14" /> Reply by email
             </a>
           }
-          <button type="button" class="btn btn-sm" [disabled]="saving()" (click)="save()">{{ saving() ? 'Saving…' : 'Save' }}</button>
+          @if (canEdit()) {
+            <button type="button" class="btn btn-sm" [disabled]="saving()" (click)="save()">{{ saving() ? 'Saving…' : 'Save' }}</button>
+          } @else {
+            <span class="text-sm text-text2">View only: changing status needs the Editor role.</span>
+          }
         </div>
       </div>
     }

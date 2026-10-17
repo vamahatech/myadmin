@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, firstValueFrom } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
@@ -8,6 +8,7 @@ import { PushAdminService } from '../../core/services/push-admin.service';
 import { AdminApi as VerdiqApi } from '../../core/services/verdiq/admin-api';
 import { RenewloopAdminApi } from '../../core/services/renewloop/admin-api';
 import { APP_REGISTRY } from '../../core/models/app-registry.model';
+import { PermissionService } from '../../core/services/permission.service';
 import { GlobalHeaderComponent } from '../../shared/components/global-header/global-header.component';
 import { AppRowComponent, AppStatus } from '../../shared/components/app-row/app-row.component';
 
@@ -33,8 +34,13 @@ export class HomeComponent implements OnInit {
   private readonly verdiq = inject(VerdiqApi);
   private readonly renewloop = inject(RenewloopAdminApi);
 
-  readonly apps = APP_REGISTRY;
-  readonly countLabel = `${String(this.apps.length).padStart(2, '0')} ${this.apps.length === 1 ? 'application' : 'applications'}`;
+  private readonly perms = inject(PermissionService);
+  /** Only the apps this admin has access to (all of them for a superadmin). */
+  readonly apps = this.perms.visibleApps;
+  readonly countLabel = computed(() => {
+    const n = this.apps().length;
+    return `${String(n).padStart(2, '0')} ${n === 1 ? 'application' : 'applications'}`;
+  });
   readonly loading = signal(true);
 
   /** Per-app backend health + one headline number, filled in after load. */
@@ -59,15 +65,16 @@ export class HomeComponent implements OnInit {
   }
 
   private checkHealth(): void {
-    void this.probe('vamaha', () => this.content.listAll(), list => plural(list.length, 'article'));
-    void this.probe('emi-planner', () => this.push.listTokens('emi-planner'), rows => plural(rows.length, 'device'));
-    void this.probe(
+    const can = (id: string) => this.perms.canApp(id);
+    if (can('vamaha')) void this.probe('vamaha', () => this.content.listAll(), list => plural(list.length, 'article'));
+    if (can('emi-planner')) void this.probe('emi-planner', () => this.push.listTokens('emi-planner'), rows => plural(rows.length, 'device'));
+    if (can('verdiq')) void this.probe(
       'verdiq',
       () => this.verdiq.getMetrics(),
       m => plural(m.counts.products, 'product'),
       () => this.session.ensureVerdiqSession(),
     );
-    void this.probe(
+    if (can('renewloop')) void this.probe(
       'renewloop',
       () => this.renewloop.getUsers({ limit: 1 }),
       p => plural(p.pagination.total, 'user'),

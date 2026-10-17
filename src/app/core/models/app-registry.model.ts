@@ -67,6 +67,9 @@ export interface AppNavItem {
   /** Extra child paths that should also mark this item active
    *  (e.g. an article editor under the Articles list). */
   activePrefixes?: string[];
+  /** Permission module id (vamaha-backend APP_MODULES). Defaults to the first path
+   *  segment; set it when the path doesn't say (e.g. an app's '' landing page). */
+  module?: string;
   /** Optional sidebar section label. Consecutive items with the same group
    *  render under one heading; apps with few items can omit it. */
   group?: string;

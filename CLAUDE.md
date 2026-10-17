@@ -24,7 +24,28 @@ structure, backend rules, definition of done). Read both before building any of 
 | EMI Planner | `/apps/emi-planner/{analytics,push,feedback}` | vamaha-backend |
 | Verdiq | `/apps/verdiq/{overview,products,coverage,verdicts,additives,double-standards,alternatives,analytics,submissions,reports,feedback,ingest,users}` | verdiq-backend, silent service login (`verdiqSessionGuard`) |
 | RenewLoop | `/apps/renewloop/{users,activity,feedback,errors,notifications}` | sbmint backend, silent service login (`renewloopSessionGuard`) |
-Also: `/` directory (home), `/settings`, `/login`. All guarded by `authGuard` (token in localStorage `vamaha_admin_token`).
+Also: `/` directory (home), `/settings`, `/settings/admins` (superadmin), `/login`, and the signed-out
+`/forgot-password`, `/reset-password?token=`, `/accept-invite?token=`. Signed-in routes use `authGuard`
+(token in localStorage `vamaha_admin_token`).
+
+## Admin accounts & permissions
+Identity and permissions live in vamaha-backend (see `vamaha-backend/docs/ADMIN-ACCOUNTS.md`).
+`GET /auth/me` returns `permissions { superadmin, apps: { [appId]: { role, modules } }, catalog }`:
+SUPERADMIN sees everything; ADMIN has per-app `VIEWER < EDITOR < MANAGER` plus an optional module
+allow-list (module id = nav item `module` or first path segment; Vamaha's '' Articles item sets
+`module: 'articles'`). The backend enforces it; the console mirrors it:
+- `PermissionService` (`canApp`, `can(app, module, 'view'|'edit'|'manage')`, `canNav`, `visibleApps`,
+  `isSuperadmin`). Home, app switcher, sidebar and command palette only list what the admin can open.
+- Every app route has `appAccessGuard` (app) + `canActivateChild: [appModuleGuard]` (module; redirects
+  to the first allowed module). `/settings/admins` has `superadminGuard`. **New app routes need both guards.**
+- **New actions:** hide or disable by level in the UI (`perms.can(...)`) *and* put `@AppPermission` on the
+  backend route. Done so far: push send/run-cron (manage), RenewLoop notify/send (manage), feedback/error
+  triage (edit), Vamaha "New article" (edit).
+- Verdiq/RenewLoop sessions come from the vamaha-backend **session broker** (`POST /app-sessions/:appId`,
+  `AppSessionService` → `adoptSession` on each app's auth service). No service password is in this bundle.
+- Pages: `settings/admins` (invite with per-app role + module ticks, edit, resend invite, send reset,
+  deactivate, audit log tab), Settings (change password, "your access"), auth pages share
+  `shared/components/auth-layout` and `password-fields` (≥ 10 characters + confirm).
 
 Each app route uses `AppShellComponent` with route `data`: `appId` (matches APP_REGISTRY id),
 `appName`, `navItems: AppNavItem[]` (label, `icon` = IconName, `path`, optional `activePrefixes`),
@@ -48,6 +69,7 @@ Nav items may carry `group` (sidebar section label + command-palette entry); Ver
 - `icon` — `<app-icon name="bell" [size]="18">`; inline SVG registry (add new names in `ICONS`). No emoji icons, no icon library.
 - `modal` (focus moves in, Tab trapped, Esc, focus returns) · `confirm-delete-modal` (type-to-confirm for irreversible deletes)
 - `confirm-dialog` + `ConfirmService.ask({title, message, confirmLabel, tone})` → `Promise<boolean>`. Never `window.confirm()`.
+- `auth-layout` (two-panel signed-out frame; project the form) · `password-fields` (new + confirm, show/hide, rule checklist; `[(password)]`, `[(confirm)]`)
 - `toaster` + `ToastService.success/error/info` — outcomes of actions (saved, sent). Blocking load errors stay inline (`.state.error`).
 - `empty-state` (icon, title, body, projected action) · `skeleton` (`variant` rows/stats/cards) · `pagination` (page, pageSize, total; "Showing x–y of n" + first/prev/numbered/next/last, always visible)
 - `shared/utils/avatar.ts` — `initials(name)` + `avatarColor(id)` (stable palette token per person) for the `.avatar` class
@@ -104,12 +126,13 @@ Nav items may carry `group` (sidebar section label + command-palette entry); Ver
 ## Known issues / not done
 - RenewLoop `apiBaseUrl` is the local sbmint (`127.0.0.1:3300`). Its `npm run dev` doesn't reload code, so after pulling backend changes restart it, or new pages 404 and show "Could not load …".
 - RenewLoop `crashConsoleUrl` is the generic Play Console URL; replace it with the app's Android vitals link.
-- Real Verdiq/RenewLoop service passwords are committed in `src/environments/environment.ts` — should be rotated & moved out.
+- The Verdiq/RenewLoop service passwords were removed from `environment.ts` (broker now) but are still in **git history**: rotate them and set the new ones only on vamaha-backend.
 - Broad legacy rules in styles.css (`form input/label … !important`) still apply app-wide; `.btn` submit buttons opt out.
 - `public/renewloop.png` is ~1 MB for a 40px icon.
 - Verdiq review queues (submissions, reports, ingest, feedback, verdicts) and forms (additives, alternatives, double-standards, users) still use Verdiq-local card/form styles inside the shared header/states.
 - `PushAdminService.listApps()` only returns `emi-planner`, so the Vamaha push page manages EMI Planner's devices.
-- Home probes each backend on load (incl. Verdiq/RenewLoop service logins) for its status dots.
+- Home probes each backend the admin can open (Verdiq/RenewLoop via the broker) for its status dots.
+- Article editor actions (publish/delete) are refused by the backend for non-editors but not yet hidden in the editor UI.
 - Inside the Vamaha app on phones, the brand V and the Vamaha app icon (also a V) sit side by side.
 - Pages verified only in error/empty states (no local backends); re-check data-heavy pages with live data.
 

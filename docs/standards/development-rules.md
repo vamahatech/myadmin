@@ -18,7 +18,13 @@ component classes, shell) are in [../../CLAUDE.md](../../CLAUDE.md). This file d
    never inject `HttpClient`.
 5. **Page:** build from the shared building blocks (§3) under
    `src/app/pages/apps/<app>/<module>/`.
-6. **Wire up:** route and `navItems` in `app.routes.ts`; capability flag in the app registry.
+6. **Wire up:** route and `navItems` in `app.routes.ts` (app routes carry `appAccessGuard` and
+   `canActivateChild: [appModuleGuard]`); the module id in vamaha-backend `APP_MODULES`;
+   capability flag in the app registry.
+6b. **Permissions:** every admin endpoint declares what it needs (`@AppPermission` in
+   vamaha-backend; the app backend's admin check elsewhere), and the page hides or disables
+   actions with `PermissionService.can(app, module, level)`: view = read, edit =
+   create/edit/triage, manage = send/delete/export.
 7. **Docs:** update the app status table (standard §9) and the app's `docs/events.md` if
    events changed.
 
@@ -137,6 +143,7 @@ A monitoring feature is done when:
 - [ ] Endpoint matches monitoring-standard §5 (or the standard was updated in the same change)
 - [ ] Backend tests pass, and new queries were checked against a real (test) database
 - [ ] Admin writes are audited; events/errors contain no forbidden data (standard §8)
+- [ ] Endpoint has a permission requirement; the UI hides actions the role can't perform
 - [ ] Privacy policy covers any new personal data
 - [ ] The page has loading, error, empty and data states, and works at 360 px and in dark mode
 - [ ] Metrics follow the definitions in standard §3 (unit labelled; deltas only when comparable)

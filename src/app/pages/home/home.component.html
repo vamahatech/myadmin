@@ -9,12 +9,12 @@
       <p class="mt-2 text-sm text-text2">One place to manage every application shipped by the studio.</p>
       <p class="mt-3">
         <span class="inline-flex items-center rounded-full bg-surface px-2.5 py-0.5 text-xs font-medium text-text">
-          {{ countLabel }}
+          {{ countLabel() }}
         </span>
       </p>
 
       <ul class="mt-8 border border-border rounded-xl overflow-hidden divide-y divide-border" aria-label="Studio applications">
-        @for (app of apps; track app.id; let i = $index) {
+        @for (app of apps(); track app.id; let i = $index) {
           <li class="ledger-row [&:first-child_a]:rounded-t-xl [&:last-child_a]:rounded-b-xl" [style.animation-delay]="(i * 60) + 'ms'">
             <app-row [app]="app" [index]="i" [status]="health()[app.id].status" [metric]="health()[app.id].metric" />
           </li>

@@ -20,7 +20,7 @@
     id="app-switcher-panel"
     class="absolute left-0 top-full mt-2 w-80 max-w-[calc(100vw-32px)] z-40 rounded-xl border border-border bg-card shadow-md p-1.5">
     <p class="px-2.5 pt-1.5 pb-2 text-[11px] font-medium uppercase tracking-wide text-text2">Switch application</p>
-    @for (app of apps; track app.id) {
+    @for (app of apps(); track app.id) {
       @let isCurrent = app.id === current().id;
       <a
         [routerLink]="app.route"

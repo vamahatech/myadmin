@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { verdiqSessionGuard } from './core/guards/verdiq-session.guard';
 import { renewloopSessionGuard } from './core/guards/renewloop-session.guard';
+import { appAccessGuard, appModuleGuard, superadminGuard } from './core/guards/app-access.guard';
 
 export const routes: Routes = [
   {
@@ -15,6 +16,24 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/auth/login/login.component').then(m => m.LoginComponent),
   },
+  // Signed-out password pages (links from invite / reset emails).
+  {
+    path: 'forgot-password',
+    loadComponent: () =>
+      import('./pages/auth/forgot-password/forgot-password.component').then(m => m.ForgotPasswordComponent),
+  },
+  {
+    path: 'reset-password',
+    data: { mode: 'reset' },
+    loadComponent: () =>
+      import('./pages/auth/set-password/set-password.component').then(m => m.SetPasswordComponent),
+  },
+  {
+    path: 'accept-invite',
+    data: { mode: 'invite' },
+    loadComponent: () =>
+      import('./pages/auth/set-password/set-password.component').then(m => m.SetPasswordComponent),
+  },
   {
     path: 'settings',
     canActivate: [authGuard],
@@ -22,8 +41,15 @@ export const routes: Routes = [
       import('./pages/settings/settings.component').then(m => m.SettingsComponent),
   },
   {
+    path: 'settings/admins',
+    canActivate: [authGuard, superadminGuard],
+    loadComponent: () =>
+      import('./pages/settings/admins/admins.component').then(m => m.AdminsComponent),
+  },
+  {
     path: 'apps/vamaha',
-    canActivate: [authGuard],
+    canActivate: [authGuard, appAccessGuard],
+    canActivateChild: [appModuleGuard],
     loadComponent: () =>
       import('./shared/components/app-shell/app-shell.component').then(
         m => m.AppShellComponent,
@@ -32,7 +58,7 @@ export const routes: Routes = [
       appId: 'vamaha',
       appName: 'Vamaha',
       navItems: [
-        { label: 'Articles', icon: 'file-text', path: '', activePrefixes: ['articles'] },
+        { label: 'Articles', icon: 'file-text', path: '', module: 'articles', activePrefixes: ['articles'] },
         { label: 'Push notifications', icon: 'bell', path: 'push' },
       ],
     },
@@ -71,7 +97,8 @@ export const routes: Routes = [
   },
   {
     path: 'apps/emi-planner',
-    canActivate: [authGuard],
+    canActivate: [authGuard, appAccessGuard],
+    canActivateChild: [appModuleGuard],
     loadComponent: () =>
       import('./shared/components/app-shell/app-shell.component').then(
         m => m.AppShellComponent,
@@ -116,7 +143,8 @@ export const routes: Routes = [
   },
   {
     path: 'apps/verdiq',
-    canActivate: [authGuard, verdiqSessionGuard],
+    canActivate: [authGuard, appAccessGuard, verdiqSessionGuard],
+    canActivateChild: [appModuleGuard],
     loadComponent: () =>
       import('./shared/components/app-shell/app-shell.component').then(
         m => m.AppShellComponent,
@@ -224,7 +252,8 @@ export const routes: Routes = [
   },
   {
     path: 'apps/renewloop',
-    canActivate: [authGuard, renewloopSessionGuard],
+    canActivate: [authGuard, appAccessGuard, renewloopSessionGuard],
+    canActivateChild: [appModuleGuard],
     loadComponent: () =>
       import('./shared/components/app-shell/app-shell.component').then(
         m => m.AppShellComponent,

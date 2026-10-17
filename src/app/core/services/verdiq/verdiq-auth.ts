@@ -44,6 +44,17 @@ export class VerdiqAuthService {
     );
   }
 
+  /** Stores a session issued by the vamaha-backend broker (POST /app-sessions/verdiq). */
+  adoptSession(token: string, user?: Partial<AdminUser>): void {
+    this.storage.setToken(token);
+    const claims = decodeJwt(token);
+    this.userSig.set({
+      id: user?.id ?? claims?.sub ?? '',
+      email: user?.email ?? claims?.email ?? '',
+      is_admin: claims?.is_admin ?? user?.is_admin ?? false,
+    });
+  }
+
   logout(): void {
     this.storage.clearToken();
     this.userSig.set(null);

@@ -3,6 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { IconComponent } from '../icon/icon.component';
 import { ThemeSwitchComponent } from '../theme-switch/theme-switch.component';
+import { PermissionService } from '../../../core/services/permission.service';
 
 /**
  * Header account trigger + dropdown: who is signed in, a link to the
@@ -18,6 +19,7 @@ import { ThemeSwitchComponent } from '../theme-switch/theme-switch.component';
 })
 export class AccountMenuComponent {
   readonly auth = inject(AuthService);
+  readonly perms = inject(PermissionService);
   private readonly router = inject(Router);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly trigger = viewChild.required<ElementRef<HTMLButtonElement>>('trigger');

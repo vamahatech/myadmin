@@ -1,47 +1,56 @@
 import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { VerdiqAuthService } from './verdiq/verdiq-auth';
 import { RenewloopAuthService } from './renewloop/renewloop-auth';
+import type { AdminUser } from '../models/verdiq/user.model';
+
+interface BrokeredSession {
+  token: string;
+  expiresAt: string;
+  user?: Partial<AdminUser>;
+}
 
 /**
- * Cross-backend silent-login for apps whose backend differs from
- * vamaha-backend (currently Verdiq and RenewLoop). Each auth service already
- * persists its own token via its own StorageService, so this only logs in
- * when no valid token exists yet this browser session.
+ * Sessions for apps whose backend differs from vamaha-backend (Verdiq, RenewLoop).
+ * vamaha-backend's session broker (POST /app-sessions/:appId) holds those backends'
+ * service credentials and only issues a session to admins with access to the app,
+ * so no password ships in this bundle. Each app's auth service keeps the token in
+ * its own storage; this only fetches one when none is valid yet.
  */
 @Injectable({ providedIn: 'root' })
 export class AppSessionService {
+  private readonly http = inject(HttpClient);
   private readonly verdiqAuth = inject(VerdiqAuthService);
   private readonly renewloopAuth = inject(RenewloopAuthService);
 
   async ensureVerdiqSession(): Promise<void> {
     if (this.verdiqAuth.getToken() && !this.verdiqAuth.isTokenExpired()) return;
-    await firstValueFrom(
-      this.verdiqAuth.login({
-        email: environment.verdiq.serviceEmail,
-        password: environment.verdiq.servicePassword,
-      }),
-    );
+    const session = await this.broker('verdiq');
+    this.verdiqAuth.adoptSession(session.token, session.user);
   }
 
   async ensureRenewloopSession(): Promise<void> {
     if (this.renewloopAuth.getToken() && !this.renewloopAuth.isTokenExpired()) return;
-    await firstValueFrom(
-      this.renewloopAuth.login({
-        email: environment.renewloop.serviceEmail,
-        password: environment.renewloop.servicePassword,
-      }),
-    );
+    const session = await this.broker('renewloop');
+    this.renewloopAuth.adoptSession(session.token);
   }
 
-  /** Clears every service-credential session. Called from AuthService.logout()
-   * so signing out of the shell doesn't leave a service-account JWT behind
-   * in localStorage for any app backend. Keeps its existing name (it's
-   * already called from AuthService.logout()) even though it now clears
-   * both sessions — renaming it repo-wide is out of scope here. */
+  /** Clears every app session. Called from AuthService on sign-out and on a new sign-in,
+   * so a different admin on this browser never inherits the previous one's sessions.
+   * (Keeps its historical name; it clears both.) */
   clearVerdiqSession(): void {
     this.verdiqAuth.logout();
     this.renewloopAuth.logout();
+  }
+
+  private broker(appId: 'verdiq' | 'renewloop'): Promise<BrokeredSession> {
+    return firstValueFrom(
+      this.http
+        .post<{ data: BrokeredSession }>(`${environment.apiBaseUrl}/app-sessions/${appId}`, {})
+        .pipe(map((res) => res.data)),
+    );
   }
 }

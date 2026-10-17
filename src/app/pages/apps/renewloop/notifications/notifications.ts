@@ -9,6 +9,7 @@ import { IconComponent } from '../../../../shared/components/icon/icon.component
 import { PushComposerComponent } from '../../../../shared/components/push-composer/push-composer.component';
 import { ConfirmService } from '../../../../core/services/confirm.service';
 import { ToastService } from '../../../../core/services/toast.service';
+import { PermissionService } from '../../../../core/services/permission.service';
 
 type Audience = 'all' | 'users';
 
@@ -41,9 +42,12 @@ export class RenewloopNotifications {
     return `${n} selected user${n === 1 ? '' : 's'}`;
   });
 
-  readonly disabledReason = computed(() =>
-    this.audience() === 'users' && this.selectedUsers().length === 0 ? 'Pick at least one recipient above.' : null,
-  );
+  private readonly perms = inject(PermissionService);
+
+  readonly disabledReason = computed(() => {
+    if (!this.perms.can('renewloop', 'notifications', 'manage')) return 'Sending needs the Manager role for RenewLoop.';
+    return this.audience() === 'users' && this.selectedUsers().length === 0 ? 'Pick at least one recipient above.' : null;
+  });
 
   constructor() {
     // Users page "Notify" hands over recipients via navigation state.

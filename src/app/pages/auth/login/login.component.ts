@@ -1,23 +1,21 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Meta } from '@angular/platform-browser';
 import { AuthService } from '../../../core/services/auth.service';
-import { APP_REGISTRY } from '../../../core/models/app-registry.model';
 import { IconComponent } from '../../../shared/components/icon/icon.component';
+import { AuthLayoutComponent } from '../../../shared/components/auth-layout/auth-layout.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [FormsModule, IconComponent],
+  imports: [FormsModule, RouterLink, IconComponent, AuthLayoutComponent],
   templateUrl: './login.component.html',
 })
 export class LoginComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly meta = inject(Meta);
-
-  readonly apps = APP_REGISTRY;
 
   email = '';
   password = '';

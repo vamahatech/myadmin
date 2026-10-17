@@ -15,7 +15,7 @@
           <dl class="grid grid-cols-[80px_1fr] gap-y-2 text-sm">
             <dt class="text-text2">Name</dt><dd class="text-text break-words">{{ u.name }}</dd>
             <dt class="text-text2">Email</dt><dd class="text-text break-all">{{ u.email }}</dd>
-            <dt class="text-text2">Role</dt><dd class="text-text">{{ u.role }}</dd>
+            <dt class="text-text2">Role</dt><dd class="text-text">{{ perms.isSuperadmin() ? 'Superadmin' : 'Admin' }}</dd>
           </dl>
         }
         <button type="button" (click)="logout()" class="btn btn-secondary w-full">
@@ -23,6 +23,56 @@
           Sign out
         </button>
       </div>
+
+      @if (perms.isSuperadmin()) {
+        <a routerLink="/settings/admins" class="card p-5 flex items-center gap-4 no-underline text-text hover:bg-hover">
+          <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <app-icon name="users" [size]="18" />
+          </span>
+          <span class="min-w-0 flex-1">
+            <span class="block font-semibold">Admins & permissions</span>
+            <span class="block text-sm text-text2">Invite admins, choose their apps and roles, see the audit log.</span>
+          </span>
+          <app-icon name="chevron-right" [size]="16" class="text-text2" />
+        </a>
+      } @else if (myAccess().length) {
+        <section class="card p-6" aria-labelledby="access-title">
+          <h2 id="access-title" class="section-title">Your access</h2>
+          <p class="muted mt-1 mb-4">Granted by a superadmin. Ask them if you need more.</p>
+          <ul class="space-y-3">
+            @for (a of myAccess(); track a.name) {
+              <li class="flex items-center gap-3">
+                <img [src]="'/' + a.icon" alt="" class="h-8 w-8 rounded-lg object-cover ring-1 ring-border" />
+                <span class="min-w-0">
+                  <span class="block text-sm font-semibold">{{ a.name }} · {{ a.role }}</span>
+                  <span class="block truncate text-xs text-text2">{{ a.modules }}</span>
+                </span>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
+      <section class="card p-6" aria-labelledby="password-title">
+        <h2 id="password-title" class="section-title">Change password</h2>
+        <p class="muted mt-1 mb-4">You'll stay signed in here; every other session is signed out.</p>
+        <form (submit)="$event.preventDefault(); changePassword()" class="space-y-5" novalidate>
+          <div>
+            <label for="current-password" class="field-label">Current password</label>
+            <input id="current-password" type="password" autocomplete="current-password" class="input min-h-11"
+              [value]="currentPassword" (input)="currentPassword = $any($event.target).value" />
+          </div>
+          <app-password-fields [(password)]="newPassword" [(confirm)]="confirmPassword" />
+          @if (changeError()) {
+            <p class="field-error flex items-center gap-1.5" role="alert">
+              <app-icon name="alert-triangle" [size]="14" /> {{ changeError() }}
+            </p>
+          }
+          <button type="submit" class="btn w-full" [disabled]="changing() || !canChange() || !currentPassword">
+            {{ changing() ? 'Saving…' : 'Change password' }}
+          </button>
+        </form>
+      </section>
 
       <section class="card p-6" aria-labelledby="appearance-title">
         <h2 id="appearance-title" class="section-title">Appearance</h2>

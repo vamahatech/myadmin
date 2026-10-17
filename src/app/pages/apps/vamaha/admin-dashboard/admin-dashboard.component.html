@@ -6,10 +6,12 @@
       <app-icon name="refresh" [size]="16" />
       Refresh
     </button>
+    @if (canEdit) {
     <a routerLink="/apps/vamaha/articles/new" class="btn">
       <app-icon name="plus" [size]="16" />
       Add article
     </a>
+    }
   </app-page-header>
 
   @if (loading()) {
@@ -20,7 +22,9 @@
   } @else if (articles().length === 0) {
     <div class="card">
       <app-empty-state icon="file-text" title="No articles yet" body="Write one by hand or generate a draft from trusted sources.">
-        <a routerLink="/apps/vamaha/articles/new" class="btn btn-sm"><app-icon name="plus" [size]="14" /> Add article</a>
+        @if (canEdit) {
+    <a routerLink="/apps/vamaha/articles/new" class="btn btn-sm"><app-icon name="plus" [size]="14" /> Add article</a>
+    }
       </app-empty-state>
     </div>
   } @else {

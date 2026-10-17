@@ -9,6 +9,7 @@ import { StatusBadgeComponent } from '../../../../shared/components/status-badge
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
 import { SkeletonComponent } from '../../../../shared/components/skeleton/skeleton.component';
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
+import { PermissionService } from '../../../../core/services/permission.service';
 
 type StatusFilter = 'ALL' | Article['status'];
 
@@ -19,6 +20,9 @@ type StatusFilter = 'ALL' | Article['status'];
   templateUrl: './admin-dashboard.component.html',
 })
 export class AdminDashboardComponent implements OnInit {
+  /** Creating/editing articles needs the Editor role on Vamaha. */
+  readonly canEdit = inject(PermissionService).can('vamaha', 'articles', 'edit');
+
   private readonly admin = inject(AdminContentService);
   private readonly meta = inject(Meta);
 

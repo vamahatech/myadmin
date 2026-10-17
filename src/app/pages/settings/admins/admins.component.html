@@ -1,0 +1,289 @@
+<div class="min-h-screen bg-bg text-text flex flex-col">
+  <app-global-header />
+
+  <main class="flex-1 w-full shell-content">
+    <a routerLink="/settings" class="btn btn-tertiary btn-sm -ml-3 mb-4">
+      <app-icon name="arrow-left" [size]="16" />
+      Settings
+    </a>
+
+    <div class="page">
+      <app-page-header title="Admins & permissions" [breadcrumb]="[{ label: 'Settings', link: '/settings' }, { label: 'Admins & permissions' }]">
+        <span pageDescription>Who can use the console, which apps they see, and what they can change there.</span>
+        <button type="button" class="btn btn-sm" (click)="openInvite()">
+          <app-icon name="plus" [size]="14" /> Invite admin
+        </button>
+      </app-page-header>
+
+      <div class="segmented self-start" role="group" aria-label="View">
+        <button type="button" [attr.aria-pressed]="tab() === 'admins'" (click)="setTab('admins')">
+          Admins <span class="segmented__count">{{ counts().total }}</span>
+        </button>
+        <button type="button" [attr.aria-pressed]="tab() === 'audit'" (click)="setTab('audit')">Audit log</button>
+      </div>
+
+      @if (tab() === 'admins') {
+        @if (error()) {
+          <div class="card state error" role="alert">{{ error() }}</div>
+        }
+        <section class="card overflow-hidden" aria-label="Admins">
+          <div class="card-toolbar">
+            <div class="card-toolbar__group">
+              <h2 class="text-base font-semibold">Console admins</h2>
+              <span class="text-sm text-text2">{{ counts().active }} active@if (counts().invited) { · {{ counts().invited }} invited }</span>
+            </div>
+          </div>
+
+          @if (loading() && !admins()) {
+            <div class="p-4"><app-skeleton [count]="4" /></div>
+          } @else if (admins(); as list) {
+            @if (!list.length) {
+              <app-empty-state icon="users" title="No admins yet" body="Invite someone to give them access to one or more apps.">
+                <button type="button" class="btn btn-sm" (click)="openInvite()">Invite admin</button>
+              </app-empty-state>
+            } @else {
+              <div class="table-scroll" [class.opacity-60]="loading()">
+                <table class="data-table is-compact">
+                  <thead>
+                    <tr>
+                      <th>Admin</th>
+                      <th>Role</th>
+                      <th>Apps</th>
+                      <th>Status</th>
+                      <th>Last sign-in</th>
+                      <th class="text-right"><span class="sr-only">Actions</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (a of list; track a.id) {
+                      <tr [class.opacity-60]="a.status === 'deactivated'">
+                        <td>
+                          <button type="button" class="flex items-center gap-2.5 min-w-0 text-left rounded hover:underline" (click)="openEdit(a)">
+                            <span class="avatar" aria-hidden="true" [style.--avatar-color]="avatarColor(a.id)">{{ initials(a.name) }}</span>
+                            <span class="min-w-0">
+                              <span class="block font-medium truncate">{{ a.name }}@if (a.id === meId()) { <span class="text-text2 font-normal">(you)</span> }</span>
+                              <span class="block text-xs text-text2 truncate">{{ a.email }}</span>
+                            </span>
+                          </button>
+                        </td>
+                        <td>
+                          @if (a.role === 'SUPERADMIN') {
+                            <span class="badge badge-info">Superadmin</span>
+                          } @else {
+                            <span class="badge badge-neutral">Admin</span>
+                          }
+                        </td>
+                        <td>
+                          @if (a.role === 'SUPERADMIN') {
+                            <span class="text-sm text-text2">All apps</span>
+                          } @else if (!a.access.length) {
+                            <span class="text-sm text-text2">None</span>
+                          } @else {
+                            <div class="flex flex-wrap gap-1.5">
+                              @for (g of a.access; track g.appId) {
+                                <span class="inline-flex items-center gap-1.5 rounded-full border border-border bg-card py-0.5 pl-0.5 pr-2 text-xs" [title]="grantSummary(g)">
+                                  <img [src]="'/' + appIcon(g.appId)" alt="" class="h-5 w-5 rounded-full object-cover" />
+                                  {{ appName(g.appId) }} · {{ roleLabels[g.role] }}@if (g.modules.length) { <span class="text-text2">({{ g.modules.length }})</span> }
+                                </span>
+                              }
+                            </div>
+                          }
+                        </td>
+                        <td>
+                          @switch (a.status) {
+                            @case ('active') { <span class="badge badge-success">Active</span> }
+                            @case ('invited') { <span class="badge badge-warning">Invited</span> }
+                            @default { <span class="badge badge-neutral">Deactivated</span> }
+                          }
+                        </td>
+                        <td class="text-text2 tabular-nums whitespace-nowrap" [title]="a.lastLoginAt ? (a.lastLoginAt | date: 'medium') : ''">
+                          {{ a.lastLoginAt ? (a.lastLoginAt | date: 'dd MMM yyyy') : 'Never' }}
+                        </td>
+                        <td class="text-right whitespace-nowrap">
+                          <button type="button" class="icon-btn is-sm" [attr.aria-label]="'Edit ' + a.name" title="Edit role & access" (click)="openEdit(a)">
+                            <app-icon name="pen" [size]="15" />
+                          </button>
+                          @if (a.status === 'invited') {
+                            <button type="button" class="icon-btn is-sm" [attr.aria-label]="'Resend invite to ' + a.name" title="Resend invite" [disabled]="busyId() === a.id" (click)="resendInvite(a)">
+                              <app-icon name="refresh" [size]="15" />
+                            </button>
+                          }
+                          @if (a.status === 'active') {
+                            <button type="button" class="icon-btn is-sm" [attr.aria-label]="'Send password reset to ' + a.name" title="Send password reset link" [disabled]="busyId() === a.id" (click)="sendReset(a)">
+                              <app-icon name="message" [size]="15" />
+                            </button>
+                          }
+                          @if (a.id !== meId()) {
+                            @if (a.status === 'deactivated') {
+                              <button type="button" class="icon-btn is-sm" [attr.aria-label]="'Reactivate ' + a.name" title="Reactivate" [disabled]="busyId() === a.id" (click)="setActive(a, true)">
+                                <app-icon name="check-circle" [size]="15" />
+                              </button>
+                            } @else {
+                              <button type="button" class="icon-btn is-sm icon-danger" [attr.aria-label]="'Deactivate ' + a.name" title="Deactivate" [disabled]="busyId() === a.id" (click)="setActive(a, false)">
+                                <app-icon name="x" [size]="15" />
+                              </button>
+                            }
+                          }
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          }
+        </section>
+
+        <section class="card p-5" aria-labelledby="roles-title">
+          <h2 id="roles-title" class="section-title">What the roles mean</h2>
+          <dl class="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+            <div><dt class="font-semibold">Superadmin</dt><dd class="text-text2">Every app and module, plus this page and the audit log.</dd></div>
+            @for (r of appRoles; track r) {
+              <div><dt class="font-semibold">{{ roleLabels[r] }} <span class="font-normal text-text2">(per app)</span></dt><dd class="text-text2">{{ roleHints[r] }}</dd></div>
+            }
+          </dl>
+        </section>
+      } @else {
+        <section class="card overflow-hidden" aria-label="Audit log">
+          <div class="card-toolbar">
+            <div class="card-toolbar__group">
+              <h2 class="text-base font-semibold">Audit log</h2>
+              @if (audit(); as p) { <span class="badge badge-neutral tabular-nums">{{ p.pagination.total }}</span> }
+            </div>
+            <div class="card-toolbar__group">
+              <label class="select-field">
+                <span class="sr-only">Action</span>
+                <select class="input" [value]="auditAction()" (change)="setAuditAction($any($event.target).value)">
+                  @for (o of auditActions; track o.value) {
+                    <option [value]="o.value" [selected]="auditAction() === o.value">{{ o.label }}</option>
+                  }
+                </select>
+                <app-icon name="chevron-down" [size]="16" />
+              </label>
+            </div>
+          </div>
+          @if (auditLoading() && !audit()) {
+            <div class="p-4"><app-skeleton [count]="6" /></div>
+          } @else if (audit(); as p) {
+            @if (!p.entries.length) {
+              <app-empty-state icon="file-text" title="Nothing recorded yet" body="Invites, access changes, password resets and app sessions show up here." />
+            } @else {
+              <div class="table-scroll" [class.opacity-60]="auditLoading()">
+                <table class="data-table is-compact">
+                  <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Target</th></tr></thead>
+                  <tbody>
+                    @for (e of p.entries; track e.id) {
+                      <tr>
+                        <td class="text-text2 tabular-nums whitespace-nowrap" [title]="e.createdAt | date: 'medium'">{{ e.createdAt | date: 'dd MMM, h:mm a' }}</td>
+                        <td class="truncate max-w-[16rem]">{{ e.actorEmail }}</td>
+                        <td>{{ actionLabel(e.action) }}</td>
+                        <td class="text-text2 truncate max-w-[20rem]">{{ targetLabel(e) }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              <app-pagination [page]="p.pagination.page" [pageSize]="p.pagination.limit" [total]="p.pagination.total" (pageChange)="auditGoTo($event)" />
+            }
+          }
+        </section>
+      }
+    </div>
+  </main>
+
+  <app-modal [open]="!!draft()" [title]="draft()?.id ? 'Edit ' + draft()!.name : 'Invite an admin'" (closed)="closeDialog()">
+    @if (draft(); as d) {
+      @if (inviteLink(); as link) {
+        <div class="flex flex-col gap-4">
+          <p class="text-sm">Email isn't set up on the server, so the invite wasn't sent. Share this one-time link with <strong>{{ d.email || 'them' }}</strong> (valid 48 hours):</p>
+          <code class="block break-all rounded-lg border border-border bg-surface p-3 text-xs">{{ link }}</code>
+          <div class="flex justify-end gap-2">
+            <button type="button" class="btn btn-secondary btn-sm" (click)="closeDialog()">Done</button>
+            <button type="button" class="btn btn-sm" (click)="copyInviteLink()"><app-icon name="check" [size]="14" /> Copy link</button>
+          </div>
+        </div>
+      } @else {
+        <div class="flex flex-col gap-4">
+          <div class="grid gap-3 sm:grid-cols-2">
+            <label class="block">
+              <span class="field-label">Name</span>
+              <input class="input" [value]="d.name" (input)="patchDraft({ name: $any($event.target).value })" maxlength="80" />
+            </label>
+            <label class="block">
+              <span class="field-label">Email</span>
+              <input class="input" type="email" [value]="d.email" [disabled]="!!d.id" (input)="patchDraft({ email: $any($event.target).value })" />
+            </label>
+          </div>
+
+          <label class="block">
+            <span class="field-label">Role</span>
+            <span class="select-field w-full">
+              <select class="input w-full" [value]="d.role" [disabled]="isEditingSelf()" (change)="patchDraft({ role: $any($event.target).value })">
+                <option value="ADMIN" [selected]="d.role === 'ADMIN'">Admin: only the apps below</option>
+                <option value="SUPERADMIN" [selected]="d.role === 'SUPERADMIN'">Superadmin: everything, including managing admins</option>
+              </select>
+              <app-icon name="chevron-down" [size]="16" />
+            </span>
+            @if (isEditingSelf()) { <span class="field-help">You can't change your own role.</span> }
+          </label>
+
+          @if (d.role === 'ADMIN') {
+            <div>
+              <p class="field-label">App access</p>
+              <ul class="flex flex-col divide-y divide-border rounded-lg border border-border">
+                @for (app of apps(); track app.id) {
+                  <li class="p-3">
+                    <div class="flex items-center gap-3">
+                      <img [src]="'/' + app.icon" alt="" class="h-8 w-8 rounded-lg object-cover ring-1 ring-border" />
+                      <span class="flex-1 font-medium">{{ app.name }}</span>
+                      <span class="select-field">
+                        <select class="input" [attr.aria-label]="app.name + ' role'" [value]="d.grants[app.id].role" (change)="setAppRole(app.id, $any($event.target).value)">
+                          <option value="" [selected]="!d.grants[app.id].role">No access</option>
+                          @for (r of appRoles; track r) {
+                            <option [value]="r" [selected]="d.grants[app.id].role === r">{{ roleLabels[r] }}</option>
+                          }
+                        </select>
+                        <app-icon name="chevron-down" [size]="16" />
+                      </span>
+                    </div>
+                    @if (d.grants[app.id].role) {
+                      <p class="mt-2 text-xs text-text2">{{ hintFor(d.grants[app.id].role) }}</p>
+                      <div class="mt-2 flex flex-wrap gap-x-4 gap-y-2 text-sm">
+                        <label class="inline-flex items-center gap-2 font-medium">
+                          <input type="checkbox" class="h-4 w-4 accent-primary"
+                            [checked]="d.grants[app.id].modules.length === app.modules.length"
+                            [indeterminate]="d.grants[app.id].modules.length > 0 && d.grants[app.id].modules.length < app.modules.length"
+                            (change)="toggleAllModules(app.id)" />
+                          All modules
+                        </label>
+                        @for (m of app.modules; track m.id) {
+                          <label class="inline-flex items-center gap-2">
+                            <input type="checkbox" class="h-4 w-4 accent-primary" [checked]="d.grants[app.id].modules.includes(m.id)" (change)="toggleModule(app.id, m.id)" />
+                            {{ m.label }}
+                          </label>
+                        }
+                      </div>
+                    }
+                  </li>
+                }
+              </ul>
+            </div>
+          } @else {
+            <p class="rounded-lg border border-border bg-surface p-3 text-sm">Superadmins can open every app and module, invite and manage admins, and read the audit log.</p>
+          }
+
+          @if (formError()) {
+            <p class="field-error flex items-center gap-1.5" role="alert"><app-icon name="alert-triangle" [size]="14" /> {{ formError() }}</p>
+          }
+
+          <div class="flex justify-end gap-2">
+            <button type="button" class="btn btn-secondary btn-sm" (click)="closeDialog()">Cancel</button>
+            <button type="button" class="btn btn-sm" [disabled]="saving()" (click)="save()">
+              {{ saving() ? 'Saving…' : d.id ? 'Save changes' : 'Send invite' }}
+            </button>
+          </div>
+        </div>
+      }
+    }
+  </app-modal>
+</div>

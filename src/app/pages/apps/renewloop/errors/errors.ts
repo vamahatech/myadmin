@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -14,6 +14,7 @@ import { IconComponent } from '../../../../shared/components/icon/icon.component
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { Modal } from '../../../../shared/components/modal/modal';
+import { PermissionService } from '../../../../core/services/permission.service';
 
 type StatusFilter = ErrorStatus | 'open' | '';
 
@@ -55,6 +56,9 @@ export class RenewloopErrors {
   editStatus: ErrorStatus = 'new';
   editNote = '';
   readonly saving = signal(false);
+  /** Changing status/notes needs the Editor role; viewers see the details read-only. */
+  readonly canEdit = computed(() => this.perms.can('renewloop', 'errors', 'edit'));
+  private readonly perms = inject(PermissionService);
 
   readonly tone = statusTone;
   readonly statusLabel = (s: ErrorStatus) => ERROR_STATUS_LABELS[s] ?? s;

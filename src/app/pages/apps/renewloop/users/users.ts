@@ -15,6 +15,7 @@ import { SkeletonComponent } from '../../../../shared/components/skeleton/skelet
 import { IconComponent, IconName } from '../../../../shared/components/icon/icon.component';
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
+import { PermissionService } from '../../../../core/services/permission.service';
 
 type ActiveFilter = '' | 'true' | 'false';
 
@@ -72,6 +73,10 @@ export class RenewloopUsers {
   ];
 
   /** Selected rows, kept across pages/filters so a recipient list can be built up. */
+  /** Notify buttons open the composer; only useful if this admin can send. */
+  private readonly perms = inject(PermissionService);
+  readonly canNotify = computed(() => this.perms.can('renewloop', 'notifications', 'manage'));
+
   readonly selected = signal<Map<string, UserRow>>(new Map());
   readonly selectedUsers = computed(() => [...this.selected().values()]);
   readonly allOnPageSelected = computed(() => {
